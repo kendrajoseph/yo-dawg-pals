@@ -93,20 +93,13 @@ const HeroSection = () => {
         </p>
 
         {/* CTAs */}
-        <div className="mt-10 flex flex-col items-center justify-center gap-3 sm:flex-row">
+        <div className="mt-10 flex justify-center">
           <Button
             size="lg"
             className="group h-14 rounded-full bg-gradient-sunset px-8 text-base font-semibold text-primary-foreground shadow-pop transition-transform hover:scale-105"
           >
-            Book a sitter
+            Book a service
             <ArrowRight className="transition-transform group-hover:translate-x-1" />
-          </Button>
-          <Button
-            size="lg"
-            variant="outline"
-            className="h-14 rounded-full border-2 border-foreground/15 bg-card px-8 text-base font-semibold hover:border-primary hover:text-primary"
-          >
-            Become a sitter
           </Button>
         </div>
 
