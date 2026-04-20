@@ -20,10 +20,10 @@ const MeetSitter = () => {
               loading="lazy"
             />
             {/* Sticker */}
-            <div className="absolute -left-3 -top-3 grid h-16 w-16 -rotate-12 place-items-center rounded-full bg-accent text-center text-accent-foreground shadow-pop sm:h-20 sm:w-20">
-              <div className="font-hand text-sm leading-tight sm:text-base">
-                hi, I'm
-                <div className="font-display text-base sm:text-lg">your sitter!</div>
+            <div className="absolute -left-4 -top-4 grid h-20 w-20 -rotate-12 place-items-center rounded-full bg-accent text-center text-accent-foreground shadow-pop sm:h-24 sm:w-24">
+              <div>
+                <div className="font-hand text-sm leading-none sm:text-base">hi, I'm</div>
+                <div className="font-display text-base leading-tight sm:text-lg">your sitter!</div>
               </div>
             </div>
           </div>
