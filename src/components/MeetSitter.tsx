@@ -19,13 +19,6 @@ const MeetSitter = () => {
               className="h-72 w-64 rounded-2xl object-cover sm:h-80 sm:w-72"
               loading="lazy"
             />
-            {/* Sticker */}
-            <div className="absolute -left-4 -top-4 grid h-20 w-20 -rotate-12 place-items-center rounded-full bg-accent text-center text-accent-foreground shadow-pop sm:h-24 sm:w-24">
-              <div>
-                <div className="font-hand text-sm leading-none sm:text-base">hi, I'm</div>
-                <div className="font-display text-base leading-tight sm:text-lg">your sitter!</div>
-              </div>
-            </div>
           </div>
         </div>
 
