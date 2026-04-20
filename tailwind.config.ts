@@ -14,9 +14,9 @@ export default {
     },
     extend: {
       fontFamily: {
-        display: ['"Abril Fatface"', "Georgia", "serif"],
-        body: ['Cabin', "system-ui", "sans-serif"],
-        hand: ['Caveat', "cursive"],
+        display: ['"Archivo Black"', "Impact", "sans-serif"],
+        body: ['Hind', "system-ui", "sans-serif"],
+        tag: ['"Permanent Marker"', "cursive"],
       },
       colors: {
         border: "hsl(var(--border))",
@@ -32,6 +32,10 @@ export default {
         highlight: {
           DEFAULT: "hsl(var(--highlight))",
           foreground: "hsl(var(--highlight-foreground))",
+        },
+        clay: {
+          DEFAULT: "hsl(var(--clay))",
+          foreground: "hsl(var(--clay-foreground))",
         },
         secondary: {
           DEFAULT: "hsl(var(--secondary))",
