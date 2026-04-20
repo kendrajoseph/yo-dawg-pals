@@ -1,4 +1,4 @@
-import { ArrowRight, Sparkles, Star, PawPrint, Home } from "lucide-react";
+import { ArrowRight, Sparkles, PawPrint } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import heroDogs from "@/assets/hero-dogs.jpg";
 
