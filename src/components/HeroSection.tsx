@@ -121,7 +121,7 @@ const HeroSection = () => {
             <div className="absolute -right-4 -top-4 z-10 grid h-20 w-20 place-items-center rounded-full bg-accent text-center text-accent-foreground shadow-pop sm:-right-6 -top-6 sm:h-24 sm:w-24">
               <div className="rotate-12">
                 <div className="font-hand text-lg leading-none sm:text-xl">since</div>
-                <div className="font-display text-xl sm:text-2xl">2024</div>
+                <div className="font-display text-xl sm:text-2xl">2015</div>
               </div>
             </div>
             <img
