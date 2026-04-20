@@ -77,12 +77,6 @@ const HeroSection = () => {
 
       {/* Hero content */}
       <div className="relative z-10 mx-auto max-w-6xl px-6 pb-24 pt-12 text-center md:pt-20">
-        {/* Trust chip */}
-        <div className="mx-auto mb-8 inline-flex items-center gap-2 rounded-full border border-border bg-card/80 px-4 py-1.5 text-xs font-semibold text-foreground/80 shadow-soft backdrop-blur">
-          <Sparkles className="h-3.5 w-3.5 text-accent" />
-          Trusted by 2,000+ pet parents
-        </div>
-
         {/* Headline */}
         <h1 className="font-display text-[clamp(4rem,14vw,11rem)] leading-[0.9] tracking-tight">
           <span className="text-gradient-sunset">Yo Dawg</span>
