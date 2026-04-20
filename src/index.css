@@ -2,109 +2,110 @@
 @tailwind components;
 @tailwind utilities;
 
-/* Yo Dawg — Sunset Blaze design system. All colors in HSL. */
+/* Yo Dawg — Pine & Sunlight design system. West-coast outdoorsy with edge.
+   All colors in HSL. */
 
 @layer base {
   :root {
-    /* Warm cream base */
-    --background: 36 60% 97%;
-    --foreground: 20 14% 12%;
+    /* Warm parchment — like sun-bleached paper / trail map */
+    --background: 42 38% 94%;
+    --foreground: 130 22% 10%;
 
-    --card: 0 0% 100%;
-    --card-foreground: 20 14% 12%;
+    --card: 40 45% 98%;
+    --card-foreground: 130 22% 10%;
 
-    --popover: 0 0% 100%;
-    --popover-foreground: 20 14% 12%;
+    --popover: 40 45% 98%;
+    --popover-foreground: 130 22% 10%;
 
-    /* Sunset Blaze: orange #ff6b35 */
-    --primary: 16 100% 60%;
-    --primary-foreground: 36 60% 98%;
-    --primary-glow: 32 95% 55%;
+    /* Deep pine #2a3d2a */
+    --primary: 120 18% 20%;
+    --primary-foreground: 42 38% 96%;
+    --primary-glow: 100 32% 32%;
 
-    /* Soft peach secondary */
-    --secondary: 28 90% 92%;
-    --secondary-foreground: 16 60% 25%;
+    /* Mossy green #5a7a3d secondary */
+    --secondary: 90 30% 36%;
+    --secondary-foreground: 42 38% 96%;
 
-    --muted: 28 40% 94%;
-    --muted-foreground: 20 10% 42%;
+    --muted: 42 28% 88%;
+    --muted-foreground: 130 12% 32%;
 
-    /* Hot pink accent #e84393 */
-    --accent: 330 75% 58%;
-    --accent-foreground: 36 60% 98%;
+    /* Golden hour #d4a04a */
+    --accent: 40 60% 56%;
+    --accent-foreground: 130 22% 10%;
 
-    /* Deep purple highlight #6c5ce7 */
-    --highlight: 250 73% 63%;
-    --highlight-foreground: 36 60% 98%;
+    /* Sunlit highlight #e8d49e */
+    --highlight: 42 64% 76%;
+    --highlight-foreground: 130 22% 10%;
 
-    --destructive: 0 84% 60%;
-    --destructive-foreground: 36 60% 98%;
+    /* Trail clay — used sparingly for warmth */
+    --clay: 18 55% 48%;
+    --clay-foreground: 42 38% 96%;
 
-    --border: 28 30% 88%;
-    --input: 28 30% 88%;
-    --ring: 16 100% 60%;
+    --destructive: 8 70% 48%;
+    --destructive-foreground: 42 38% 96%;
 
-    --radius: 1rem;
+    --border: 42 22% 78%;
+    --input: 42 22% 82%;
+    --ring: 40 60% 56%;
 
-    /* Signature gradients */
-    --gradient-sunset: linear-gradient(135deg, hsl(16 100% 60%) 0%, hsl(28 95% 58%) 35%, hsl(330 75% 58%) 75%, hsl(250 73% 63%) 100%);
-    --gradient-sunset-soft: linear-gradient(135deg, hsl(28 100% 95%) 0%, hsl(330 80% 95%) 50%, hsl(250 80% 95%) 100%);
-    --gradient-text: linear-gradient(120deg, hsl(16 100% 55%) 0%, hsl(330 80% 55%) 100%);
+    --radius: 0.5rem;
 
-    /* Shadows */
-    --shadow-soft: 0 10px 30px -12px hsl(16 60% 40% / 0.18);
-    --shadow-pop: 0 20px 50px -16px hsl(330 70% 50% / 0.35);
+    /* Signature gradients — sunlight breaking through pines */
+    --gradient-sunlight: linear-gradient(135deg, hsl(120 18% 20%) 0%, hsl(100 25% 28%) 40%, hsl(40 55% 50%) 100%);
+    --gradient-golden: linear-gradient(120deg, hsl(40 70% 52%) 0%, hsl(42 75% 68%) 100%);
+    --gradient-canopy: linear-gradient(180deg, hsl(42 38% 94%) 0%, hsl(42 38% 90%) 100%);
+    --gradient-text: linear-gradient(120deg, hsl(120 18% 20%) 0%, hsl(40 65% 48%) 100%);
 
-    --sidebar-background: 36 60% 97%;
-    --sidebar-foreground: 20 14% 12%;
-    --sidebar-primary: 16 100% 60%;
-    --sidebar-primary-foreground: 36 60% 98%;
-    --sidebar-accent: 28 90% 92%;
-    --sidebar-accent-foreground: 16 60% 25%;
-    --sidebar-border: 28 30% 88%;
-    --sidebar-ring: 16 100% 60%;
+    /* Shadows — bolder, harder edges to match graffiti feel */
+    --shadow-soft: 0 8px 24px -8px hsl(120 30% 12% / 0.18);
+    --shadow-pop: 8px 8px 0px 0px hsl(120 18% 20%);
+    --shadow-pop-accent: 6px 6px 0px 0px hsl(40 60% 56%);
+
+    --sidebar-background: 42 38% 94%;
+    --sidebar-foreground: 130 22% 10%;
+    --sidebar-primary: 120 18% 20%;
+    --sidebar-primary-foreground: 42 38% 96%;
+    --sidebar-accent: 42 28% 88%;
+    --sidebar-accent-foreground: 130 22% 10%;
+    --sidebar-border: 42 22% 78%;
+    --sidebar-ring: 40 60% 56%;
   }
 
   .dark {
-    --background: 20 25% 8%;
-    --foreground: 36 60% 96%;
+    --background: 130 18% 8%;
+    --foreground: 42 38% 94%;
 
-    --card: 20 22% 11%;
-    --card-foreground: 36 60% 96%;
+    --card: 130 16% 11%;
+    --card-foreground: 42 38% 94%;
 
-    --popover: 20 22% 11%;
-    --popover-foreground: 36 60% 96%;
+    --popover: 130 16% 11%;
+    --popover-foreground: 42 38% 94%;
 
-    --primary: 16 100% 62%;
-    --primary-foreground: 20 25% 8%;
-    --primary-glow: 32 95% 58%;
+    --primary: 40 60% 56%;
+    --primary-foreground: 130 18% 8%;
+    --primary-glow: 42 75% 68%;
 
-    --secondary: 20 20% 18%;
-    --secondary-foreground: 36 60% 96%;
+    --secondary: 90 25% 28%;
+    --secondary-foreground: 42 38% 94%;
 
-    --muted: 20 18% 16%;
-    --muted-foreground: 28 15% 70%;
+    --muted: 130 14% 16%;
+    --muted-foreground: 42 22% 70%;
 
-    --accent: 330 80% 62%;
-    --accent-foreground: 20 25% 8%;
+    --accent: 40 60% 56%;
+    --accent-foreground: 130 18% 8%;
 
-    --highlight: 250 73% 68%;
-    --highlight-foreground: 20 25% 8%;
+    --highlight: 42 64% 76%;
+    --highlight-foreground: 130 18% 8%;
 
-    --destructive: 0 70% 50%;
-    --destructive-foreground: 36 60% 96%;
+    --clay: 18 55% 48%;
+    --clay-foreground: 42 38% 94%;
 
-    --border: 20 18% 20%;
-    --input: 20 18% 20%;
-    --ring: 16 100% 62%;
+    --destructive: 8 65% 48%;
+    --destructive-foreground: 42 38% 94%;
 
-    --sidebar-background: 20 25% 8%;
-    --sidebar-foreground: 36 60% 96%;
-    --sidebar-primary: 16 100% 62%;
-    --sidebar-primary-foreground: 20 25% 8%;
-    --sidebar-accent: 20 20% 18%;
-    --sidebar-accent-foreground: 36 60% 96%;
-    --sidebar-border: 20 18% 20%;
-    --sidebar-ring: 16 100% 62%;
+    --border: 130 14% 20%;
+    --input: 130 14% 20%;
+    --ring: 40 60% 56%;
   }
 }
 
@@ -114,47 +115,68 @@
   }
 
   html {
-    font-family: 'Cabin', system-ui, sans-serif;
+    font-family: 'Hind', system-ui, sans-serif;
   }
 
   body {
     @apply bg-background text-foreground;
-    font-feature-settings: "ss01", "ss02";
   }
 
   h1, h2, h3, h4 {
-    font-family: 'Abril Fatface', Georgia, serif;
+    font-family: 'Archivo Black', 'Impact', sans-serif;
     letter-spacing: -0.01em;
+    text-transform: uppercase;
   }
 }
 
 @layer utilities {
   .font-display {
-    font-family: 'Abril Fatface', Georgia, serif;
+    font-family: 'Archivo Black', 'Impact', sans-serif;
+    text-transform: uppercase;
+    letter-spacing: -0.01em;
   }
   .font-body {
-    font-family: 'Cabin', system-ui, sans-serif;
+    font-family: 'Hind', system-ui, sans-serif;
   }
-  .font-hand {
-    font-family: 'Caveat', cursive;
+  .font-tag {
+    font-family: 'Permanent Marker', cursive;
+    letter-spacing: 0.01em;
   }
-  .text-gradient-sunset {
+  .text-gradient-sunlight {
     background: var(--gradient-text);
     -webkit-background-clip: text;
     background-clip: text;
     -webkit-text-fill-color: transparent;
     color: transparent;
   }
-  .bg-gradient-sunset {
-    background: var(--gradient-sunset);
+  .bg-gradient-sunlight {
+    background: var(--gradient-sunlight);
   }
-  .bg-gradient-sunset-soft {
-    background: var(--gradient-sunset-soft);
+  .bg-gradient-golden {
+    background: var(--gradient-golden);
+  }
+  .bg-gradient-canopy {
+    background: var(--gradient-canopy);
   }
   .shadow-soft {
     box-shadow: var(--shadow-soft);
   }
   .shadow-pop {
     box-shadow: var(--shadow-pop);
+  }
+  .shadow-pop-accent {
+    box-shadow: var(--shadow-pop-accent);
+  }
+  /* Subtle paper grain texture */
+  .texture-grain {
+    background-image:
+      radial-gradient(hsl(130 22% 10% / 0.04) 1px, transparent 1px),
+      radial-gradient(hsl(130 22% 10% / 0.03) 1px, transparent 1px);
+    background-size: 14px 14px, 22px 22px;
+    background-position: 0 0, 7px 11px;
+  }
+  /* Slight ink-stamp tilt for stickers */
+  .stamp {
+    transform: rotate(-4deg);
   }
 }
