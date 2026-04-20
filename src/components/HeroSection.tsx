@@ -139,23 +139,6 @@ const HeroSection = () => {
           </div>
         </div>
 
-        {/* Stats strip */}
-        <div className="mt-14 flex flex-wrap items-center justify-center gap-x-10 gap-y-4 text-sm font-semibold text-foreground/75">
-          <div className="flex items-center gap-2">
-            <Star className="h-4 w-4 fill-primary text-primary" />
-            <span><span className="font-display text-lg text-foreground">4.9</span> avg rating</span>
-          </div>
-          <div className="hidden h-4 w-px bg-border sm:block" />
-          <div className="flex items-center gap-2">
-            <PawPrint className="h-4 w-4 text-accent" />
-            <span><span className="font-display text-lg text-foreground">12k</span> happy walks</span>
-          </div>
-          <div className="hidden h-4 w-px bg-border sm:block" />
-          <div className="flex items-center gap-2">
-            <Home className="h-4 w-4 text-highlight" />
-            <span><span className="font-display text-lg text-foreground">800</span> trusted sitters</span>
-          </div>
-        </div>
       </div>
     </header>
   );
