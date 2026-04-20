@@ -4,62 +4,72 @@ import sitterPortrait from "@/assets/sitter-portrait.png";
 
 const MeetSitter = () => {
   return (
-    <section id="sitters" className="relative bg-background py-20 sm:py-28">
-      <div className="mx-auto grid max-w-5xl items-center gap-10 px-6 md:grid-cols-[auto,1fr] md:gap-14">
-        {/* Portrait */}
+    <section id="sitters" className="relative bg-background py-16 sm:py-24">
+      <div className="mx-auto grid max-w-5xl items-center gap-10 px-5 sm:px-6 md:grid-cols-[auto,1fr] md:gap-14">
+        {/* Portrait — polaroid style */}
         <div className="relative mx-auto md:mx-0">
           <div
             aria-hidden
-            className="absolute -inset-4 -z-10 rounded-[2rem] bg-gradient-sunset opacity-30 blur-2xl"
+            className="absolute -inset-3 -z-10 bg-accent/30 blur-2xl"
           />
-          <div className="relative rotate-2 overflow-hidden rounded-3xl border-2 border-foreground/10 bg-card p-3 shadow-pop transition-transform duration-500 hover:rotate-0">
+          {/* Tape */}
+          <div
+            aria-hidden
+            className="absolute -top-3 left-8 z-10 h-5 w-16 -rotate-12 bg-highlight/80 shadow-soft"
+          />
+          <div className="relative rotate-2 border-4 border-primary bg-card p-3 pb-12 shadow-pop transition-transform duration-500 hover:rotate-0">
             <img
               src={sitterPortrait}
               alt="Your friendly Yo Dawg sitter with a happy dog on a sunny walk"
-              className="h-72 w-64 rounded-2xl object-cover sm:h-80 sm:w-72"
+              className="h-72 w-64 object-cover sm:h-80 sm:w-72"
               loading="lazy"
             />
+            <div className="absolute bottom-2 left-0 right-0 text-center">
+              <span className="font-tag text-xl text-primary">your sitter</span>
+            </div>
           </div>
         </div>
 
         {/* Bio */}
         <div className="text-center md:text-left">
-          <span className="inline-flex items-center gap-2 rounded-full border border-border bg-card px-3 py-1 text-xs font-semibold text-foreground/70 shadow-soft">
-            <MapPin className="h-3.5 w-3.5 text-primary" />
+          <span className="inline-flex items-center gap-2 border-2 border-primary bg-card px-3 py-1 text-xs font-display uppercase tracking-wide text-primary">
+            <MapPin className="h-3.5 w-3.5" />
             Now booking locally
           </span>
-          <h2 className="mt-4 font-display text-4xl tracking-tight text-foreground sm:text-5xl">
-            Meet your sitter
+          <h2 className="mt-4 font-display text-4xl leading-[0.95] text-primary sm:text-5xl">
+            Meet your
+            <br />
+            <span className="text-accent">sitter.</span>
           </h2>
-          <p className="mt-4 text-lg text-muted-foreground">
-            Hi! I'm the human behind Yo Dawg — a lifelong dog lover offering personal,
-            one-on-one walks, sits, boarding & basic training with the care your pup
-            deserves.
+          <p className="mt-4 text-base text-foreground/80 sm:text-lg">
+            Hi! I'm the human behind Yo Dawg — a lifelong dog lover offering
+            personal, one-on-one walks, sits, boarding & basic training with the
+            care your pup deserves. <span className="font-tag text-xl text-clay">trail-ready, treat-stocked.</span>
           </p>
 
           <div className="mt-6 flex flex-wrap justify-center gap-2 md:justify-start">
-            <span className="inline-flex items-center gap-1.5 rounded-full bg-secondary/60 px-3 py-1 text-xs font-semibold text-secondary-foreground">
-              <ShieldCheck className="h-3.5 w-3.5 text-primary" /> Fully insured
+            <span className="inline-flex items-center gap-1.5 border-2 border-primary bg-secondary px-3 py-1 text-xs font-display uppercase tracking-wide text-secondary-foreground">
+              <ShieldCheck className="h-3.5 w-3.5" /> Fully insured
             </span>
-            <span className="inline-flex items-center gap-1.5 rounded-full bg-secondary/60 px-3 py-1 text-xs font-semibold text-secondary-foreground">
-              <Heart className="h-3.5 w-3.5 text-accent" /> Pet first-aid trained
+            <span className="inline-flex items-center gap-1.5 border-2 border-primary bg-highlight px-3 py-1 text-xs font-display uppercase tracking-wide text-highlight-foreground">
+              <Heart className="h-3.5 w-3.5" /> Pet first-aid
             </span>
-            <span className="inline-flex items-center gap-1.5 rounded-full bg-secondary/60 px-3 py-1 text-xs font-semibold text-secondary-foreground">
-              🐾 All breeds welcome
+            <span className="inline-flex items-center gap-1.5 border-2 border-primary bg-accent px-3 py-1 text-xs font-display uppercase tracking-wide text-accent-foreground">
+              🐾 All breeds
             </span>
           </div>
 
           <div className="mt-8 flex flex-col items-center gap-3 sm:flex-row md:items-start">
             <Button
               size="lg"
-              className="h-12 rounded-full bg-gradient-sunset px-6 font-semibold text-primary-foreground shadow-soft transition-transform hover:scale-105 hover:shadow-pop"
+              className="h-12 rounded-md bg-primary px-6 font-display text-sm uppercase tracking-wide text-primary-foreground shadow-pop-accent transition-transform hover:-translate-y-0.5"
             >
               Book a meet & greet
             </Button>
             <Button
               size="lg"
               variant="outline"
-              className="h-12 rounded-full border-2 border-foreground/15 bg-card px-6 font-semibold hover:border-primary hover:text-primary"
+              className="h-12 rounded-md border-2 border-primary bg-card px-6 font-display text-sm uppercase tracking-wide text-primary hover:bg-primary hover:text-primary-foreground"
             >
               Read my story
             </Button>
