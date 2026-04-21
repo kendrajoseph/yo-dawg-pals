@@ -5,11 +5,17 @@ import sitterPortrait from "@/assets/sitter-portrait.png";
 
 const MeetSitter = () => {
   return (
-    <section id="sitters" className="relative bg-background py-24 sm:py-32">
-      <div className="mx-auto grid max-w-6xl items-center gap-12 px-5 sm:px-8 md:grid-cols-[auto,1fr] md:gap-20">
+    <section id="sitters" className="relative overflow-hidden bg-background py-24 sm:py-32">
+      <div aria-hidden className="pointer-events-none absolute inset-0 texture-topo opacity-40" />
+
+      <div className="relative mx-auto grid max-w-6xl items-center gap-12 px-5 sm:px-8 md:grid-cols-[auto,1fr] md:gap-20">
         {/* Portrait */}
         <div className="relative mx-auto md:mx-0">
-          <div className="overflow-hidden rounded-2xl border border-border bg-card shadow-card">
+          {/* sticker badge */}
+          <div className="absolute -right-3 -top-4 z-10 grid h-20 w-20 -rotate-12 place-items-center rounded-full border-2 border-primary bg-secondary text-center font-display text-secondary-foreground shadow-pop-sm">
+            <span className="text-xs leading-tight">Hi,<br />I'm here!</span>
+          </div>
+          <div className="-rotate-2 overflow-hidden rounded-3xl border-2 border-primary bg-card shadow-pop transition-transform duration-500 hover:rotate-0">
             <img
               src={sitterPortrait}
               alt="Your friendly Yo Dawg sitter on a sunny trail walk with a happy dog"
@@ -21,27 +27,28 @@ const MeetSitter = () => {
 
         {/* Bio */}
         <div>
-          <span className="inline-flex items-center gap-2 rounded-full border border-border bg-muted/60 px-3 py-1 text-xs font-tag text-muted-foreground">
+          <span className="inline-flex items-center gap-2 rounded-full border-2 border-primary bg-card px-3 py-1.5 text-xs font-tag text-primary shadow-pop-sm">
             <MapPin className="h-3.5 w-3.5" />
             Now booking locally
           </span>
-          <h2 className="mt-5 font-display text-4xl leading-[1.05] text-primary sm:text-5xl">
-            Meet your <span className="italic text-gradient-sunrise">sitter.</span>
+          <h2 className="mt-5 font-display text-5xl leading-[0.95] text-primary sm:text-6xl">
+            Meet your{" "}
+            <span className="font-serif italic text-clay">sitter.</span>
           </h2>
           <p className="mt-5 max-w-xl text-base leading-relaxed text-foreground/75 sm:text-lg">
             Hi — I'm the human behind Yo Dawg. A lifelong dog person offering
-            personal, one-on-one walks, sits, boarding and basic training, with
-            the calm, attentive care your pup deserves. Trail-ready, treat-stocked.
+            personal, one-on-one walks, sits, boarding and basic training.
+            Trail-ready, treat-stocked, slightly obsessed with your dog already.
           </p>
 
           <ul className="mt-8 flex flex-wrap gap-2">
-            <li className="inline-flex items-center gap-1.5 rounded-full border border-border bg-card px-3 py-1.5 text-xs font-tag text-foreground/80">
-              <ShieldCheck className="h-3.5 w-3.5 text-secondary" /> Fully insured
+            <li className="inline-flex items-center gap-1.5 rounded-full border-2 border-primary bg-secondary px-3 py-1.5 text-xs font-tag text-secondary-foreground shadow-pop-sm">
+              <ShieldCheck className="h-3.5 w-3.5" /> Fully insured
             </li>
-            <li className="inline-flex items-center gap-1.5 rounded-full border border-border bg-card px-3 py-1.5 text-xs font-tag text-foreground/80">
-              <Heart className="h-3.5 w-3.5 text-clay" /> Pet first-aid certified
+            <li className="inline-flex items-center gap-1.5 rounded-full border-2 border-primary bg-accent px-3 py-1.5 text-xs font-tag text-accent-foreground shadow-pop-sm">
+              <Heart className="h-3.5 w-3.5" /> Pet first-aid
             </li>
-            <li className="inline-flex items-center gap-1.5 rounded-full border border-border bg-card px-3 py-1.5 text-xs font-tag text-foreground/80">
+            <li className="inline-flex items-center gap-1.5 rounded-full border-2 border-primary bg-clay px-3 py-1.5 text-xs font-tag text-clay-foreground shadow-pop-sm">
               All breeds welcome
             </li>
           </ul>
@@ -50,7 +57,7 @@ const MeetSitter = () => {
             <Button
               asChild
               size="lg"
-              className="h-12 rounded-full bg-primary px-7 text-sm font-medium text-primary-foreground hover:bg-primary/90"
+              className="h-12 rounded-full bg-primary px-7 text-sm font-semibold text-primary-foreground shadow-pop-sm transition-transform hover:-translate-y-0.5"
             >
               <Link to="/book">Book a meet & greet</Link>
             </Button>
@@ -58,7 +65,7 @@ const MeetSitter = () => {
               asChild
               size="lg"
               variant="ghost"
-              className="h-12 rounded-full px-5 text-sm font-medium hover:bg-muted"
+              className="h-12 rounded-full px-5 text-sm font-semibold hover:bg-muted"
             >
               <Link to="/account">My account →</Link>
             </Button>

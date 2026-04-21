@@ -2,131 +2,118 @@
 @tailwind components;
 @tailwind utilities;
 
-/* Yo Dawg — West Coast trail design system.
-   Pacific Northwest hiking: deep pine, warm cream, muted gold, terracotta.
-   All colors HSL. Mature, editorial, outdoorsy. */
+/* Yo Dawg — Trailhead vibes with attitude.
+   Forest pine + warm cream + acid lime + sun gold + clay orange.
+   Mature editorial with playful, energetic accents. HSL only. */
 
 @layer base {
   :root {
-    /* Warm cream — sun-bleached map paper */
-    --background: 38 30% 95%;
-    --foreground: 150 22% 12%;
+    /* Warm cream */
+    --background: 38 34% 94%;
+    --foreground: 155 28% 11%;
 
-    --card: 40 35% 98%;
-    --card-foreground: 150 22% 12%;
+    --card: 40 40% 98%;
+    --card-foreground: 155 28% 11%;
 
-    --popover: 40 35% 98%;
-    --popover-foreground: 150 22% 12%;
+    --popover: 40 40% 98%;
+    --popover-foreground: 155 28% 11%;
 
-    /* Deep pine — forest canopy */
-    --primary: 155 30% 16%;
-    --primary-foreground: 38 30% 95%;
-    --primary-glow: 145 22% 32%;
+    /* Deep pine */
+    --primary: 155 38% 13%;
+    --primary-foreground: 38 34% 96%;
+    --primary-glow: 145 28% 28%;
 
-    /* Moss green */
-    --secondary: 95 22% 38%;
-    --secondary-foreground: 38 30% 95%;
+    /* Acid lime — punchy outdoorsy green */
+    --secondary: 78 75% 52%;
+    --secondary-foreground: 155 38% 13%;
 
-    --muted: 38 22% 90%;
-    --muted-foreground: 150 12% 32%;
+    --muted: 38 24% 88%;
+    --muted-foreground: 155 14% 30%;
 
-    /* Muted gold — late afternoon sun */
-    --accent: 38 55% 48%;
-    --accent-foreground: 38 30% 98%;
+    /* Sun gold — bright golden hour */
+    --accent: 42 92% 56%;
+    --accent-foreground: 155 38% 13%;
 
-    /* Soft cream highlight */
-    --highlight: 42 50% 86%;
-    --highlight-foreground: 150 22% 12%;
+    /* Warm cream highlight */
+    --highlight: 42 65% 84%;
+    --highlight-foreground: 155 28% 11%;
 
-    /* Terracotta clay */
-    --clay: 18 55% 48%;
-    --clay-foreground: 38 30% 98%;
+    /* Clay orange — warm, energetic */
+    --clay: 18 78% 52%;
+    --clay-foreground: 38 34% 96%;
 
-    /* Trail rust — used sparingly for accents (was magenta) */
-    --tag: 14 40% 38%;
-    --tag-foreground: 38 30% 98%;
+    /* Berry rust — used for accents */
+    --tag: 8 65% 44%;
+    --tag-foreground: 38 34% 96%;
 
-    /* Lake water */
-    --electric: 195 35% 42%;
-    --electric-foreground: 38 30% 98%;
+    /* Lake teal */
+    --electric: 188 55% 38%;
+    --electric-foreground: 38 34% 96%;
 
-    --destructive: 4 60% 44%;
-    --destructive-foreground: 38 30% 98%;
+    --destructive: 4 70% 48%;
+    --destructive-foreground: 38 34% 96%;
 
-    --border: 150 14% 82%;
+    --border: 150 14% 80%;
     --input: 150 14% 86%;
-    --ring: 38 55% 48%;
+    --ring: 42 92% 56%;
 
-    --radius: 0.5rem;
+    --radius: 0.75rem;
 
-    /* Refined gradients */
-    --gradient-canopy: linear-gradient(180deg, hsl(38 30% 95%) 0%, hsl(38 28% 92%) 100%);
-    --gradient-trail: linear-gradient(135deg, hsl(155 30% 16%) 0%, hsl(145 22% 32%) 100%);
-    --gradient-sunrise: linear-gradient(120deg, hsl(38 55% 48%) 0%, hsl(18 55% 48%) 100%);
+    --gradient-canopy: linear-gradient(180deg, hsl(38 34% 94%) 0%, hsl(38 30% 90%) 100%);
+    --gradient-trail: linear-gradient(135deg, hsl(155 38% 13%) 0%, hsl(145 28% 28%) 100%);
+    --gradient-sunrise: linear-gradient(120deg, hsl(42 92% 56%) 0%, hsl(18 78% 52%) 100%);
+    --gradient-meadow: linear-gradient(120deg, hsl(78 75% 52%) 0%, hsl(42 92% 56%) 100%);
 
-    /* Soft, refined shadows */
-    --shadow-soft: 0 8px 24px -10px hsl(150 30% 12% / 0.18);
-    --shadow-card: 0 12px 32px -14px hsl(150 30% 12% / 0.22);
-    --shadow-elevate: 0 20px 50px -20px hsl(150 30% 12% / 0.28);
+    --shadow-soft: 0 8px 24px -10px hsl(155 30% 12% / 0.18);
+    --shadow-card: 0 14px 36px -16px hsl(155 30% 12% / 0.28);
+    --shadow-elevate: 0 24px 60px -22px hsl(155 30% 12% / 0.35);
+    --shadow-pop: 8px 8px 0 0 hsl(155 38% 13%);
+    --shadow-pop-sm: 4px 4px 0 0 hsl(155 38% 13%);
 
-    --sidebar-background: 38 30% 95%;
-    --sidebar-foreground: 150 22% 12%;
-    --sidebar-primary: 155 30% 16%;
-    --sidebar-primary-foreground: 38 30% 95%;
-    --sidebar-accent: 38 22% 90%;
-    --sidebar-accent-foreground: 150 22% 12%;
-    --sidebar-border: 150 14% 82%;
-    --sidebar-ring: 38 55% 48%;
+    --sidebar-background: 38 34% 94%;
+    --sidebar-foreground: 155 28% 11%;
+    --sidebar-primary: 155 38% 13%;
+    --sidebar-primary-foreground: 38 34% 96%;
+    --sidebar-accent: 38 24% 88%;
+    --sidebar-accent-foreground: 155 28% 11%;
+    --sidebar-border: 150 14% 80%;
+    --sidebar-ring: 42 92% 56%;
   }
 
   .dark {
-    --background: 155 22% 8%;
-    --foreground: 38 25% 92%;
-
-    --card: 155 18% 11%;
-    --card-foreground: 38 25% 92%;
-
-    --popover: 155 18% 11%;
-    --popover-foreground: 38 25% 92%;
-
-    --primary: 38 50% 78%;
-    --primary-foreground: 155 22% 8%;
-    --primary-glow: 38 40% 60%;
-
-    --secondary: 95 20% 32%;
-    --secondary-foreground: 38 25% 92%;
-
-    --muted: 155 14% 16%;
+    --background: 155 28% 7%;
+    --foreground: 38 30% 92%;
+    --card: 155 22% 10%;
+    --card-foreground: 38 30% 92%;
+    --popover: 155 22% 10%;
+    --popover-foreground: 38 30% 92%;
+    --primary: 42 92% 60%;
+    --primary-foreground: 155 28% 7%;
+    --primary-glow: 42 70% 50%;
+    --secondary: 78 60% 42%;
+    --secondary-foreground: 155 28% 7%;
+    --muted: 155 16% 16%;
     --muted-foreground: 38 18% 70%;
-
-    --accent: 38 55% 56%;
-    --accent-foreground: 155 22% 8%;
-
-    --highlight: 42 35% 30%;
-    --highlight-foreground: 38 25% 92%;
-
-    --clay: 18 55% 52%;
-    --clay-foreground: 38 25% 92%;
-
-    --tag: 14 40% 44%;
-    --tag-foreground: 38 25% 92%;
-
-    --electric: 195 35% 48%;
-    --electric-foreground: 38 25% 92%;
-
-    --destructive: 4 60% 48%;
-    --destructive-foreground: 38 25% 92%;
-
-    --border: 155 14% 22%;
-    --input: 155 14% 20%;
-    --ring: 38 55% 56%;
+    --accent: 42 92% 60%;
+    --accent-foreground: 155 28% 7%;
+    --highlight: 42 30% 28%;
+    --highlight-foreground: 38 30% 92%;
+    --clay: 18 78% 56%;
+    --clay-foreground: 38 30% 92%;
+    --tag: 8 65% 50%;
+    --tag-foreground: 38 30% 92%;
+    --electric: 188 55% 44%;
+    --electric-foreground: 38 30% 92%;
+    --destructive: 4 70% 52%;
+    --destructive-foreground: 38 30% 92%;
+    --border: 155 16% 22%;
+    --input: 155 16% 20%;
+    --ring: 42 92% 60%;
   }
 }
 
 @layer base {
-  * {
-    @apply border-border;
-  }
+  * { @apply border-border; }
 
   html {
     font-family: 'Inter', system-ui, sans-serif;
@@ -134,81 +121,100 @@
     -moz-osx-font-smoothing: grayscale;
   }
 
-  body {
-    @apply bg-background text-foreground;
-  }
+  body { @apply bg-background text-foreground; }
 
   h1, h2, h3, h4 {
-    font-family: 'Fraunces', Georgia, serif;
-    letter-spacing: -0.02em;
-    font-weight: 600;
+    font-family: 'Bricolage Grotesque', 'Inter', sans-serif;
+    letter-spacing: -0.03em;
+    font-weight: 700;
   }
 
   ::selection {
-    background: hsl(var(--accent) / 0.4);
-    color: hsl(var(--foreground));
+    background: hsl(var(--accent));
+    color: hsl(var(--accent-foreground));
   }
 }
 
 @layer utilities {
   .font-display {
+    font-family: 'Bricolage Grotesque', 'Inter', sans-serif;
+    letter-spacing: -0.03em;
+    font-weight: 700;
+  }
+  .font-serif-display {
     font-family: 'Fraunces', Georgia, serif;
-    letter-spacing: -0.015em;
+    letter-spacing: -0.025em;
     font-weight: 600;
   }
-  .font-body {
-    font-family: 'Inter', system-ui, sans-serif;
-  }
+  .font-body { font-family: 'Inter', system-ui, sans-serif; }
   .font-tag {
     font-family: 'Inter', system-ui, sans-serif;
     text-transform: uppercase;
-    letter-spacing: 0.16em;
+    letter-spacing: 0.18em;
     font-weight: 600;
-    font-size: 0.75rem;
-  }
-  .font-logo {
-    font-family: 'Fraunces', Georgia, serif;
-    font-weight: 700;
-    letter-spacing: -0.03em;
-    color: hsl(var(--primary));
-    font-feature-settings: "ss01" on;
+    font-size: 0.7rem;
   }
 
   .text-gradient-trail {
     background: var(--gradient-trail);
-    -webkit-background-clip: text;
-    background-clip: text;
-    -webkit-text-fill-color: transparent;
-    color: transparent;
+    -webkit-background-clip: text; background-clip: text;
+    -webkit-text-fill-color: transparent; color: transparent;
   }
   .text-gradient-sunrise {
     background: var(--gradient-sunrise);
-    -webkit-background-clip: text;
-    background-clip: text;
-    -webkit-text-fill-color: transparent;
-    color: transparent;
+    -webkit-background-clip: text; background-clip: text;
+    -webkit-text-fill-color: transparent; color: transparent;
   }
+  .text-gradient-meadow {
+    background: var(--gradient-meadow);
+    -webkit-background-clip: text; background-clip: text;
+    -webkit-text-fill-color: transparent; color: transparent;
+  }
+
   .bg-gradient-canopy { background: var(--gradient-canopy); }
   .bg-gradient-trail { background: var(--gradient-trail); }
   .bg-gradient-sunrise { background: var(--gradient-sunrise); }
+  .bg-gradient-meadow { background: var(--gradient-meadow); }
 
   .shadow-soft { box-shadow: var(--shadow-soft); }
   .shadow-card { box-shadow: var(--shadow-card); }
   .shadow-elevate { box-shadow: var(--shadow-elevate); }
+  .shadow-pop { box-shadow: var(--shadow-pop); }
+  .shadow-pop-sm { box-shadow: var(--shadow-pop-sm); }
 
   /* Subtle paper grain */
   .texture-grain {
     background-image:
-      radial-gradient(hsl(150 24% 12% / 0.03) 1px, transparent 1px);
+      radial-gradient(hsl(155 28% 11% / 0.04) 1px, transparent 1px);
     background-size: 22px 22px;
   }
 
-  /* Underline accent — used sparingly */
-  .underline-accent {
-    background-image: linear-gradient(120deg, hsl(var(--accent) / 0.35) 0%, hsl(var(--accent) / 0.35) 100%);
-    background-repeat: no-repeat;
-    background-size: 100% 28%;
-    background-position: 0 92%;
-    padding: 0 0.05em;
+  /* Topo-line decoration */
+  .texture-topo {
+    background-image:
+      repeating-radial-gradient(
+        circle at 50% 50%,
+        hsl(155 28% 11% / 0.05) 0,
+        hsl(155 28% 11% / 0.05) 1px,
+        transparent 1px,
+        transparent 18px
+      );
   }
+
+  .underline-accent {
+    background-image: linear-gradient(120deg, hsl(var(--accent) / 0.55) 0%, hsl(var(--accent) / 0.55) 100%);
+    background-repeat: no-repeat;
+    background-size: 100% 32%;
+    background-position: 0 90%;
+    padding: 0 0.08em;
+  }
+
+  .marquee {
+    animation: marquee 40s linear infinite;
+  }
+}
+
+@keyframes marquee {
+  0% { transform: translateX(0); }
+  100% { transform: translateX(-50%); }
 }

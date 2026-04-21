@@ -1,18 +1,37 @@
 import { Link } from "react-router-dom";
+import logo from "@/assets/yodawg-logo.png";
 
 const SiteFooter = () => (
-  <footer className="border-t border-border bg-primary text-primary-foreground">
+  <footer className="relative bg-primary text-primary-foreground">
+    {/* Marquee strip */}
+    <div className="overflow-hidden border-y border-primary-foreground/15 bg-secondary py-3 text-secondary-foreground">
+      <div className="marquee flex gap-12 whitespace-nowrap font-display text-2xl">
+        {Array.from({ length: 2 }).map((_, g) => (
+          <div key={g} className="flex shrink-0 items-center gap-12">
+            <span>★ Walks</span>
+            <span>★ Sits</span>
+            <span>★ Boards</span>
+            <span>★ Trains</span>
+            <span>★ Treats</span>
+            <span>★ Hamilton, ON</span>
+            <span>★ Since 2015</span>
+          </div>
+        ))}
+      </div>
+    </div>
+
     <div className="mx-auto grid max-w-6xl gap-10 px-5 py-16 sm:px-8 md:grid-cols-3">
       <div>
-        <Link to="/" className="flex items-baseline gap-2">
-          <span className="font-logo text-3xl text-primary-foreground">Yo Dawg</span>
+        <Link to="/" aria-label="Yo Dawg home">
+          <img src={logo} alt="Yo Dawg" className="h-12 w-auto invert" />
         </Link>
-        <p className="mt-4 max-w-xs text-sm leading-relaxed text-primary-foreground/70">
-          Hamilton, Ontario · since 2015. Walks, sits, boards & basic training for every kind of dog.
+        <p className="mt-5 max-w-xs text-sm leading-relaxed text-primary-foreground/70">
+          Hamilton, Ontario. Since 2015. Walks, sits, boards & basic training
+          for every kind of good boy (and girl).
         </p>
       </div>
       <div>
-        <h4 className="text-xs font-tag text-primary-foreground/60">Services</h4>
+        <h4 className="text-xs font-tag text-accent">Services</h4>
         <ul className="mt-4 space-y-2 text-sm text-primary-foreground/85">
           <li><Link to="/book?service=walk" className="transition-colors hover:text-accent">Dog Walking</Link></li>
           <li><Link to="/book?service=sitting" className="transition-colors hover:text-accent">Pet Sitting</Link></li>
@@ -21,7 +40,7 @@ const SiteFooter = () => (
         </ul>
       </div>
       <div>
-        <h4 className="text-xs font-tag text-primary-foreground/60">Account</h4>
+        <h4 className="text-xs font-tag text-accent">Account</h4>
         <ul className="mt-4 space-y-2 text-sm text-primary-foreground/85">
           <li><Link to="/auth" className="transition-colors hover:text-accent">Sign in / sign up</Link></li>
           <li><Link to="/account" className="transition-colors hover:text-accent">My bookings</Link></li>
@@ -30,7 +49,7 @@ const SiteFooter = () => (
       </div>
     </div>
     <div className="border-t border-primary-foreground/10 px-5 py-6 text-center text-xs text-primary-foreground/55 sm:px-8">
-      © {new Date().getFullYear()} Yo Dawg · Made in Hamilton, Ontario
+      © {new Date().getFullYear()} Yo Dawg · Made with treats in Hamilton, Ontario
     </div>
   </footer>
 );
