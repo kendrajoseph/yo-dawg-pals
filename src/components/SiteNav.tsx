@@ -47,7 +47,10 @@ const SiteNav = ({ variant = "light" }: SiteNavProps) => {
         <NavLink to="/#services" className={linkBase}>Services</NavLink>
         <NavLink to="/book" className={({ isActive }) => cn(linkBase, isActive && linkActive)}>Book</NavLink>
         {user && (
-          <NavLink to="/account" className={({ isActive }) => cn(linkBase, isActive && linkActive)}>Account</NavLink>
+          <>
+            <NavLink to="/account" className={({ isActive }) => cn(linkBase, isActive && linkActive)}>Account</NavLink>
+            <NavLink to="/account/profile" className={({ isActive }) => cn(linkBase, isActive && linkActive)}>Profile</NavLink>
+          </>
         )}
         {isSitter && (
           <NavLink to="/sitter" className={({ isActive }) => cn(linkBase, isActive && linkActive)}>Dashboard</NavLink>
@@ -98,7 +101,10 @@ const SiteNav = ({ variant = "light" }: SiteNavProps) => {
           <Link to="/#services" onClick={() => setOpen(false)} className="px-3 py-2 text-sm font-semibold">Services</Link>
           <Link to="/book" onClick={() => setOpen(false)} className="px-3 py-2 text-sm font-semibold">Book</Link>
           {user && (
-            <Link to="/account" onClick={() => setOpen(false)} className="px-3 py-2 text-sm font-semibold">Account</Link>
+            <>
+              <Link to="/account" onClick={() => setOpen(false)} className="px-3 py-2 text-sm font-semibold">Account</Link>
+              <Link to="/account/profile" onClick={() => setOpen(false)} className="px-3 py-2 text-sm font-semibold">Profile</Link>
+            </>
           )}
           {isSitter && (
             <Link to="/sitter" onClick={() => setOpen(false)} className="px-3 py-2 text-sm font-semibold">Dashboard</Link>
