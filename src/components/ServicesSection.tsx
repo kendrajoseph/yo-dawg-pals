@@ -35,7 +35,6 @@ const services = [
   },
 ];
 
-const packStrip = [dog2, dog5, dog6, dog8, dog1, dog3, dog4, dog7];
 
 const ServicesSection = () => {
   return (
