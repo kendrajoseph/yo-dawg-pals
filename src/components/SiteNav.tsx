@@ -25,8 +25,8 @@ const SiteNav = () => {
         <span className="grid h-10 w-10 place-items-center rounded-md bg-primary text-primary-foreground shadow-pop-accent">
           <PawPrint className="h-5 w-5" />
         </span>
-        <span className="font-logo text-2xl tracking-tight text-foreground sm:text-3xl">
-          YO DAWG<span className="text-accent">.</span>
+        <span className="font-logo font-logo-sm text-2xl sm:text-3xl">
+          YO DAWG.
         </span>
       </Link>
 

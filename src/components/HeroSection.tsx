@@ -54,15 +54,15 @@ const HeroSection = () => {
       {/* Hero content */}
       <div className="relative z-10 mx-auto max-w-6xl px-5 pb-24 pt-10 text-center sm:px-6 md:pt-16">
         {/* Tag */}
-        <div className="mb-6 inline-flex -rotate-2 items-center gap-2">
+        <div className="mb-8 inline-flex -rotate-2 items-center gap-2">
           <Sparkles className="h-5 w-5 text-tag" />
           <span className="font-tag text-2xl text-clay sm:text-3xl">
-            <span className="scrawl-tag text-primary-foreground">Hamilton, ON</span> · since '15
+            <span className="scrawl-tag text-primary">Hamilton, ON</span> · since '15
           </span>
         </div>
 
         {/* Headline */}
-        <h1 className="text-[clamp(3.5rem,16vw,11rem)] leading-[1.05] tracking-tight">
+        <h1 className="text-[clamp(3.5rem,15vw,10rem)] leading-[0.95] tracking-normal">
           <span className="font-logo">YO</span>
           <br />
           <span className="font-logo">DAWG.</span>
