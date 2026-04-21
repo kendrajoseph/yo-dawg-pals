@@ -220,6 +220,9 @@ const SitterDashboard = () => {
 
         {/* Availability */}
         <h2 className="mt-12 font-display text-2xl uppercase text-primary">Weekly availability</h2>
+        <p className="mt-1 text-sm text-muted-foreground">
+          Tag each slot with the services it covers — customers only see times that match the service they're booking.
+        </p>
         <Card className="mt-3 border-4 border-primary p-4 shadow-pop sm:p-5">
           <div className="grid gap-3 sm:grid-cols-[1fr,auto,auto,auto] sm:items-end">
             <div>
@@ -245,23 +248,77 @@ const SitterDashboard = () => {
             </Button>
           </div>
 
+          <div className="mt-3">
+            <Label className="text-xs uppercase tracking-wide text-muted-foreground">
+              Services this new slot covers
+            </Label>
+            <div className="mt-2 flex flex-wrap gap-3">
+              {services.map((s) => {
+                const checked = newServiceIds.includes(s.id);
+                return (
+                  <label key={s.id} className={cn(
+                    "flex cursor-pointer items-center gap-2 border-2 border-primary px-3 py-1.5 text-sm transition-colors",
+                    checked ? "bg-accent text-accent-foreground" : "bg-card hover:bg-muted",
+                  )}>
+                    <Checkbox
+                      checked={checked}
+                      onCheckedChange={(v) => toggleNewServiceId(s.id, v === true)}
+                    />
+                    <span className="font-display uppercase">{s.name}</span>
+                  </label>
+                );
+              })}
+              {services.length === 0 && (
+                <span className="text-xs text-muted-foreground">No active services configured.</span>
+              )}
+            </div>
+          </div>
+
           {avail.length > 0 ? (
-            <ul className="mt-4 grid gap-2 sm:grid-cols-2">
-              {avail.map((a) => (
-                <li key={a.id} className="flex items-center justify-between border-2 border-primary bg-muted px-3 py-2">
-                  <span className="text-sm">
-                    <span className="font-display uppercase">{DAYS[a.weekday]}</span> · {minutesToTime(a.start_minute)}–{minutesToTime(a.end_minute)}
-                  </span>
-                  <button onClick={() => removeAvail(a.id)} aria-label="Remove">
-                    <Trash2 className="h-4 w-4 text-destructive" />
-                  </button>
-                </li>
-              ))}
+            <ul className="mt-5 grid gap-2">
+              {avail.map((a) => {
+                const tagged = tagsBySlot.get(a.id) ?? new Set<string>();
+                return (
+                  <li key={a.id} className="border-2 border-primary bg-muted px-3 py-2.5">
+                    <div className="flex items-center justify-between gap-3">
+                      <span className="text-sm">
+                        <span className="font-display uppercase">{DAYS[a.weekday]}</span> · {minutesToTime(a.start_minute)}–{minutesToTime(a.end_minute)}
+                      </span>
+                      <button onClick={() => removeAvail(a.id)} aria-label="Remove slot">
+                        <Trash2 className="h-4 w-4 text-destructive" />
+                      </button>
+                    </div>
+                    <div className="mt-2 flex flex-wrap gap-2">
+                      {services.map((s) => {
+                        const on = tagged.has(s.id);
+                        return (
+                          <button
+                            key={s.id}
+                            type="button"
+                            onClick={() => toggleSlotService(a.id, s.id, !on)}
+                            className={cn(
+                              "border-2 border-primary px-2 py-1 text-xs font-display uppercase transition-colors",
+                              on ? "bg-secondary text-secondary-foreground" : "bg-card text-muted-foreground hover:bg-card/80",
+                            )}
+                            aria-pressed={on}
+                          >
+                            {on ? "✓ " : ""}{s.name}
+                          </button>
+                        );
+                      })}
+                      {tagged.size === 0 && (
+                        <span className="text-xs text-destructive">⚠ No services — this slot is hidden from booking.</span>
+                      )}
+                    </div>
+                  </li>
+                );
+              })}
             </ul>
           ) : (
             <p className="mt-3 text-sm text-muted-foreground">No availability yet — customers can't book until you add some.</p>
           )}
         </Card>
+
 
         {/* Blocked dates */}
         <h2 className="mt-12 font-display text-2xl uppercase text-primary">Blocked days</h2>
