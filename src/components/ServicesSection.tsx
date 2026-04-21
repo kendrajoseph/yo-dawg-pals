@@ -1,4 +1,4 @@
-import { Footprints, Home, Bed, GraduationCap, ArrowRight } from "lucide-react";
+import { Footprints, Home, Bed, ArrowRight } from "lucide-react";
 import { Link } from "react-router-dom";
 import { dog1, dog3, dog5, dog6, dog7, dog8, dog2, dog4 } from "@/assets/dogs";
 
@@ -6,7 +6,7 @@ const services = [
   {
     icon: Footprints,
     title: "Dog Walking",
-    desc: "Solo or small-buddy walks around your block — rain, snow or sunshine.",
+    desc: "Solo or small-buddy walks — basic leash manners and training cues included, rain or shine.",
     price: "$20",
     unit: "/ 30 min",
     slug: "walk",
@@ -32,16 +32,6 @@ const services = [
     slug: "boarding",
     accent: "bg-clay text-clay-foreground",
     dog: dog4,
-  },
-  {
-    icon: GraduationCap,
-    title: "Training",
-    desc: "Sit, stay, leash manners, house rules — positive reinforcement only.",
-    price: "$40",
-    unit: "/ session",
-    slug: "training",
-    accent: "bg-electric text-electric-foreground",
-    dog: dog7,
   },
 ];
 
