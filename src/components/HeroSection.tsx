@@ -1,5 +1,7 @@
-import { ArrowRight, PawPrint, Menu } from "lucide-react";
+import { ArrowRight } from "lucide-react";
+import { Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
+import SiteNav from "@/components/SiteNav";
 import heroDogs from "@/assets/hero-dogs.jpg";
 
 const HeroSection = () => {
@@ -20,36 +22,7 @@ const HeroSection = () => {
         }}
       />
 
-      {/* Top nav */}
-      <nav className="relative z-10 mx-auto flex max-w-7xl items-center justify-between px-5 py-5 sm:px-6">
-        <a href="/" className="flex items-center gap-2.5">
-          <span className="grid h-10 w-10 place-items-center rounded-md bg-primary text-primary-foreground shadow-pop-accent">
-            <PawPrint className="h-5 w-5" />
-          </span>
-          <span className="font-display text-xl tracking-tight text-foreground sm:text-2xl">
-            YO DAWG<span className="text-accent">.</span>
-          </span>
-        </a>
-        <div className="hidden items-center gap-8 md:flex">
-          <a href="#services" className="text-sm font-semibold uppercase tracking-wide text-foreground/80 transition-colors hover:text-accent">
-            Services
-          </a>
-          <a href="#sitters" className="text-sm font-semibold uppercase tracking-wide text-foreground/80 transition-colors hover:text-accent">
-            About
-          </a>
-          <a href="#reviews" className="text-sm font-semibold uppercase tracking-wide text-foreground/80 transition-colors hover:text-accent">
-            Reviews
-          </a>
-        </div>
-        <div className="flex items-center gap-2">
-          <Button variant="ghost" size="icon" className="md:hidden" aria-label="Open menu">
-            <Menu className="h-5 w-5" />
-          </Button>
-          <Button className="hidden h-10 rounded-md bg-primary px-4 font-display text-sm uppercase tracking-wide text-primary-foreground shadow-pop-accent transition-transform hover:-translate-y-0.5 sm:inline-flex">
-            Book
-          </Button>
-        </div>
-      </nav>
+      <SiteNav />
 
       {/* Hero content */}
       <div className="relative z-10 mx-auto max-w-6xl px-5 pb-20 pt-8 text-center sm:px-6 md:pt-16">
@@ -80,11 +53,14 @@ const HeroSection = () => {
         {/* CTA */}
         <div className="mt-8 flex justify-center sm:mt-10">
           <Button
+            asChild
             size="lg"
             className="group h-14 rounded-md bg-primary px-8 font-display text-base uppercase tracking-wide text-primary-foreground shadow-pop-accent transition-transform hover:-translate-y-1 hover:translate-x-0"
           >
-            Book a service
-            <ArrowRight className="ml-1 transition-transform group-hover:translate-x-1" />
+            <Link to="/book">
+              Book a service
+              <ArrowRight className="ml-1 transition-transform group-hover:translate-x-1" />
+            </Link>
           </Button>
         </div>
 

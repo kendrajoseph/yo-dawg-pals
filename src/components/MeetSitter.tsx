@@ -1,4 +1,5 @@
 import { Heart, ShieldCheck, MapPin } from "lucide-react";
+import { Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import sitterPortrait from "@/assets/sitter-portrait.png";
 
@@ -60,18 +61,13 @@ const MeetSitter = () => {
           </div>
 
           <div className="mt-8 flex flex-col items-center gap-3 sm:flex-row md:items-start">
-            <Button
-              size="lg"
-              className="h-12 rounded-md bg-primary px-6 font-display text-sm uppercase tracking-wide text-primary-foreground shadow-pop-accent transition-transform hover:-translate-y-0.5"
-            >
-              Book a meet & greet
+            <Button asChild size="lg"
+              className="h-12 rounded-md bg-primary px-6 font-display text-sm uppercase tracking-wide text-primary-foreground shadow-pop-accent transition-transform hover:-translate-y-0.5">
+              <Link to="/book">Book a meet & greet</Link>
             </Button>
-            <Button
-              size="lg"
-              variant="outline"
-              className="h-12 rounded-md border-2 border-primary bg-card px-6 font-display text-sm uppercase tracking-wide text-primary hover:bg-primary hover:text-primary-foreground"
-            >
-              Read my story
+            <Button asChild size="lg" variant="outline"
+              className="h-12 rounded-md border-2 border-primary bg-card px-6 font-display text-sm uppercase tracking-wide text-primary hover:bg-primary hover:text-primary-foreground">
+              <Link to="/account">My account</Link>
             </Button>
           </div>
         </div>

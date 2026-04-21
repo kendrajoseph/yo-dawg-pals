@@ -1,4 +1,5 @@
 import { Footprints, Home, Bed, GraduationCap, ArrowRight } from "lucide-react";
+import { Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 
 const services = [
@@ -73,12 +74,12 @@ const ServicesSection = () => {
                 <span className="font-display text-3xl text-clay">{price}</span>
                 <span className="text-xs font-medium opacity-70">{unit}</span>
               </div>
-              <Button
-                variant="ghost"
-                className="mt-3 -ml-2 h-9 px-2 font-display text-xs uppercase tracking-wide hover:bg-primary hover:text-primary-foreground"
-              >
-                Book {title.toLowerCase()}
-                <ArrowRight className="h-4 w-4 transition-transform group-hover:translate-x-1" />
+              <Button asChild variant="ghost"
+                className="mt-3 -ml-2 h-9 px-2 font-display text-xs uppercase tracking-wide hover:bg-primary hover:text-primary-foreground">
+                <Link to={`/book?service=${title.toLowerCase().replace("dog walking","walk").replace("pet sitting","sitting").replace("boarding","boarding").replace("training","training")}`}>
+                  Book {title.toLowerCase()}
+                  <ArrowRight className="h-4 w-4 transition-transform group-hover:translate-x-1" />
+                </Link>
               </Button>
             </article>
           ))}
