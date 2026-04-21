@@ -2,128 +2,124 @@
 @tailwind components;
 @tailwind utilities;
 
-/* Yo Dawg — Pine, Sunlight & Spray Paint design system.
-   West-coast outdoorsy meets neon graffiti. All colors in HSL. */
+/* Yo Dawg — West Coast trail design system.
+   Pacific Northwest hiking: deep pine, warm cream, muted gold, terracotta.
+   All colors HSL. Mature, editorial, outdoorsy. */
 
 @layer base {
   :root {
-    /* Warm parchment — sun-bleached paper / trail map */
-    --background: 42 42% 95%;
-    --foreground: 130 24% 9%;
+    /* Warm cream — sun-bleached map paper */
+    --background: 38 30% 95%;
+    --foreground: 150 22% 12%;
 
-    --card: 40 50% 98%;
-    --card-foreground: 130 24% 9%;
+    --card: 40 35% 98%;
+    --card-foreground: 150 22% 12%;
 
-    --popover: 40 50% 98%;
-    --popover-foreground: 130 24% 9%;
+    --popover: 40 35% 98%;
+    --popover-foreground: 150 22% 12%;
 
-    /* Deep pine ink */
-    --primary: 130 28% 14%;
-    --primary-foreground: 50 70% 96%;
-    --primary-glow: 100 40% 34%;
+    /* Deep pine — forest canopy */
+    --primary: 155 30% 16%;
+    --primary-foreground: 38 30% 95%;
+    --primary-glow: 145 22% 32%;
 
-    /* Spray-can lime — punchy mossy green */
-    --secondary: 88 65% 42%;
-    --secondary-foreground: 130 28% 10%;
+    /* Moss green */
+    --secondary: 95 22% 38%;
+    --secondary-foreground: 38 30% 95%;
 
-    --muted: 42 32% 88%;
-    --muted-foreground: 130 14% 28%;
+    --muted: 38 22% 90%;
+    --muted-foreground: 150 12% 32%;
 
-    /* Highlighter yellow — golden hour cranked up */
-    --accent: 46 100% 56%;
-    --accent-foreground: 130 28% 10%;
+    /* Muted gold — late afternoon sun */
+    --accent: 38 55% 48%;
+    --accent-foreground: 38 30% 98%;
 
-    /* Sunlit sticky-note */
-    --highlight: 50 95% 70%;
-    --highlight-foreground: 130 28% 10%;
+    /* Soft cream highlight */
+    --highlight: 42 50% 86%;
+    --highlight-foreground: 150 22% 12%;
 
-    /* Spray-paint orange / clay */
-    --clay: 14 90% 54%;
-    --clay-foreground: 50 70% 96%;
+    /* Terracotta clay */
+    --clay: 18 55% 48%;
+    --clay-foreground: 38 30% 98%;
 
-    /* Hot magenta — graffiti accent for tags */
-    --tag: 330 85% 56%;
-    --tag-foreground: 50 70% 96%;
+    /* Trail rust — used sparingly for accents (was magenta) */
+    --tag: 14 40% 38%;
+    --tag-foreground: 38 30% 98%;
 
-    /* Electric teal — secondary spray accent */
-    --electric: 184 80% 48%;
-    --electric-foreground: 130 28% 10%;
+    /* Lake water */
+    --electric: 195 35% 42%;
+    --electric-foreground: 38 30% 98%;
 
-    --destructive: 4 80% 52%;
-    --destructive-foreground: 50 70% 96%;
+    --destructive: 4 60% 44%;
+    --destructive-foreground: 38 30% 98%;
 
-    --border: 130 28% 14%;
-    --input: 42 22% 82%;
-    --ring: 46 100% 56%;
+    --border: 150 14% 82%;
+    --input: 150 14% 86%;
+    --ring: 38 55% 48%;
 
-    --radius: 0.25rem;
+    --radius: 0.5rem;
 
-    /* Signature gradients */
-    --gradient-sunlight: linear-gradient(135deg, hsl(130 28% 14%) 0%, hsl(100 35% 26%) 35%, hsl(46 100% 56%) 100%);
-    --gradient-golden: linear-gradient(120deg, hsl(46 100% 54%) 0%, hsl(50 95% 70%) 100%);
-    --gradient-canopy: linear-gradient(180deg, hsl(42 42% 95%) 0%, hsl(42 38% 90%) 100%);
-    --gradient-text: linear-gradient(120deg, hsl(130 28% 14%) 0%, hsl(14 90% 54%) 50%, hsl(46 100% 56%) 100%);
-    --gradient-spray: linear-gradient(110deg, hsl(330 85% 56%) 0%, hsl(14 90% 54%) 50%, hsl(46 100% 56%) 100%);
+    /* Refined gradients */
+    --gradient-canopy: linear-gradient(180deg, hsl(38 30% 95%) 0%, hsl(38 28% 92%) 100%);
+    --gradient-trail: linear-gradient(135deg, hsl(155 30% 16%) 0%, hsl(145 22% 32%) 100%);
+    --gradient-sunrise: linear-gradient(120deg, hsl(38 55% 48%) 0%, hsl(18 55% 48%) 100%);
 
-    /* Hard graffiti shadows */
-    --shadow-soft: 0 8px 24px -8px hsl(130 30% 12% / 0.22);
-    --shadow-pop: 6px 6px 0px 0px hsl(130 28% 14%);
-    --shadow-pop-lg: 10px 10px 0px 0px hsl(130 28% 14%);
-    --shadow-pop-accent: 6px 6px 0px 0px hsl(46 100% 56%);
-    --shadow-pop-tag: 6px 6px 0px 0px hsl(330 85% 56%);
-    --shadow-pop-clay: 6px 6px 0px 0px hsl(14 90% 54%);
+    /* Soft, refined shadows */
+    --shadow-soft: 0 8px 24px -10px hsl(150 30% 12% / 0.18);
+    --shadow-card: 0 12px 32px -14px hsl(150 30% 12% / 0.22);
+    --shadow-elevate: 0 20px 50px -20px hsl(150 30% 12% / 0.28);
 
-    --sidebar-background: 42 42% 95%;
-    --sidebar-foreground: 130 24% 9%;
-    --sidebar-primary: 130 28% 14%;
-    --sidebar-primary-foreground: 50 70% 96%;
-    --sidebar-accent: 42 32% 88%;
-    --sidebar-accent-foreground: 130 24% 9%;
-    --sidebar-border: 130 28% 14%;
-    --sidebar-ring: 46 100% 56%;
+    --sidebar-background: 38 30% 95%;
+    --sidebar-foreground: 150 22% 12%;
+    --sidebar-primary: 155 30% 16%;
+    --sidebar-primary-foreground: 38 30% 95%;
+    --sidebar-accent: 38 22% 90%;
+    --sidebar-accent-foreground: 150 22% 12%;
+    --sidebar-border: 150 14% 82%;
+    --sidebar-ring: 38 55% 48%;
   }
 
   .dark {
-    --background: 130 22% 7%;
-    --foreground: 50 60% 94%;
+    --background: 155 22% 8%;
+    --foreground: 38 25% 92%;
 
-    --card: 130 18% 10%;
-    --card-foreground: 50 60% 94%;
+    --card: 155 18% 11%;
+    --card-foreground: 38 25% 92%;
 
-    --popover: 130 18% 10%;
-    --popover-foreground: 50 60% 94%;
+    --popover: 155 18% 11%;
+    --popover-foreground: 38 25% 92%;
 
-    --primary: 46 100% 56%;
-    --primary-foreground: 130 22% 7%;
-    --primary-glow: 50 95% 70%;
+    --primary: 38 50% 78%;
+    --primary-foreground: 155 22% 8%;
+    --primary-glow: 38 40% 60%;
 
-    --secondary: 88 60% 38%;
-    --secondary-foreground: 50 60% 94%;
+    --secondary: 95 20% 32%;
+    --secondary-foreground: 38 25% 92%;
 
-    --muted: 130 16% 14%;
-    --muted-foreground: 50 30% 72%;
+    --muted: 155 14% 16%;
+    --muted-foreground: 38 18% 70%;
 
-    --accent: 46 100% 56%;
-    --accent-foreground: 130 22% 7%;
+    --accent: 38 55% 56%;
+    --accent-foreground: 155 22% 8%;
 
-    --highlight: 50 95% 70%;
-    --highlight-foreground: 130 22% 7%;
+    --highlight: 42 35% 30%;
+    --highlight-foreground: 38 25% 92%;
 
-    --clay: 14 90% 54%;
-    --clay-foreground: 50 60% 94%;
+    --clay: 18 55% 52%;
+    --clay-foreground: 38 25% 92%;
 
-    --tag: 330 85% 60%;
-    --tag-foreground: 50 60% 94%;
+    --tag: 14 40% 44%;
+    --tag-foreground: 38 25% 92%;
 
-    --electric: 184 80% 52%;
-    --electric-foreground: 130 22% 7%;
+    --electric: 195 35% 48%;
+    --electric-foreground: 38 25% 92%;
 
-    --destructive: 4 75% 52%;
-    --destructive-foreground: 50 60% 94%;
+    --destructive: 4 60% 48%;
+    --destructive-foreground: 38 25% 92%;
 
-    --border: 50 60% 94%;
-    --input: 130 16% 18%;
-    --ring: 46 100% 56%;
+    --border: 155 14% 22%;
+    --input: 155 14% 20%;
+    --ring: 38 55% 56%;
   }
 }
 
@@ -133,7 +129,9 @@
   }
 
   html {
-    font-family: 'Hind', system-ui, sans-serif;
+    font-family: 'Inter', system-ui, sans-serif;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
   }
 
   body {
@@ -141,176 +139,76 @@
   }
 
   h1, h2, h3, h4 {
-    font-family: 'Archivo Black', 'Impact', sans-serif;
+    font-family: 'Fraunces', Georgia, serif;
     letter-spacing: -0.02em;
-    text-transform: uppercase;
+    font-weight: 600;
   }
 
   ::selection {
-    background: hsl(var(--accent));
-    color: hsl(var(--accent-foreground));
+    background: hsl(var(--accent) / 0.4);
+    color: hsl(var(--foreground));
   }
 }
 
 @layer utilities {
   .font-display {
-    font-family: 'Archivo Black', 'Impact', sans-serif;
-    text-transform: uppercase;
-    letter-spacing: -0.02em;
+    font-family: 'Fraunces', Georgia, serif;
+    letter-spacing: -0.015em;
+    font-weight: 600;
   }
   .font-body {
-    font-family: 'Hind', system-ui, sans-serif;
+    font-family: 'Inter', system-ui, sans-serif;
   }
   .font-tag {
-    font-family: 'Permanent Marker', cursive;
-    letter-spacing: 0.01em;
+    font-family: 'Inter', system-ui, sans-serif;
+    text-transform: uppercase;
+    letter-spacing: 0.16em;
+    font-weight: 600;
+    font-size: 0.75rem;
   }
   .font-logo {
-    font-family: 'Bagel Fat One', 'Archivo Black', sans-serif;
-    letter-spacing: 0.04em;
-    text-transform: uppercase;
-    font-weight: 400;
-    transform: skewX(-8deg);
-    display: inline-block;
-    transform-origin: left center;
+    font-family: 'Fraunces', Georgia, serif;
+    font-weight: 700;
+    letter-spacing: -0.03em;
     color: hsl(var(--primary));
-    /* Soft glossy paint top-light — fades, no hard band */
-    background: linear-gradient(
-      180deg,
-      hsl(var(--primary-glow)) 0%,
-      hsl(var(--primary)) 55%,
-      hsl(130 35% 8%) 100%
-    );
-    -webkit-background-clip: text;
-    background-clip: text;
-    -webkit-text-fill-color: transparent;
-    /* Layered hard graffiti shadow + soft blur */
-    filter:
-      drop-shadow(2px 2px 0 hsl(var(--accent)))
-      drop-shadow(4px 4px 0 hsl(var(--tag)))
-      drop-shadow(0 4px 6px hsl(var(--primary) / 0.35));
+    font-feature-settings: "ss01" on;
   }
-  .font-logo-light {
-    background: linear-gradient(
-      180deg,
-      hsl(50 100% 92%) 0%,
-      hsl(var(--primary-foreground)) 55%,
-      hsl(40 50% 78%) 100%
-    );
-    -webkit-background-clip: text;
-    background-clip: text;
-    -webkit-text-fill-color: transparent;
-    filter:
-      drop-shadow(2px 2px 0 hsl(var(--tag)))
-      drop-shadow(4px 4px 0 hsl(var(--clay)))
-      drop-shadow(0 4px 6px hsl(0 0% 0% / 0.4));
-  }
-  .font-logo-sm {
-    /* Smaller, lighter shadow for nav-size logo */
-    filter:
-      drop-shadow(1.5px 1.5px 0 hsl(var(--accent)))
-      drop-shadow(2.5px 2.5px 0 hsl(var(--tag)));
-  }
-  .text-gradient-sunlight {
-    background: var(--gradient-text);
+
+  .text-gradient-trail {
+    background: var(--gradient-trail);
     -webkit-background-clip: text;
     background-clip: text;
     -webkit-text-fill-color: transparent;
     color: transparent;
   }
-  .text-gradient-spray {
-    background: var(--gradient-spray);
+  .text-gradient-sunrise {
+    background: var(--gradient-sunrise);
     -webkit-background-clip: text;
     background-clip: text;
     -webkit-text-fill-color: transparent;
     color: transparent;
   }
-  .bg-gradient-sunlight { background: var(--gradient-sunlight); }
-  .bg-gradient-golden { background: var(--gradient-golden); }
   .bg-gradient-canopy { background: var(--gradient-canopy); }
-  .bg-gradient-spray { background: var(--gradient-spray); }
+  .bg-gradient-trail { background: var(--gradient-trail); }
+  .bg-gradient-sunrise { background: var(--gradient-sunrise); }
 
   .shadow-soft { box-shadow: var(--shadow-soft); }
-  .shadow-pop { box-shadow: var(--shadow-pop); }
-  .shadow-pop-lg { box-shadow: var(--shadow-pop-lg); }
-  .shadow-pop-accent { box-shadow: var(--shadow-pop-accent); }
-  .shadow-pop-tag { box-shadow: var(--shadow-pop-tag); }
-  .shadow-pop-clay { box-shadow: var(--shadow-pop-clay); }
+  .shadow-card { box-shadow: var(--shadow-card); }
+  .shadow-elevate { box-shadow: var(--shadow-elevate); }
 
-  /* Spray-paint dot grain */
+  /* Subtle paper grain */
   .texture-grain {
     background-image:
-      radial-gradient(hsl(130 24% 9% / 0.05) 1px, transparent 1px),
-      radial-gradient(hsl(14 90% 54% / 0.04) 1px, transparent 1px),
-      radial-gradient(hsl(46 100% 56% / 0.05) 1px, transparent 1px);
-    background-size: 14px 14px, 22px 22px, 32px 32px;
-    background-position: 0 0, 7px 11px, 16px 4px;
+      radial-gradient(hsl(150 24% 12% / 0.03) 1px, transparent 1px);
+    background-size: 22px 22px;
   }
 
-  /* Sticker tilt */
-  .stamp { transform: rotate(-4deg); }
-
-  /* Highlighter underline — quick scrawl behind text */
-  .scrawl {
-    background-image: linear-gradient(120deg, hsl(var(--accent) / 0.65) 0%, hsl(var(--accent) / 0.65) 100%);
+  /* Underline accent — used sparingly */
+  .underline-accent {
+    background-image: linear-gradient(120deg, hsl(var(--accent) / 0.35) 0%, hsl(var(--accent) / 0.35) 100%);
     background-repeat: no-repeat;
-    background-size: 100% 38%;
-    background-position: 0 88%;
-    padding: 0 0.15em;
+    background-size: 100% 28%;
+    background-position: 0 92%;
+    padding: 0 0.05em;
   }
-  .scrawl-tag {
-    background-image: linear-gradient(120deg, hsl(var(--tag) / 0.7) 0%, hsl(var(--tag) / 0.7) 100%);
-    background-repeat: no-repeat;
-    background-size: 100% 38%;
-    background-position: 0 88%;
-    padding: 0 0.15em;
-  }
-
-  /* Spray-paint glow */
-  .spray-glow {
-    text-shadow:
-      0 0 0 hsl(var(--accent)),
-      2px 2px 0 hsl(var(--clay) / 0.55),
-      -2px -2px 0 hsl(var(--tag) / 0.45);
-  }
-
-  /* Drip — bottom edge fake spray drips using svg-like gradient */
-  .drip-bottom {
-    position: relative;
-  }
-  .drip-bottom::after {
-    content: "";
-    position: absolute;
-    left: 0; right: 0; bottom: -10px;
-    height: 14px;
-    background:
-      radial-gradient(circle at 12% 0, hsl(var(--clay)) 0 4px, transparent 5px),
-      radial-gradient(circle at 32% 0, hsl(var(--accent)) 0 3px, transparent 4px),
-      radial-gradient(circle at 58% 0, hsl(var(--tag)) 0 5px, transparent 6px),
-      radial-gradient(circle at 78% 0, hsl(var(--secondary)) 0 4px, transparent 5px),
-      radial-gradient(circle at 92% 0, hsl(var(--electric)) 0 3px, transparent 4px);
-    background-size: 100% 100%;
-    background-repeat: no-repeat;
-    pointer-events: none;
-  }
-
-  /* Hand-scribbled border — spiky outline */
-  .border-jagged {
-    clip-path: polygon(
-      0% 6%, 4% 0%, 14% 4%, 22% 0%, 32% 5%, 44% 0%, 56% 4%, 68% 0%, 80% 5%, 92% 0%, 100% 6%,
-      96% 18%, 100% 32%, 96% 50%, 100% 66%, 96% 82%, 100% 94%,
-      88% 100%, 76% 96%, 64% 100%, 50% 96%, 36% 100%, 24% 96%, 12% 100%, 0% 94%,
-      4% 80%, 0% 66%, 4% 50%, 0% 34%, 4% 18%
-    );
-  }
-
-  /* Marquee for tag tickers */
-  .animate-marquee {
-    animation: marquee 28s linear infinite;
-  }
-}
-
-@keyframes marquee {
-  0% { transform: translateX(0); }
-  100% { transform: translateX(-50%); }
 }

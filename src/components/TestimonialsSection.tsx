@@ -1,81 +1,57 @@
-import { Star, Quote } from "lucide-react";
+import { Star } from "lucide-react";
 
 const testimonials = [
   {
     quote:
-      "Our pup Biscuit comes home tired, happy, and a little bit better behaved every single time. Genuinely the best in Hamilton.",
+      "Our pup Biscuit comes home tired, happy and a little better behaved every single time. Genuinely the best in Hamilton.",
     name: "Maya & Biscuit",
     role: "Bernedoodle parents",
-    rotate: "-rotate-2",
-    bg: "bg-card",
-    quoteBg: "bg-tag text-tag-foreground",
   },
   {
     quote:
-      "Booked a last-minute weekend boarding and felt totally at ease the whole trip. Got cute photo updates too! 10/10.",
+      "Booked a last-minute weekend boarding and felt completely at ease the whole trip. Got cute photo updates too.",
     name: "Jordan",
     role: "Rescue mutt dad",
-    rotate: "rotate-2",
-    bg: "bg-highlight",
-    quoteBg: "bg-clay text-clay-foreground",
   },
   {
     quote:
-      "Training sessions actually stuck. My anxious shepherd now walks past squirrels like a gentleman. Magic.",
+      "Training sessions actually stuck. My anxious shepherd now walks past squirrels like a gentleman.",
     name: "Priya & Mango",
     role: "German Shepherd mom",
-    rotate: "-rotate-1",
-    bg: "bg-secondary text-secondary-foreground",
-    quoteBg: "bg-accent text-accent-foreground",
   },
 ];
 
 const TestimonialsSection = () => {
   return (
-    <section id="reviews" className="relative bg-background py-16 sm:py-24 texture-grain">
-      <div className="mx-auto max-w-6xl px-5 sm:px-6">
-        <div className="mx-auto max-w-2xl text-center">
-          <span className="font-tag text-2xl text-tag sm:text-3xl">
-            tail wags & thank-yous
-          </span>
-          <h2 className="mt-2 font-display text-4xl leading-[0.95] text-primary sm:text-6xl">
-            Loved by
+    <section id="reviews" className="relative bg-background py-24 sm:py-32">
+      <div className="mx-auto max-w-7xl px-5 sm:px-8">
+        <div className="max-w-2xl">
+          <span className="text-xs font-tag text-muted-foreground">Reviews</span>
+          <h2 className="mt-3 font-display text-4xl leading-[1.05] text-primary sm:text-5xl">
+            Loved by good dogs
             <br />
-            <span className="text-gradient-spray">good dogs.</span>
+            <span className="italic text-accent">and their people.</span>
           </h2>
-          <p className="mt-4 text-base text-foreground/80 sm:text-lg">
-            Real words from real Hamilton pet parents.
-          </p>
         </div>
 
-        <div className="mt-14 grid gap-7 md:grid-cols-3">
-          {testimonials.map(({ quote, name, role, rotate, bg, quoteBg }) => (
+        <div className="mt-14 grid gap-6 md:grid-cols-3">
+          {testimonials.map(({ quote, name, role }) => (
             <figure
               key={name}
-              className={`group relative border-4 border-primary p-6 shadow-pop transition-all duration-300 hover:-translate-y-2 hover:rotate-0 ${rotate} ${bg}`}
+              className="flex flex-col rounded-2xl border border-border bg-card p-7 shadow-soft transition-shadow hover:shadow-card"
             >
-              <Quote
-                aria-hidden
-                className={`absolute -top-5 -left-3 h-10 w-10 p-2 border-2 border-primary ${quoteBg}`}
-              />
-              <div className="mb-3 mt-2 flex gap-0.5 text-clay">
+              <div className="mb-4 flex gap-0.5 text-accent">
                 {Array.from({ length: 5 }).map((_, i) => (
                   <Star key={i} className="h-4 w-4 fill-current" />
                 ))}
               </div>
-              <blockquote className="text-base leading-relaxed">
+              <blockquote className="flex-1 font-display text-lg leading-snug text-foreground">
                 "{quote}"
               </blockquote>
-              <figcaption className="mt-5 border-t-2 border-primary/30 pt-4">
-                <div className="font-display text-lg uppercase tracking-tight">
-                  {name}
-                </div>
-                <div className="text-xs font-medium opacity-75">{role}</div>
+              <figcaption className="mt-6 border-t border-border pt-4">
+                <div className="text-sm font-medium text-primary">{name}</div>
+                <div className="mt-0.5 text-xs text-muted-foreground">{role}</div>
               </figcaption>
-              {/* corner sticker */}
-              <div className="absolute -bottom-3 -right-3 -rotate-12 bg-primary px-2 py-0.5 font-tag text-sm text-primary-foreground shadow-pop-accent">
-                ★★★★★
-              </div>
             </figure>
           ))}
         </div>
