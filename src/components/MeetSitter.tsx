@@ -121,7 +121,7 @@ const MeetSitter = () => {
               size="lg"
               className="h-12 w-full rounded-full bg-primary px-7 text-sm font-semibold text-primary-foreground shadow-pop-sm transition-transform hover:-translate-y-0.5 sm:w-auto"
             >
-              <Link to="/book">Book a meet & greet</Link>
+              <Link to="/book?service=meet-and-greet">Book a meet & greet</Link>
             </Button>
             <Button
               asChild
