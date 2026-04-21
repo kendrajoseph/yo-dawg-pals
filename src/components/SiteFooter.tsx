@@ -1,42 +1,36 @@
 import { Link } from "react-router-dom";
-import { PawPrint } from "lucide-react";
 
 const SiteFooter = () => (
-  <footer className="relative border-t-4 border-primary bg-primary text-primary-foreground">
-    <div className="mx-auto grid max-w-6xl gap-8 px-5 py-12 sm:px-6 md:grid-cols-3">
+  <footer className="border-t border-border bg-primary text-primary-foreground">
+    <div className="mx-auto grid max-w-6xl gap-10 px-5 py-16 sm:px-8 md:grid-cols-3">
       <div>
-        <Link to="/" className="flex items-center gap-2.5">
-          <span className="grid h-10 w-10 place-items-center rounded-md bg-accent text-accent-foreground shadow-pop">
-            <PawPrint className="h-5 w-5" />
-          </span>
-          <span className="font-logo font-logo-light text-3xl tracking-tight">
-            YO DAWG.
-          </span>
+        <Link to="/" className="flex items-baseline gap-2">
+          <span className="font-logo text-3xl text-primary-foreground">Yo Dawg</span>
         </Link>
-        <p className="mt-4 max-w-xs text-sm opacity-80">
-          Hamilton, Ontario · since 2015. Walks, sits, boards & basic training for every kind of good boy (and girl).
+        <p className="mt-4 max-w-xs text-sm leading-relaxed text-primary-foreground/70">
+          Hamilton, Ontario · since 2015. Walks, sits, boards & basic training for every kind of dog.
         </p>
       </div>
       <div>
-        <h4 className="font-display text-sm uppercase tracking-wide text-accent">Services</h4>
-        <ul className="mt-3 space-y-1.5 text-sm opacity-90">
-          <li><Link to="/book?service=walk" className="hover:text-accent">Dog Walking</Link></li>
-          <li><Link to="/book?service=sitting" className="hover:text-accent">Pet Sitting</Link></li>
-          <li><Link to="/book?service=boarding" className="hover:text-accent">Boarding</Link></li>
-          <li><Link to="/book?service=training" className="hover:text-accent">Training</Link></li>
+        <h4 className="text-xs font-tag text-primary-foreground/60">Services</h4>
+        <ul className="mt-4 space-y-2 text-sm text-primary-foreground/85">
+          <li><Link to="/book?service=walk" className="transition-colors hover:text-accent">Dog Walking</Link></li>
+          <li><Link to="/book?service=sitting" className="transition-colors hover:text-accent">Pet Sitting</Link></li>
+          <li><Link to="/book?service=boarding" className="transition-colors hover:text-accent">Boarding</Link></li>
+          <li><Link to="/book?service=training" className="transition-colors hover:text-accent">Training</Link></li>
         </ul>
       </div>
       <div>
-        <h4 className="font-display text-sm uppercase tracking-wide text-accent">Account</h4>
-        <ul className="mt-3 space-y-1.5 text-sm opacity-90">
-          <li><Link to="/auth" className="hover:text-accent">Sign in / sign up</Link></li>
-          <li><Link to="/account" className="hover:text-accent">My bookings</Link></li>
-          <li><Link to="/account/pets" className="hover:text-accent">My pets</Link></li>
+        <h4 className="text-xs font-tag text-primary-foreground/60">Account</h4>
+        <ul className="mt-4 space-y-2 text-sm text-primary-foreground/85">
+          <li><Link to="/auth" className="transition-colors hover:text-accent">Sign in / sign up</Link></li>
+          <li><Link to="/account" className="transition-colors hover:text-accent">My bookings</Link></li>
+          <li><Link to="/account/pets" className="transition-colors hover:text-accent">My pets</Link></li>
         </ul>
       </div>
     </div>
-    <div className="border-t border-primary-foreground/15 px-5 py-4 text-center text-xs opacity-70 sm:px-6">
-      © {new Date().getFullYear()} Yo Dawg. Made with treats in Hamilton.
+    <div className="border-t border-primary-foreground/10 px-5 py-6 text-center text-xs text-primary-foreground/55 sm:px-8">
+      © {new Date().getFullYear()} Yo Dawg · Made in Hamilton, Ontario
     </div>
   </footer>
 );

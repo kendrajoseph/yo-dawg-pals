@@ -14,10 +14,10 @@ export default {
     },
     extend: {
       fontFamily: {
-        display: ['"Archivo Black"', "Impact", "sans-serif"],
-        body: ['Hind', "system-ui", "sans-serif"],
-        tag: ['"Permanent Marker"', "cursive"],
-        logo: ['"Bagel Fat One"', '"Archivo Black"', "sans-serif"],
+        display: ['Fraunces', 'Georgia', "serif"],
+        body: ['Inter', "system-ui", "sans-serif"],
+        tag: ['Inter', "system-ui", "sans-serif"],
+        logo: ['Fraunces', 'Georgia', "serif"],
       },
       colors: {
         border: "hsl(var(--border))",
@@ -96,24 +96,14 @@ export default {
           to: { height: "0" },
         },
         "float-slow": {
-          "0%, 100%": { transform: "translateY(0px) rotate(-1deg)" },
-          "50%": { transform: "translateY(-8px) rotate(-1deg)" },
-        },
-        "wiggle": {
-          "0%, 100%": { transform: "rotate(-2deg)" },
-          "50%": { transform: "rotate(2deg)" },
-        },
-        "spray-pulse": {
-          "0%, 100%": { transform: "scale(1)", opacity: "1" },
-          "50%": { transform: "scale(1.04)", opacity: "0.92" },
+          "0%, 100%": { transform: "translateY(0px)" },
+          "50%": { transform: "translateY(-6px)" },
         },
       },
       animation: {
         "accordion-down": "accordion-down 0.2s ease-out",
         "accordion-up": "accordion-up 0.2s ease-out",
         "float-slow": "float-slow 6s ease-in-out infinite",
-        "wiggle": "wiggle 1.2s ease-in-out infinite",
-        "spray-pulse": "spray-pulse 2.4s ease-in-out infinite",
       },
     },
   },

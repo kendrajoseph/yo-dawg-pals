@@ -1,4 +1,4 @@
-import { ArrowRight, Sparkles } from "lucide-react";
+import { ArrowRight, MapPin } from "lucide-react";
 import { Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import SiteNav from "@/components/SiteNav";
@@ -6,128 +6,87 @@ import heroDogs from "@/assets/hero-dogs.jpg";
 
 const HeroSection = () => {
   return (
-    <header className="relative overflow-hidden bg-background texture-grain">
-      {/* Canopy gradient wash */}
-      <div
-        aria-hidden
-        className="pointer-events-none absolute inset-0 bg-gradient-canopy"
-      />
-      {/* Sun blob — neon */}
-      <div
-        aria-hidden
-        className="pointer-events-none absolute -right-32 top-10 -z-0 h-[460px] w-[460px] rounded-full blur-3xl"
-        style={{
-          background:
-            "radial-gradient(closest-side, hsl(var(--accent) / 0.55), transparent 70%)",
-        }}
-      />
-      {/* Magenta spray blob */}
-      <div
-        aria-hidden
-        className="pointer-events-none absolute -left-24 top-40 -z-0 h-[320px] w-[320px] rounded-full blur-3xl"
-        style={{
-          background:
-            "radial-gradient(closest-side, hsl(var(--tag) / 0.35), transparent 70%)",
-        }}
-      />
+    <header className="relative overflow-hidden bg-background">
+      <div aria-hidden className="pointer-events-none absolute inset-0 bg-gradient-canopy" />
+      <div aria-hidden className="pointer-events-none absolute inset-0 texture-grain opacity-60" />
 
       <SiteNav />
 
-      {/* Top tag ticker */}
-      <div className="relative z-10 overflow-hidden border-y-4 border-primary bg-primary text-primary-foreground">
-        <div className="flex animate-marquee whitespace-nowrap gap-10 py-2 font-tag text-xl">
-          {Array.from({ length: 2 }).map((_, group) => (
-            <div key={group} className="flex shrink-0 gap-10">
-              <span>★ walks</span>
-              <span className="text-accent">★ sits</span>
-              <span>★ boards</span>
-              <span className="text-accent">★ training</span>
-              <span>★ since 2015</span>
-              <span className="text-accent">★ hamilton, on</span>
-              <span>★ insured</span>
-              <span className="text-accent">★ pet first-aid</span>
-            </div>
-          ))}
-        </div>
-      </div>
-
-      {/* Hero content */}
-      <div className="relative z-10 mx-auto max-w-6xl px-5 pb-24 pt-10 text-center sm:px-6 md:pt-16">
-        {/* Tag */}
-        <div className="mb-8 inline-flex -rotate-2 items-center gap-2">
-          <Sparkles className="h-5 w-5 text-tag" />
-          <span className="font-tag text-2xl text-clay sm:text-3xl">
-            <span className="scrawl-tag text-primary">Hamilton, ON</span> · since '15
+      <div className="relative z-10 mx-auto grid max-w-7xl items-center gap-12 px-5 pb-24 pt-12 sm:px-8 md:grid-cols-[1.1fr,1fr] md:gap-16 md:pb-32 md:pt-20">
+        {/* Left — copy */}
+        <div>
+          <span className="inline-flex items-center gap-2 rounded-full border border-border bg-card/60 px-3 py-1 text-xs font-tag text-muted-foreground backdrop-blur">
+            <MapPin className="h-3.5 w-3.5" />
+            Hamilton, Ontario
           </span>
+
+          <h1 className="mt-6 font-display text-5xl leading-[1.02] text-primary sm:text-6xl md:text-7xl lg:text-[5.5rem]">
+            Trail-tested
+            <br />
+            care for your
+            <br />
+            <span className="italic text-gradient-sunrise">good dog.</span>
+          </h1>
+
+          <p className="mt-6 max-w-xl text-base leading-relaxed text-foreground/75 sm:text-lg">
+            Personal walks, drop-in sits, overnight boarding and basic training —
+            from a lifelong dog person who treats your pup like their own.
+          </p>
+
+          <div className="mt-9 flex flex-col items-start gap-3 sm:flex-row sm:items-center">
+            <Button
+              asChild
+              size="lg"
+              className="group h-12 rounded-full bg-primary px-7 text-sm font-medium text-primary-foreground transition-colors hover:bg-primary/90"
+            >
+              <Link to="/book">
+                Book a service
+                <ArrowRight className="ml-1 h-4 w-4 transition-transform group-hover:translate-x-1" />
+              </Link>
+            </Button>
+            <Button
+              asChild
+              size="lg"
+              variant="ghost"
+              className="h-12 rounded-full px-5 text-sm font-medium text-foreground hover:bg-muted"
+            >
+              <Link to="/#services">See services →</Link>
+            </Button>
+          </div>
+
+          {/* Stats / trust strip */}
+          <dl className="mt-12 grid max-w-md grid-cols-3 gap-6 border-t border-border pt-8">
+            <div>
+              <dt className="text-xs font-tag text-muted-foreground">Since</dt>
+              <dd className="mt-1 font-display text-2xl text-primary">2015</dd>
+            </div>
+            <div>
+              <dt className="text-xs font-tag text-muted-foreground">Insured</dt>
+              <dd className="mt-1 font-display text-2xl text-primary">Fully</dd>
+            </div>
+            <div>
+              <dt className="text-xs font-tag text-muted-foreground">Reviews</dt>
+              <dd className="mt-1 font-display text-2xl text-primary">5.0★</dd>
+            </div>
+          </dl>
         </div>
 
-        {/* Headline */}
-        <h1 className="text-[clamp(3.5rem,15vw,10rem)] leading-[0.95] tracking-normal">
-          <span className="font-logo">YO</span>
-          <br />
-          <span className="font-logo">DAWG.</span>
-        </h1>
-
-        {/* Sub-headline */}
-        <p className="mx-auto mt-7 max-w-xl text-base text-foreground/80 sm:text-lg">
-          Walks, sits, boards & basic training for every kind of{" "}
-          <span className="font-tag text-2xl text-clay sm:text-3xl">
-            good boy
-          </span>{" "}
-          (and girl).
-        </p>
-
-        {/* CTA */}
-        <div className="mt-9 flex flex-col items-center justify-center gap-3 sm:mt-10 sm:flex-row">
-          <Button
-            asChild
-            size="lg"
-            className="group h-14 rounded-md bg-accent px-8 font-display text-base uppercase tracking-wide text-accent-foreground shadow-pop transition-transform hover:-translate-y-1 hover:translate-x-0"
-          >
-            <Link to="/book">
-              Book a service
-              <ArrowRight className="ml-1 transition-transform group-hover:translate-x-1" />
-            </Link>
-          </Button>
-          <Button
-            asChild
-            size="lg"
-            variant="outline"
-            className="h-14 rounded-md border-4 border-primary bg-card px-8 font-display text-base uppercase tracking-wide text-primary shadow-pop-tag transition-transform hover:-translate-y-1 hover:bg-tag hover:text-tag-foreground"
-          >
-            <Link to="/#services">See services</Link>
-          </Button>
-        </div>
-
-        {/* Illustration card — taped poster style */}
-        <div className="relative mx-auto mt-16 max-w-4xl sm:mt-20">
-          {/* Tape */}
-          <div
-            aria-hidden
-            className="absolute -top-3 left-1/2 z-10 h-6 w-20 -translate-x-1/2 rotate-3 bg-tag/80 shadow-soft"
-          />
-          <div
-            aria-hidden
-            className="absolute -top-2 right-10 z-10 h-5 w-14 -rotate-12 bg-accent/80 shadow-soft"
-          />
-          <div className="drip-bottom relative -rotate-1 border-4 border-primary bg-card p-3 shadow-pop-lg transition-transform duration-500 hover:rotate-0 sm:p-6">
-            {/* Stamp */}
-            <div className="stamp animate-spray-pulse absolute -right-3 -top-4 z-10 grid h-20 w-20 place-items-center rounded-full bg-tag font-display text-tag-foreground shadow-pop sm:-right-5 sm:-top-5 sm:h-24 sm:w-24">
-              <div className="text-center leading-tight">
-                <div className="font-tag text-sm normal-case sm:text-base">since</div>
-                <div className="text-2xl sm:text-3xl">2015</div>
-              </div>
-            </div>
-            {/* Corner scrawl */}
-            <div className="absolute -left-4 -bottom-3 z-10 -rotate-6 bg-accent px-3 py-1 font-tag text-lg text-accent-foreground shadow-pop sm:text-xl">
-              tail-wag guaranteed
-            </div>
+        {/* Right — image */}
+        <div className="relative">
+          <div className="relative overflow-hidden rounded-2xl border border-border bg-card shadow-elevate">
             <img
               src={heroDogs}
-              alt="Hand-drawn illustration of eight quirky dogs with the caption Dog Walking & Basic Training"
-              className="mx-auto h-auto w-full"
+              alt="A friendly group of dogs ready for a trail walk"
+              className="h-auto w-full object-cover"
               loading="eager"
             />
+          </div>
+          {/* Subtle quote card */}
+          <div className="absolute -bottom-6 -left-4 max-w-[260px] rounded-xl border border-border bg-card p-4 shadow-card sm:-left-8">
+            <p className="font-display text-sm italic leading-snug text-foreground">
+              "Comes home tired, happy, and a little better behaved every time."
+            </p>
+            <p className="mt-2 text-xs font-tag text-muted-foreground">Maya & Biscuit</p>
           </div>
         </div>
       </div>
