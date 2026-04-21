@@ -166,11 +166,11 @@
     letter-spacing: 0.01em;
   }
   .font-logo {
-    font-family: 'Rubik Spray Paint', 'Bungee Shade', 'Archivo Black', sans-serif;
-    letter-spacing: 0.02em;
+    font-family: 'Bagel Fat One', 'Archivo Black', sans-serif;
+    letter-spacing: 0.01em;
     text-transform: uppercase;
     font-weight: 400;
-    transform: skewX(-12deg);
+    transform: skewX(-10deg);
     display: inline-block;
     transform-origin: left center;
   }
