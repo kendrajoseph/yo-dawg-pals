@@ -2,113 +2,112 @@
 @tailwind components;
 @tailwind utilities;
 
-/* Yo Dawg — Trailhead vibes with attitude.
-   Forest pine + warm cream + acid lime + sun gold + clay orange.
-   Mature editorial with playful, energetic accents. HSL only. */
+/* Yo Dawg — Comic illustrated brand.
+   Deep navy + warm cream + bright orange + sun yellow.
+   Playful, confident, illustrated. HSL only. */
 
 @layer base {
   :root {
-    /* Warm cream */
-    --background: 38 34% 94%;
-    --foreground: 155 28% 11%;
+    /* Warm cream — main page background */
+    --background: 38 38% 95%;
+    --foreground: 220 45% 12%;
 
-    --card: 40 40% 98%;
-    --card-foreground: 155 28% 11%;
+    --card: 40 50% 98%;
+    --card-foreground: 220 45% 12%;
 
-    --popover: 40 40% 98%;
-    --popover-foreground: 155 28% 11%;
+    --popover: 40 50% 98%;
+    --popover-foreground: 220 45% 12%;
 
-    /* Deep pine */
-    --primary: 155 38% 13%;
-    --primary-foreground: 38 34% 96%;
-    --primary-glow: 145 28% 28%;
+    /* Deep navy — the brand anchor (used on hero) */
+    --primary: 220 50% 14%;
+    --primary-foreground: 38 38% 95%;
+    --primary-glow: 220 38% 24%;
 
-    /* Acid lime — punchy outdoorsy green */
-    --secondary: 78 75% 52%;
-    --secondary-foreground: 155 38% 13%;
+    /* Sun yellow — soft warm secondary */
+    --secondary: 44 95% 68%;
+    --secondary-foreground: 220 50% 14%;
 
-    --muted: 38 24% 88%;
-    --muted-foreground: 155 14% 30%;
+    --muted: 38 26% 90%;
+    --muted-foreground: 220 18% 32%;
 
-    /* Sun gold — bright golden hour */
-    --accent: 42 92% 56%;
-    --accent-foreground: 155 38% 13%;
+    /* Bright orange — the headline accent (matches the logo) */
+    --accent: 24 95% 58%;
+    --accent-foreground: 38 38% 96%;
 
-    /* Warm cream highlight */
-    --highlight: 42 65% 84%;
-    --highlight-foreground: 155 28% 11%;
+    --highlight: 44 90% 80%;
+    --highlight-foreground: 220 50% 14%;
 
-    /* Clay orange — warm, energetic */
-    --clay: 18 78% 52%;
-    --clay-foreground: 38 34% 96%;
+    /* Deeper clay/rust — for serif italics */
+    --clay: 14 78% 48%;
+    --clay-foreground: 38 38% 96%;
 
-    /* Berry rust — used for accents */
+    /* Berry rust */
     --tag: 8 65% 44%;
-    --tag-foreground: 38 34% 96%;
+    --tag-foreground: 38 38% 96%;
 
     /* Lake teal */
-    --electric: 188 55% 38%;
-    --electric-foreground: 38 34% 96%;
+    --electric: 188 60% 38%;
+    --electric-foreground: 38 38% 96%;
 
     --destructive: 4 70% 48%;
-    --destructive-foreground: 38 34% 96%;
+    --destructive-foreground: 38 38% 96%;
 
-    --border: 150 14% 80%;
-    --input: 150 14% 86%;
-    --ring: 42 92% 56%;
+    --border: 220 14% 82%;
+    --input: 220 14% 88%;
+    --ring: 24 95% 58%;
 
-    --radius: 0.75rem;
+    --radius: 1rem;
 
-    --gradient-canopy: linear-gradient(180deg, hsl(38 34% 94%) 0%, hsl(38 30% 90%) 100%);
-    --gradient-trail: linear-gradient(135deg, hsl(155 38% 13%) 0%, hsl(145 28% 28%) 100%);
-    --gradient-sunrise: linear-gradient(120deg, hsl(42 92% 56%) 0%, hsl(18 78% 52%) 100%);
-    --gradient-meadow: linear-gradient(120deg, hsl(78 75% 52%) 0%, hsl(42 92% 56%) 100%);
+    --gradient-canopy: linear-gradient(180deg, hsl(38 38% 95%) 0%, hsl(38 32% 91%) 100%);
+    --gradient-night: linear-gradient(160deg, hsl(220 55% 10%) 0%, hsl(220 50% 16%) 60%, hsl(220 45% 20%) 100%);
+    --gradient-sunrise: linear-gradient(120deg, hsl(44 95% 62%) 0%, hsl(24 95% 58%) 100%);
 
-    --shadow-soft: 0 8px 24px -10px hsl(155 30% 12% / 0.18);
-    --shadow-card: 0 14px 36px -16px hsl(155 30% 12% / 0.28);
-    --shadow-elevate: 0 24px 60px -22px hsl(155 30% 12% / 0.35);
-    --shadow-pop: 8px 8px 0 0 hsl(155 38% 13%);
-    --shadow-pop-sm: 4px 4px 0 0 hsl(155 38% 13%);
+    --shadow-soft: 0 8px 24px -10px hsl(220 50% 10% / 0.18);
+    --shadow-card: 0 14px 36px -16px hsl(220 50% 10% / 0.28);
+    --shadow-elevate: 0 24px 60px -22px hsl(220 50% 10% / 0.4);
+    --shadow-pop: 6px 6px 0 0 hsl(220 50% 14%);
+    --shadow-pop-sm: 3px 3px 0 0 hsl(220 50% 14%);
+    --shadow-glow: 0 0 80px -10px hsl(24 95% 58% / 0.45);
 
-    --sidebar-background: 38 34% 94%;
-    --sidebar-foreground: 155 28% 11%;
-    --sidebar-primary: 155 38% 13%;
-    --sidebar-primary-foreground: 38 34% 96%;
-    --sidebar-accent: 38 24% 88%;
-    --sidebar-accent-foreground: 155 28% 11%;
-    --sidebar-border: 150 14% 80%;
-    --sidebar-ring: 42 92% 56%;
+    --sidebar-background: 38 38% 95%;
+    --sidebar-foreground: 220 45% 12%;
+    --sidebar-primary: 220 50% 14%;
+    --sidebar-primary-foreground: 38 38% 95%;
+    --sidebar-accent: 38 26% 90%;
+    --sidebar-accent-foreground: 220 45% 12%;
+    --sidebar-border: 220 14% 82%;
+    --sidebar-ring: 24 95% 58%;
   }
 
   .dark {
-    --background: 155 28% 7%;
-    --foreground: 38 30% 92%;
-    --card: 155 22% 10%;
-    --card-foreground: 38 30% 92%;
-    --popover: 155 22% 10%;
-    --popover-foreground: 38 30% 92%;
-    --primary: 42 92% 60%;
-    --primary-foreground: 155 28% 7%;
-    --primary-glow: 42 70% 50%;
-    --secondary: 78 60% 42%;
-    --secondary-foreground: 155 28% 7%;
-    --muted: 155 16% 16%;
+    --background: 220 50% 8%;
+    --foreground: 38 32% 92%;
+    --card: 220 42% 12%;
+    --card-foreground: 38 32% 92%;
+    --popover: 220 42% 12%;
+    --popover-foreground: 38 32% 92%;
+    --primary: 24 95% 60%;
+    --primary-foreground: 220 50% 8%;
+    --primary-glow: 24 80% 50%;
+    --secondary: 44 80% 55%;
+    --secondary-foreground: 220 50% 8%;
+    --muted: 220 30% 16%;
     --muted-foreground: 38 18% 70%;
-    --accent: 42 92% 60%;
-    --accent-foreground: 155 28% 7%;
-    --highlight: 42 30% 28%;
-    --highlight-foreground: 38 30% 92%;
-    --clay: 18 78% 56%;
-    --clay-foreground: 38 30% 92%;
+    --accent: 24 95% 60%;
+    --accent-foreground: 220 50% 8%;
+    --highlight: 44 30% 28%;
+    --highlight-foreground: 38 32% 92%;
+    --clay: 14 78% 56%;
+    --clay-foreground: 38 32% 92%;
     --tag: 8 65% 50%;
-    --tag-foreground: 38 30% 92%;
-    --electric: 188 55% 44%;
-    --electric-foreground: 38 30% 92%;
+    --tag-foreground: 38 32% 92%;
+    --electric: 188 60% 44%;
+    --electric-foreground: 38 32% 92%;
     --destructive: 4 70% 52%;
-    --destructive-foreground: 38 30% 92%;
-    --border: 155 16% 22%;
-    --input: 155 16% 20%;
-    --ring: 42 92% 60%;
+    --destructive-foreground: 38 32% 92%;
+    --border: 220 30% 22%;
+    --input: 220 30% 20%;
+    --ring: 24 95% 60%;
   }
 }
 
@@ -155,37 +154,37 @@
     font-size: 0.7rem;
   }
 
-  .text-gradient-trail {
-    background: var(--gradient-trail);
-    -webkit-background-clip: text; background-clip: text;
-    -webkit-text-fill-color: transparent; color: transparent;
-  }
   .text-gradient-sunrise {
     background: var(--gradient-sunrise);
     -webkit-background-clip: text; background-clip: text;
     -webkit-text-fill-color: transparent; color: transparent;
   }
-  .text-gradient-meadow {
-    background: var(--gradient-meadow);
-    -webkit-background-clip: text; background-clip: text;
-    -webkit-text-fill-color: transparent; color: transparent;
-  }
 
   .bg-gradient-canopy { background: var(--gradient-canopy); }
-  .bg-gradient-trail { background: var(--gradient-trail); }
+  .bg-gradient-night { background: var(--gradient-night); }
   .bg-gradient-sunrise { background: var(--gradient-sunrise); }
-  .bg-gradient-meadow { background: var(--gradient-meadow); }
 
   .shadow-soft { box-shadow: var(--shadow-soft); }
   .shadow-card { box-shadow: var(--shadow-card); }
   .shadow-elevate { box-shadow: var(--shadow-elevate); }
   .shadow-pop { box-shadow: var(--shadow-pop); }
   .shadow-pop-sm { box-shadow: var(--shadow-pop-sm); }
+  .shadow-glow { box-shadow: var(--shadow-glow); }
+
+  /* Halftone dot texture — matches the comic illustration style */
+  .texture-halftone {
+    background-image: radial-gradient(hsl(38 38% 95% / 0.08) 1px, transparent 1.5px);
+    background-size: 14px 14px;
+  }
+  .texture-halftone-light {
+    background-image: radial-gradient(hsl(220 50% 14% / 0.06) 1px, transparent 1.5px);
+    background-size: 14px 14px;
+  }
 
   /* Subtle paper grain */
   .texture-grain {
     background-image:
-      radial-gradient(hsl(155 28% 11% / 0.04) 1px, transparent 1px);
+      radial-gradient(hsl(220 50% 14% / 0.04) 1px, transparent 1px);
     background-size: 22px 22px;
   }
 
@@ -194,8 +193,8 @@
     background-image:
       repeating-radial-gradient(
         circle at 50% 50%,
-        hsl(155 28% 11% / 0.05) 0,
-        hsl(155 28% 11% / 0.05) 1px,
+        hsl(220 50% 14% / 0.05) 0,
+        hsl(220 50% 14% / 0.05) 1px,
         transparent 1px,
         transparent 18px
       );
@@ -211,6 +210,9 @@
 
   .marquee {
     animation: marquee 40s linear infinite;
+  }
+  .marquee-fast {
+    animation: marquee 22s linear infinite;
   }
 }
 

@@ -1,5 +1,6 @@
 import { Footprints, Home, Bed, GraduationCap, ArrowRight } from "lucide-react";
 import { Link } from "react-router-dom";
+import pack from "@/assets/yodawg-pack.svg";
 
 const services = [
   {
@@ -42,8 +43,10 @@ const services = [
 
 const ServicesSection = () => {
   return (
-    <section id="services" className="relative bg-muted/50 py-24 sm:py-32">
-      <div className="mx-auto max-w-7xl px-5 sm:px-8">
+    <section id="services" className="relative bg-background py-24 sm:py-32">
+      <div aria-hidden className="pointer-events-none absolute inset-0 texture-halftone-light opacity-60" />
+
+      <div className="relative mx-auto max-w-7xl px-5 sm:px-8">
         <div className="flex flex-col gap-6 md:flex-row md:items-end md:justify-between">
           <div className="max-w-2xl">
             <span className="text-xs font-tag text-clay">What we do</span>
@@ -51,7 +54,7 @@ const ServicesSection = () => {
               Care that fits the way
               <br />
               you and your dog{" "}
-              <span className="font-serif italic text-accent-foreground">
+              <span className="font-serif italic text-clay">
                 <span className="underline-accent">actually live.</span>
               </span>
             </h2>
@@ -62,7 +65,17 @@ const ServicesSection = () => {
           </p>
         </div>
 
-        <div className="mt-16 grid gap-5 sm:grid-cols-2 lg:grid-cols-4">
+        {/* Dog pack illustration band */}
+        <div className="mt-14 overflow-hidden rounded-3xl border-2 border-primary bg-card p-6 shadow-pop sm:p-10">
+          <img
+            src={pack}
+            alt="Eight illustrated dog faces — every breed welcome"
+            className="mx-auto w-full max-w-3xl"
+            loading="lazy"
+          />
+        </div>
+
+        <div className="mt-12 grid gap-5 sm:grid-cols-2 lg:grid-cols-4">
           {services.map(({ icon: Icon, title, desc, price, unit, slug, accent }, i) => (
             <article
               key={title}
