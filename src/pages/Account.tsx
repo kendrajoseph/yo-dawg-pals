@@ -6,7 +6,7 @@ import SiteNav from "@/components/SiteNav";
 import SiteFooter from "@/components/SiteFooter";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
-import { CalendarPlus, PawPrint, ChevronRight } from "lucide-react";
+import { CalendarPlus, PawPrint, ChevronRight, User } from "lucide-react";
 import { formatBookingDateTime, formatPriceWithDecimals, STATUS_LABELS, STATUS_STYLES } from "@/lib/booking";
 
 type BookingRow = {
@@ -49,6 +49,9 @@ const Account = () => {
             <h1 className="font-display text-5xl text-primary sm:text-6xl">My account.</h1>
           </div>
           <div className="flex flex-wrap gap-2">
+            <Button asChild variant="outline" className="border-2 border-primary font-display uppercase">
+              <Link to="/account/profile"><User className="h-4 w-4" /> My profile</Link>
+            </Button>
             <Button asChild variant="outline" className="border-2 border-primary font-display uppercase">
               <Link to="/account/pets"><PawPrint className="h-4 w-4" /> My pets</Link>
             </Button>
