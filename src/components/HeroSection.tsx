@@ -43,9 +43,9 @@ const HeroSection = () => {
           </h1>
 
           <p className="mt-5 max-w-lg text-base leading-relaxed text-primary-foreground/75 sm:mt-7 sm:text-lg">
-            Personal walks, drop-in sits, cozy overnight boarding and basic
-            training — from one Hamilton dog person who treats your pup like
-            their own.
+            Personal walks, drop-in sits and cozy overnight boarding — basic
+            training cues included with every service, from one Hamilton dog
+            person who treats your pup like their own.
           </p>
 
           <div className="mt-7 flex flex-col items-stretch gap-3 sm:mt-9 sm:flex-row sm:items-center">
@@ -130,7 +130,6 @@ const HeroSection = () => {
               <span>★ Walks</span>
               <span>★ Sits</span>
               <span>★ Boards</span>
-              <span>★ Training</span>
               <span>★ Hamilton, ON</span>
               <span>★ Since 2015</span>
               <span>★ Insured</span>

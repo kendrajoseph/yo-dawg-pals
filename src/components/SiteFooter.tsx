@@ -11,8 +11,9 @@ const SiteFooter = () => (
           </span>
         </Link>
         <p className="mt-5 max-w-xs text-sm leading-relaxed text-primary-foreground/70">
-          Hamilton, Ontario. Since 2015. Walks, sits, boards & basic training
-          for every kind of good boy (and girl).
+          Hamilton, Ontario. Since 2015. Walks, sits and boards — basic
+          training cues included with every service, for every kind of good
+          boy (and girl).
         </p>
       </div>
       <div>
@@ -21,7 +22,6 @@ const SiteFooter = () => (
           <li><Link to="/book?service=walk" className="transition-colors hover:text-accent">Dog Walking</Link></li>
           <li><Link to="/book?service=sitting" className="transition-colors hover:text-accent">Pet Sitting</Link></li>
           <li><Link to="/book?service=boarding" className="transition-colors hover:text-accent">Boarding</Link></li>
-          <li><Link to="/book?service=training" className="transition-colors hover:text-accent">Training</Link></li>
         </ul>
       </div>
       <div>

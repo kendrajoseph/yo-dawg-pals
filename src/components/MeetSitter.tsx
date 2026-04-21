@@ -98,8 +98,9 @@ const MeetSitter = () => {
           </h2>
           <p className="mt-5 max-w-xl text-base leading-relaxed text-foreground/75 sm:text-lg">
             Hi — I'm the human behind Yo Dawg. A lifelong dog person offering
-            personal, one-on-one walks, sits, boarding and basic training.
-            Trail-ready, treat-stocked, slightly obsessed with your dog already.
+            personal, one-on-one walks, sits and boarding — with basic training
+            cues woven into every service. Trail-ready, treat-stocked, slightly
+            obsessed with your dog already.
           </p>
 
           <ul className="mt-8 flex flex-wrap gap-2">
