@@ -29,14 +29,17 @@ const SiteNav = ({ variant = "light" }: SiteNavProps) => {
 
   return (
     <nav className="relative z-20 mx-auto flex max-w-7xl items-center justify-between px-5 py-5 sm:px-8">
-      <Link to="/" className="flex items-center" aria-label="Yo Dawg home">
+      <Link to="/" className="flex items-baseline gap-1" aria-label="Yo Dawg home">
         <span
           className={cn(
-            "font-display text-2xl tracking-tight sm:text-[1.7rem]",
-            onDark ? "text-primary-foreground" : "text-primary",
+            "font-display text-3xl uppercase leading-none tracking-tight sm:text-[2rem]",
+            onDark ? "text-primary-foreground" : "text-secondary",
           )}
         >
-          YO <span className="text-accent">DAWG</span>
+          Yo
+        </span>
+        <span className="font-display text-3xl uppercase leading-none tracking-tight text-accent sm:text-[2rem]">
+          Dawg
         </span>
       </Link>
 
