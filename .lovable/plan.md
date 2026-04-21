@@ -1,34 +1,36 @@
 
 
-## Add a customer profile page
+## Add a free "Meet & greet" service
 
-### What customers will see
+### What's wrong
+The homepage has a **"Book a meet & greet"** button (in `MeetSitter.tsx`) that links to `/book`, but there's no matching service in the booking flow — only Walking, Sitting, and Boarding show up in the "Pick a service" step.
 
-A new **"My profile"** page at `/account/profile` where logged-in customers can view and edit their own info, plus a "Profile" button on the `/account` dashboard alongside "My pets" and "Book a service."
+### What I'll do
 
-The profile card shows:
-- **Avatar** — circular, with an upload button (drag-or-click). Stored in the existing public `avatars` bucket at `avatars/{user.id}.{ext}`.
-- **Full name** — text input
-- **Email** — read-only (shown from `auth.users`, not editable here since it requires auth flow)
-- **Phone number** — text input, formatted as `(555) 123-4567`
-- **Short bio / notes for your sitter** — textarea (uses existing `bio` column; relabeled for customer context — "anything your sitter should know about you, gate codes, parking, etc.")
-- **Save changes** button — toast on success, validation errors inline.
+**1. Add a new service to the database**
+Insert a `meet-and-greet` service into the `services` table:
+- **Name**: Meet & Greet
+- **Slug**: `meet-and-greet`
+- **Description**: "Free 20-minute intro visit so we can get acquainted with you and your dog before any booking."
+- **Price**: $0 (free)
+- **Duration**: 20 minutes
+- **Unit label**: `/ visit`
+- **Sort order**: 0 (shown first)
+- **is_active**: true
 
-A small **"Account"** sub-section underneath shows:
-- Account created date
-- Sign out button (already in nav, but handy here too)
+**2. Tag existing availability slots with the new service**
+Since availability is now multi-select per slot, insert `availability_services` rows linking every existing availability slot to the new `meet-and-greet` service — otherwise no time slots will appear when customers pick it.
 
-### Files to create / edit
+**3. Update the homepage CTA**
+In `src/components/MeetSitter.tsx`, change the link to `/book?service=meet-and-greet` so the service is preselected when the user lands on the booking page.
 
-- **Create `src/pages/Profile.tsx`** — fetches `profiles` row by `user.id`, edit form with Zod validation (`full_name` 1–100 chars, `phone` optional E.164-ish, `bio` ≤ 1000 chars), avatar upload to `avatars` bucket, then `update` on `profiles`.
-- **Edit `src/App.tsx`** — add `<Route path="/account/profile" element={<ProtectedRoute><Profile /></ProtectedRoute>} />`.
-- **Edit `src/pages/Account.tsx`** — add a "Profile" button (User icon) to the action row.
-- **Edit `src/components/SiteNav.tsx`** — add "Profile" to the user dropdown / mobile menu.
+**4. Handle $0 price display**
+In `src/pages/Book.tsx`, the price is rendered with `formatPriceWithDecimals(...)`. Confirm $0.00 renders cleanly (it will — no code change needed). The 25% deposit step also handles $0 fine ($0.00 deposit shown).
 
-### Technical notes
+**5. Make sure the deposit flow doesn't block free bookings**
+Since deposit is `Math.round(price_cents * 0.25)` = 0 for free services, the booking will insert with `deposit_cents = 0` and status `pending_payment` — but with no payment integration wired up yet, this is fine. The booking success page will still confirm.
 
-- No DB migration needed — `profiles` table and policies (`Users update own profile`, `Users insert own profile`) already cover it.
-- Avatar upload: `supabase.storage.from("avatars").upload(\`${user.id}/${Date.now()}.${ext}\`, file, { upsert: true })`, then save the public URL to `profiles.avatar_url`.
-- Uses existing brand styling — `border-4 border-primary`, `shadow-pop`, `font-display uppercase` buttons, `font-tag text-clay` headings — to match `/account` and `/account/pets`.
-- Profile data already auto-seeds on signup via the existing `handle_new_user` trigger, so every customer has a row to edit.
+### Files touched
+- **DB migration** — insert `meet-and-greet` service + tag all existing availability slots with it
+- **`src/components/MeetSitter.tsx`** — update the "Book a meet & greet" link to preselect the service
 
