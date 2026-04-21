@@ -23,23 +23,6 @@ const SiteFooter = () => (
       </div>
     </div>
 
-    {/* Marquee strip */}
-    <div className="overflow-hidden border-y border-primary-foreground/10 bg-accent py-3 text-accent-foreground">
-      <div className="marquee flex gap-12 whitespace-nowrap font-display text-2xl">
-        {Array.from({ length: 2 }).map((_, g) => (
-          <div key={g} className="flex shrink-0 items-center gap-12">
-            <span>★ Walks</span>
-            <span>★ Sits</span>
-            <span>★ Boards</span>
-            <span>★ Trains</span>
-            <span>★ Treats</span>
-            <span>★ Hamilton, ON</span>
-            <span>★ Since 2015</span>
-          </div>
-        ))}
-      </div>
-    </div>
-
     <div className="mx-auto grid max-w-6xl gap-10 px-5 py-16 sm:px-8 md:grid-cols-3">
       <div>
         <Link to="/" aria-label="Yo Dawg home" className="inline-block">
