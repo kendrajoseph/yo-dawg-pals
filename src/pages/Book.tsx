@@ -19,6 +19,8 @@ import { DAYS, formatPriceWithDecimals, minutesToTime } from "@/lib/booking";
 type Service = {
   id: string; slug: string; name: string; description: string | null;
   price_cents: number; duration_minutes: number; unit_label: string | null;
+  payment_mode: "full" | "deposit" | "free";
+  stripe_price_id: string | null;
 };
 type Pet = { id: string; name: string; breed: string | null; photo_url: string | null };
 type Avail = { id: string; sitter_id: string; weekday: number; start_minute: number; end_minute: number };
@@ -150,6 +152,12 @@ const Book = () => {
   };
   const back = () => setStep((s) => Math.max(s - 1, 0));
 
+  const computePaymentAmount = (svc: Service) => {
+    if (svc.payment_mode === "free") return 0;
+    if (svc.payment_mode === "full") return svc.price_cents;
+    return Math.round(svc.price_cents * 0.25); // deposit
+  };
+
   const submit = async () => {
     if (!user || !service || !date || slot === null || !petId || !sitterId) return;
     setSubmitting(true);
@@ -157,6 +165,7 @@ const Book = () => {
     const start_at = new Date(start.getTime() + slot * 60_000).toISOString();
     const end_at = new Date(start.getTime() + (slot + service.duration_minutes) * 60_000).toISOString();
     const deposit_cents = Math.round(service.price_cents * 0.25);
+    const payment_amount_cents = computePaymentAmount(service);
 
     const { data, error } = await supabase
       .from("bookings")
@@ -168,6 +177,7 @@ const Book = () => {
         start_at, end_at,
         total_cents: service.price_cents,
         deposit_cents,
+        payment_amount_cents,
         notes: notes || null,
         status: "pending_payment",
       })
@@ -178,7 +188,8 @@ const Book = () => {
       toast({ title: "Couldn't book", description: error.message, variant: "destructive" });
       return;
     }
-    navigate(`/booking/${data.id}/success`);
+    // Route to checkout page (handles free path too)
+    navigate(`/booking/${data.id}/checkout`);
   };
 
   // Auth gating: allow browsing service step but require login by step 2
@@ -359,10 +370,22 @@ const Book = () => {
                 <Row label="Duration" value={`${service.duration_minutes} min`} />
                 <Row label="Pet" value={pets.find((p) => p.id === petId)?.name ?? ""} />
                 <Row label="Total" value={formatPriceWithDecimals(service.price_cents)} />
-                <Row label="Deposit (25%)" value={formatPriceWithDecimals(Math.round(service.price_cents * 0.25))} accent />
+                {service.payment_mode === "deposit" && (
+                  <Row label="Due now (25% deposit)" value={formatPriceWithDecimals(computePaymentAmount(service))} accent />
+                )}
+                {service.payment_mode === "full" && (
+                  <Row label="Due now (full)" value={formatPriceWithDecimals(computePaymentAmount(service))} accent />
+                )}
+                {service.payment_mode === "free" && (
+                  <Row label="Due now" value="Free" accent />
+                )}
               </dl>
               <p className="mt-4 text-xs text-muted-foreground">
-                A 25% deposit will be requested next. Balance is due after the service.
+                {service.payment_mode === "free"
+                  ? "No payment needed — your meet & greet will be confirmed instantly."
+                  : service.payment_mode === "full"
+                  ? "Full payment is collected at booking. Free cancellation up to 24h before your service."
+                  : "A 25% deposit is collected now to lock in your slot. Balance is due after the service. Free cancellation up to 24h before."}
               </p>
             </div>
           )}
