@@ -2,6 +2,7 @@ import HeroSection from "@/components/HeroSection";
 import MeetSitter from "@/components/MeetSitter";
 import ServicesSection from "@/components/ServicesSection";
 import TestimonialsSection from "@/components/TestimonialsSection";
+import SiteFooter from "@/components/SiteFooter";
 
 const Index = () => {
   return (
@@ -10,6 +11,7 @@ const Index = () => {
       <MeetSitter />
       <ServicesSection />
       <TestimonialsSection />
+      <SiteFooter />
     </main>
   );
 };

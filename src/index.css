@@ -174,14 +174,12 @@
     display: inline-block;
     transform-origin: left center;
     color: hsl(var(--primary));
-    /* Subtle glossy paint highlight — narrow band near top */
+    /* Soft glossy paint top-light — fades, no hard band */
     background: linear-gradient(
       180deg,
-      hsl(var(--primary)) 0%,
-      hsl(var(--primary)) 22%,
-      hsl(0 0% 100% / 0.32) 28%,
-      hsl(var(--primary)) 36%,
-      hsl(var(--primary)) 100%
+      hsl(var(--primary-glow)) 0%,
+      hsl(var(--primary)) 55%,
+      hsl(130 35% 8%) 100%
     );
     -webkit-background-clip: text;
     background-clip: text;
@@ -195,11 +193,9 @@
   .font-logo-light {
     background: linear-gradient(
       180deg,
-      hsl(var(--primary-foreground)) 0%,
-      hsl(var(--primary-foreground)) 22%,
-      hsl(var(--accent) / 0.7) 28%,
-      hsl(var(--primary-foreground)) 36%,
-      hsl(var(--primary-foreground)) 100%
+      hsl(50 100% 92%) 0%,
+      hsl(var(--primary-foreground)) 55%,
+      hsl(40 50% 78%) 100%
     );
     -webkit-background-clip: text;
     background-clip: text;
