@@ -167,50 +167,53 @@
   }
   .font-logo {
     font-family: 'Bagel Fat One', 'Archivo Black', sans-serif;
-    letter-spacing: 0.01em;
+    letter-spacing: 0.04em;
     text-transform: uppercase;
     font-weight: 400;
-    transform: skewX(-10deg);
+    transform: skewX(-8deg);
     display: inline-block;
     transform-origin: left center;
-    /* Glossy paint highlight */
+    color: hsl(var(--primary));
+    /* Subtle glossy paint highlight — narrow band near top */
     background: linear-gradient(
       180deg,
       hsl(var(--primary)) 0%,
-      hsl(var(--primary)) 38%,
-      hsl(0 0% 100% / 0.55) 40%,
-      hsl(0 0% 100% / 0.55) 46%,
-      hsl(var(--primary)) 48%,
+      hsl(var(--primary)) 22%,
+      hsl(0 0% 100% / 0.32) 28%,
+      hsl(var(--primary)) 36%,
       hsl(var(--primary)) 100%
     );
     -webkit-background-clip: text;
     background-clip: text;
     -webkit-text-fill-color: transparent;
-    color: transparent;
-    /* Drop shadow — offset hard graffiti shadow + soft blur */
+    /* Layered hard graffiti shadow + soft blur */
     filter:
-      drop-shadow(3px 3px 0 hsl(var(--accent)))
-      drop-shadow(5px 5px 0 hsl(var(--tag)))
-      drop-shadow(0 6px 8px hsl(var(--primary) / 0.4));
+      drop-shadow(2px 2px 0 hsl(var(--accent)))
+      drop-shadow(4px 4px 0 hsl(var(--tag)))
+      drop-shadow(0 4px 6px hsl(var(--primary) / 0.35));
   }
   .font-logo-light {
     background: linear-gradient(
       180deg,
       hsl(var(--primary-foreground)) 0%,
-      hsl(var(--primary-foreground)) 38%,
-      hsl(var(--accent)) 40%,
-      hsl(var(--accent)) 46%,
-      hsl(var(--primary-foreground)) 48%,
+      hsl(var(--primary-foreground)) 22%,
+      hsl(var(--accent) / 0.7) 28%,
+      hsl(var(--primary-foreground)) 36%,
       hsl(var(--primary-foreground)) 100%
     );
     -webkit-background-clip: text;
     background-clip: text;
     -webkit-text-fill-color: transparent;
-    color: transparent;
     filter:
-      drop-shadow(3px 3px 0 hsl(var(--tag)))
-      drop-shadow(5px 5px 0 hsl(var(--clay)))
-      drop-shadow(0 6px 8px hsl(0 0% 0% / 0.4));
+      drop-shadow(2px 2px 0 hsl(var(--tag)))
+      drop-shadow(4px 4px 0 hsl(var(--clay)))
+      drop-shadow(0 4px 6px hsl(0 0% 0% / 0.4));
+  }
+  .font-logo-sm {
+    /* Smaller, lighter shadow for nav-size logo */
+    filter:
+      drop-shadow(1.5px 1.5px 0 hsl(var(--accent)))
+      drop-shadow(2.5px 2.5px 0 hsl(var(--tag)));
   }
   .text-gradient-sunlight {
     background: var(--gradient-text);
