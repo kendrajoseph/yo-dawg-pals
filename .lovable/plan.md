@@ -1,29 +1,34 @@
 
 
-## Set up Anneke's owner account (anneke@yodawg.ca)
+## Add a customer profile page
 
-Goal: when Anneke signs up with `anneke@yodawg.ca`, she automatically gets `sitter` + `admin` roles so she can access `/sitter` to manage the calendar, availability, and bookings.
+### What customers will see
 
-### How it will work
+A new **"My profile"** page at `/account/profile` where logged-in customers can view and edit their own info, plus a "Profile" button on the `/account` dashboard alongside "My pets" and "Book a service."
 
-1. **Auto-promotion trigger** — Update the existing `handle_new_user()` database function so that when a new user signs up:
-   - Everyone still gets a `profiles` row + default `customer` role (current behavior).
-   - **If the email is `anneke@yodawg.ca`**, also insert `sitter` and `admin` roles for that user.
+The profile card shows:
+- **Avatar** — circular, with an upload button (drag-or-click). Stored in the existing public `avatars` bucket at `avatars/{user.id}.{ext}`.
+- **Full name** — text input
+- **Email** — read-only (shown from `auth.users`, not editable here since it requires auth flow)
+- **Phone number** — text input, formatted as `(555) 123-4567`
+- **Short bio / notes for your sitter** — textarea (uses existing `bio` column; relabeled for customer context — "anything your sitter should know about you, gate codes, parking, etc.")
+- **Save changes** button — toast on success, validation errors inline.
 
-2. **Anneke signs up normally** — She goes to `/auth`, picks the "Sign up" tab, enters her name, `anneke@yodawg.ca`, and a password. The trigger runs server-side and grants her elevated roles instantly. No manual role assignment needed, ever.
+A small **"Account"** sub-section underneath shows:
+- Account created date
+- Sign out button (already in nav, but handy here too)
 
-3. **She lands in the right place** — After signup she's redirected to `/account`. Because `isSitter` is now `true`, the existing nav will show the "Sitter" link to `/sitter`, where she can manage availability, blocked dates, and bookings (already built in `SitterDashboard.tsx`).
+### Files to create / edit
 
-4. **Safety net** — If Anneke (or you) already created an account with that email before this trigger existed, I'll also run a one-time backfill that grants her the roles retroactively.
+- **Create `src/pages/Profile.tsx`** — fetches `profiles` row by `user.id`, edit form with Zod validation (`full_name` 1–100 chars, `phone` optional E.164-ish, `bio` ≤ 1000 chars), avatar upload to `avatars` bucket, then `update` on `profiles`.
+- **Edit `src/App.tsx`** — add `<Route path="/account/profile" element={<ProtectedRoute><Profile /></ProtectedRoute>} />`.
+- **Edit `src/pages/Account.tsx`** — add a "Profile" button (User icon) to the action row.
+- **Edit `src/components/SiteNav.tsx`** — add "Profile" to the user dropdown / mobile menu.
 
-### Technical details
+### Technical notes
 
-- **Migration**: replace `public.handle_new_user()` with a version that checks `NEW.email = 'anneke@yodawg.ca'` (case-insensitive) and inserts `('sitter')` and `('admin')` into `user_roles` in addition to `customer`. Keep `SECURITY DEFINER` and `search_path = public`.
-- **Backfill (data op via insert tool)**: `INSERT INTO user_roles (user_id, role) SELECT id, 'sitter' FROM auth.users WHERE lower(email) = 'anneke@yodawg.ca' ON CONFLICT DO NOTHING;` — same for `'admin'`. No-op if the account doesn't exist yet.
-- **Email confirmation**: Supabase auth currently requires email verification by default. Since Anneke's domain `yodawg.ca` is already connected and her mailbox isn't set up yet, she won't be able to click the confirmation link. **Recommended**: temporarily enable auto-confirm so she can sign in immediately, then turn it back off once her mailbox works. Alternative: leave verification on and wait until her email is live.
-- No app code changes needed — `useAuth`, `ProtectedRoute`, `SiteNav`, and `SitterDashboard` already react correctly to the `sitter` role.
-
-### What I need from you
-
-One quick choice on the email-confirmation question above (auto-confirm now vs. wait for her mailbox) — I'll ask in the next step before running the migration.
+- No DB migration needed — `profiles` table and policies (`Users update own profile`, `Users insert own profile`) already cover it.
+- Avatar upload: `supabase.storage.from("avatars").upload(\`${user.id}/${Date.now()}.${ext}\`, file, { upsert: true })`, then save the public URL to `profiles.avatar_url`.
+- Uses existing brand styling — `border-4 border-primary`, `shadow-pop`, `font-display uppercase` buttons, `font-tag text-clay` headings — to match `/account` and `/account/pets`.
+- Profile data already auto-seeds on signup via the existing `handle_new_user` trigger, so every customer has a row to edit.
 
