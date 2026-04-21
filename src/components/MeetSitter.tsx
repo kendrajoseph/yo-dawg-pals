@@ -1,28 +1,75 @@
+import { useEffect, useState } from "react";
 import { Heart, ShieldCheck, MapPin } from "lucide-react";
 import { Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
-import sitterPortrait from "@/assets/sitter-portrait.png";
 import { dog6, dog7 } from "@/assets/dogs";
+import anneke1 from "@/assets/anneke/anneke-1.jpeg";
+import anneke2 from "@/assets/anneke/anneke-2.jpeg";
+import anneke3 from "@/assets/anneke/anneke-3.jpeg";
+import anneke4 from "@/assets/anneke/anneke-4.jpeg";
+import anneke5 from "@/assets/anneke/anneke-5.jpeg";
+import dogStick from "@/assets/anneke/dog-stick.jpeg";
+import dogsCar from "@/assets/anneke/dogs-car.jpeg";
+
+const carouselPhotos = [
+  { src: anneke1, alt: "Anneke on a sunny walk with a golden retriever" },
+  { src: anneke2, alt: "Anneke getting a big slobbery kiss from a brindle pup" },
+  { src: anneke3, alt: "Anneke cuddling a happy schnauzer outdoors" },
+  { src: dogStick, alt: "A very pleased Aussie shepherd guarding the world's best stick" },
+  { src: anneke4, alt: "Anneke walking a chocolate lab through a golden field" },
+  { src: dogsCar, alt: "Two road-trip dogs riding shotgun together" },
+  { src: anneke5, alt: "Anneke and a happy dog at a glowing beach sunset" },
+];
 
 const MeetSitter = () => {
+  const [index, setIndex] = useState(0);
+
+  useEffect(() => {
+    const id = setInterval(() => {
+      setIndex((i) => (i + 1) % carouselPhotos.length);
+    }, 3500);
+    return () => clearInterval(id);
+  }, []);
+
   return (
     <section id="sitters" className="relative overflow-hidden bg-background py-24 sm:py-32">
       <div aria-hidden className="pointer-events-none absolute inset-0 texture-topo opacity-40" />
 
       <div className="relative mx-auto grid max-w-6xl items-center gap-12 px-5 sm:px-8 md:grid-cols-[auto,1fr] md:gap-20">
-        {/* Portrait */}
+        {/* Portrait carousel */}
         <div className="relative mx-auto md:mx-0">
           {/* sticker badge */}
-          <div className="absolute -right-3 -top-4 z-10 grid h-20 w-20 -rotate-12 place-items-center rounded-full border-2 border-primary bg-secondary text-center font-display text-secondary-foreground shadow-pop-sm">
+          <div className="absolute -right-3 -top-4 z-20 grid h-20 w-20 -rotate-12 place-items-center rounded-full border-2 border-primary bg-secondary text-center font-display text-secondary-foreground shadow-pop-sm">
             <span className="text-xs leading-tight">Hi.<br />I'm Anneke</span>
           </div>
           <div className="-rotate-2 overflow-hidden rounded-3xl border-2 border-primary bg-card shadow-pop transition-transform duration-500 hover:rotate-0">
-            <img
-              src={sitterPortrait}
-              alt="Your friendly Yo Dawg sitter on a sunny trail walk with a happy dog"
-              className="h-80 w-72 object-cover sm:h-96 sm:w-80"
-              loading="lazy"
-            />
+            <div className="relative h-80 w-72 sm:h-96 sm:w-80">
+              {carouselPhotos.map((photo, i) => (
+                <img
+                  key={photo.src}
+                  src={photo.src}
+                  alt={photo.alt}
+                  loading={i === 0 ? "eager" : "lazy"}
+                  className={`absolute inset-0 h-full w-full object-cover transition-opacity duration-700 ease-in-out ${
+                    i === index ? "opacity-100" : "opacity-0"
+                  }`}
+                />
+              ))}
+            </div>
+          </div>
+          {/* dots */}
+          <div className="absolute -bottom-8 left-1/2 z-10 flex -translate-x-1/2 gap-1.5">
+            {carouselPhotos.map((_, i) => (
+              <button
+                key={i}
+                type="button"
+                aria-label={`Show photo ${i + 1}`}
+                onClick={() => setIndex(i)}
+                className={`h-2 rounded-full border border-primary transition-all ${
+                  i === index ? "w-6 bg-primary" : "w-2 bg-card"
+                }`}
+              />
+            ))}
           </div>
           {/* peeking dog buddies */}
           <img
