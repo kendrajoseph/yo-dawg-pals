@@ -140,47 +140,107 @@ export type Database = {
       pets: {
         Row: {
           age_years: number | null
+          allergies: string | null
+          authorized_pickup_name: string | null
+          authorized_pickup_phone: string | null
+          behavioral_notes: string | null
           breed: string | null
+          color: string | null
           created_at: string
+          dietary_notes: string | null
           emergency_contact: string | null
+          entry_code: string | null
+          entry_instructions: string | null
           id: string
+          insurance_policy: string | null
+          insurance_provider: string | null
+          medications: string | null
+          microchip_id: string | null
           name: string
           notes: string | null
           owner_id: string
+          owner_phone: string | null
           photo_url: string | null
+          secondary_contact_name: string | null
+          secondary_contact_phone: string | null
+          sex: string | null
+          spayed_neutered: boolean | null
           species: string
           updated_at: string
+          vet_address: string | null
           vet_info: string | null
+          vet_name: string | null
+          vet_phone: string | null
           weight_lbs: number | null
         }
         Insert: {
           age_years?: number | null
+          allergies?: string | null
+          authorized_pickup_name?: string | null
+          authorized_pickup_phone?: string | null
+          behavioral_notes?: string | null
           breed?: string | null
+          color?: string | null
           created_at?: string
+          dietary_notes?: string | null
           emergency_contact?: string | null
+          entry_code?: string | null
+          entry_instructions?: string | null
           id?: string
+          insurance_policy?: string | null
+          insurance_provider?: string | null
+          medications?: string | null
+          microchip_id?: string | null
           name: string
           notes?: string | null
           owner_id: string
+          owner_phone?: string | null
           photo_url?: string | null
+          secondary_contact_name?: string | null
+          secondary_contact_phone?: string | null
+          sex?: string | null
+          spayed_neutered?: boolean | null
           species?: string
           updated_at?: string
+          vet_address?: string | null
           vet_info?: string | null
+          vet_name?: string | null
+          vet_phone?: string | null
           weight_lbs?: number | null
         }
         Update: {
           age_years?: number | null
+          allergies?: string | null
+          authorized_pickup_name?: string | null
+          authorized_pickup_phone?: string | null
+          behavioral_notes?: string | null
           breed?: string | null
+          color?: string | null
           created_at?: string
+          dietary_notes?: string | null
           emergency_contact?: string | null
+          entry_code?: string | null
+          entry_instructions?: string | null
           id?: string
+          insurance_policy?: string | null
+          insurance_provider?: string | null
+          medications?: string | null
+          microchip_id?: string | null
           name?: string
           notes?: string | null
           owner_id?: string
+          owner_phone?: string | null
           photo_url?: string | null
+          secondary_contact_name?: string | null
+          secondary_contact_phone?: string | null
+          sex?: string | null
+          spayed_neutered?: boolean | null
           species?: string
           updated_at?: string
+          vet_address?: string | null
           vet_info?: string | null
+          vet_name?: string | null
+          vet_phone?: string | null
           weight_lbs?: number | null
         }
         Relationships: []
