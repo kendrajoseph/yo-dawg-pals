@@ -3,7 +3,7 @@ import { Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import SiteNav from "@/components/SiteNav";
 import wordmark from "@/assets/yodawg-wordmark.svg";
-import { dog3, dog5, dog8 } from "@/assets/dogs";
+import { dog3 } from "@/assets/dogs";
 
 const HeroSection = () => {
   return (
@@ -108,20 +108,6 @@ const HeroSection = () => {
               <div className="text-3xl">2015</div>
             </div>
           </div>
-
-          {/* Floating dog buddies peeking around the wordmark */}
-          <img
-            src={dog5}
-            alt=""
-            aria-hidden
-            className="absolute -left-4 top-2 z-10 h-20 w-auto -rotate-12 drop-shadow-[4px_4px_0_hsl(220_50%_4%/0.6)] sm:-left-6 sm:h-28"
-          />
-          <img
-            src={dog8}
-            alt=""
-            aria-hidden
-            className="absolute -bottom-2 right-2 z-10 h-20 w-auto rotate-6 drop-shadow-[4px_4px_0_hsl(220_50%_4%/0.6)] sm:-bottom-4 sm:right-10 sm:h-28"
-          />
 
           {/* Floating quote with dog */}
           <div className="absolute -bottom-6 left-0 z-10 flex max-w-[280px] items-start gap-2 -rotate-2 rounded-2xl border-2 border-primary-foreground/90 bg-card p-3 pl-2 text-foreground shadow-pop-sm sm:-bottom-2 sm:left-4">
