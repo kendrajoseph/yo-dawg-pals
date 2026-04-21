@@ -14,7 +14,7 @@ const MeetSitter = () => {
         <div className="relative mx-auto md:mx-0">
           {/* sticker badge */}
           <div className="absolute -right-3 -top-4 z-10 grid h-20 w-20 -rotate-12 place-items-center rounded-full border-2 border-primary bg-secondary text-center font-display text-secondary-foreground shadow-pop-sm">
-            <span className="text-xs leading-tight">Hi,<br />I'm here!</span>
+            <span className="text-xs leading-tight">Hi.<br />I'm Anneke</span>
           </div>
           <div className="-rotate-2 overflow-hidden rounded-3xl border-2 border-primary bg-card shadow-pop transition-transform duration-500 hover:rotate-0">
             <img
