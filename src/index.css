@@ -166,9 +166,10 @@
     letter-spacing: 0.01em;
   }
   .font-logo {
-    font-family: 'UnifrakturMaguntia', 'Archivo Black', serif;
-    letter-spacing: 0;
-    text-transform: none;
+    font-family: 'Rubik Spray Paint', 'Bungee Shade', 'Archivo Black', sans-serif;
+    letter-spacing: 0.02em;
+    text-transform: uppercase;
+    font-weight: 400;
   }
   .text-gradient-sunlight {
     background: var(--gradient-text);
