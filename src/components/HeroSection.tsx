@@ -3,6 +3,7 @@ import { Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import SiteNav from "@/components/SiteNav";
 import wordmark from "@/assets/yodawg-wordmark.svg";
+import { dog3, dog5, dog8 } from "@/assets/dogs";
 
 const HeroSection = () => {
   return (
@@ -101,19 +102,36 @@ const HeroSection = () => {
           />
 
           {/* Floating since-2015 sticker */}
-          <div className="absolute -right-2 top-4 grid h-24 w-24 -rotate-12 place-items-center rounded-full border-2 border-primary-foreground bg-secondary text-center font-display text-secondary-foreground shadow-pop-sm sm:right-4 sm:h-28 sm:w-28">
+          <div className="absolute -right-2 top-4 z-10 grid h-24 w-24 -rotate-12 place-items-center rounded-full border-2 border-primary-foreground bg-secondary text-center font-display text-secondary-foreground shadow-pop-sm sm:right-4 sm:h-28 sm:w-28">
             <div className="leading-tight">
               <div className="text-[10px] font-tag">since</div>
               <div className="text-3xl">2015</div>
             </div>
           </div>
 
-          {/* Floating quote */}
-          <div className="absolute -bottom-4 left-0 max-w-[260px] -rotate-2 rounded-2xl border-2 border-primary-foreground/90 bg-card p-4 text-foreground shadow-pop-sm sm:-bottom-2 sm:left-4">
-            <p className="font-serif text-sm italic leading-snug">
-              "Comes home tired, happy and a little better behaved every time."
-            </p>
-            <p className="mt-2 text-xs font-tag text-muted-foreground">— Maya & Biscuit</p>
+          {/* Floating dog buddies peeking around the wordmark */}
+          <img
+            src={dog5}
+            alt=""
+            aria-hidden
+            className="absolute -left-4 top-2 z-10 h-20 w-auto -rotate-12 drop-shadow-[4px_4px_0_hsl(220_50%_4%/0.6)] sm:-left-6 sm:h-28"
+          />
+          <img
+            src={dog8}
+            alt=""
+            aria-hidden
+            className="absolute -bottom-2 right-2 z-10 h-20 w-auto rotate-6 drop-shadow-[4px_4px_0_hsl(220_50%_4%/0.6)] sm:-bottom-4 sm:right-10 sm:h-28"
+          />
+
+          {/* Floating quote with dog */}
+          <div className="absolute -bottom-6 left-0 z-10 flex max-w-[280px] items-start gap-2 -rotate-2 rounded-2xl border-2 border-primary-foreground/90 bg-card p-3 pl-2 text-foreground shadow-pop-sm sm:-bottom-2 sm:left-4">
+            <img src={dog3} alt="" aria-hidden className="h-12 w-auto shrink-0" />
+            <div>
+              <p className="font-serif text-sm italic leading-snug">
+                "Comes home tired, happy and a little better behaved every time."
+              </p>
+              <p className="mt-1 text-xs font-tag text-muted-foreground">— Maya & Biscuit</p>
+            </div>
           </div>
         </div>
       </div>
