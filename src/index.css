@@ -173,6 +173,44 @@
     transform: skewX(-10deg);
     display: inline-block;
     transform-origin: left center;
+    /* Glossy paint highlight */
+    background: linear-gradient(
+      180deg,
+      hsl(var(--primary)) 0%,
+      hsl(var(--primary)) 38%,
+      hsl(0 0% 100% / 0.55) 40%,
+      hsl(0 0% 100% / 0.55) 46%,
+      hsl(var(--primary)) 48%,
+      hsl(var(--primary)) 100%
+    );
+    -webkit-background-clip: text;
+    background-clip: text;
+    -webkit-text-fill-color: transparent;
+    color: transparent;
+    /* Drop shadow — offset hard graffiti shadow + soft blur */
+    filter:
+      drop-shadow(3px 3px 0 hsl(var(--accent)))
+      drop-shadow(5px 5px 0 hsl(var(--tag)))
+      drop-shadow(0 6px 8px hsl(var(--primary) / 0.4));
+  }
+  .font-logo-light {
+    background: linear-gradient(
+      180deg,
+      hsl(var(--primary-foreground)) 0%,
+      hsl(var(--primary-foreground)) 38%,
+      hsl(var(--accent)) 40%,
+      hsl(var(--accent)) 46%,
+      hsl(var(--primary-foreground)) 48%,
+      hsl(var(--primary-foreground)) 100%
+    );
+    -webkit-background-clip: text;
+    background-clip: text;
+    -webkit-text-fill-color: transparent;
+    color: transparent;
+    filter:
+      drop-shadow(3px 3px 0 hsl(var(--tag)))
+      drop-shadow(5px 5px 0 hsl(var(--clay)))
+      drop-shadow(0 6px 8px hsl(0 0% 0% / 0.4));
   }
   .text-gradient-sunlight {
     background: var(--gradient-text);

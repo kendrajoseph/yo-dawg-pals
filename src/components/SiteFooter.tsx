@@ -9,8 +9,8 @@ const SiteFooter = () => (
           <span className="grid h-10 w-10 place-items-center rounded-md bg-accent text-accent-foreground shadow-pop">
             <PawPrint className="h-5 w-5" />
           </span>
-          <span className="font-logo text-3xl tracking-tight">
-            YO DAWG<span className="text-accent">.</span>
+          <span className="font-logo font-logo-light text-3xl tracking-tight">
+            YO DAWG.
           </span>
         </Link>
         <p className="mt-4 max-w-xs text-sm opacity-80">

@@ -62,11 +62,10 @@ const HeroSection = () => {
         </div>
 
         {/* Headline */}
-        <h1 className="font-logo text-[clamp(3.5rem,16vw,11rem)] leading-[0.9] tracking-tight text-primary spray-glow">
-          YO
+        <h1 className="text-[clamp(3.5rem,16vw,11rem)] leading-[1.05] tracking-tight">
+          <span className="font-logo">YO</span>
           <br />
-          <span className="text-gradient-spray">DAWG</span>
-          <span className="text-tag">.</span>
+          <span className="font-logo">DAWG.</span>
         </h1>
 
         {/* Sub-headline */}
