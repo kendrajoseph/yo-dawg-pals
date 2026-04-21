@@ -41,6 +41,39 @@ export type Database = {
         }
         Relationships: []
       }
+      availability_services: {
+        Row: {
+          availability_id: string
+          created_at: string
+          service_id: string
+        }
+        Insert: {
+          availability_id: string
+          created_at?: string
+          service_id: string
+        }
+        Update: {
+          availability_id?: string
+          created_at?: string
+          service_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "availability_services_availability_id_fkey"
+            columns: ["availability_id"]
+            isOneToOne: false
+            referencedRelation: "availability"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "availability_services_service_id_fkey"
+            columns: ["service_id"]
+            isOneToOne: false
+            referencedRelation: "services"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       blocked_dates: {
         Row: {
           blocked_date: string
