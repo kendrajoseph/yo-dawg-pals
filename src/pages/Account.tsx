@@ -69,7 +69,7 @@ const Account = () => {
         ) : bookings.length === 0 ? (
           <Card className="mt-4 -rotate-1 border-4 border-primary p-8 text-center shadow-pop">
             <p className="font-tag text-2xl text-clay">no bookings yet</p>
-            <p className="mt-2 text-sm text-muted-foreground">Lock in a walk, sit, board or training session.</p>
+            <p className="mt-2 text-sm text-muted-foreground">Lock in a walk, sit or board.</p>
             <Button asChild className="mt-6 font-display uppercase shadow-pop-accent">
               <Link to="/book">Book your first service</Link>
             </Button>
