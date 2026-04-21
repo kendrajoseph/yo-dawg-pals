@@ -78,7 +78,7 @@ const ServicesSection = () => {
           </div>
         </div>
 
-        <div className="mt-12 grid gap-5 sm:grid-cols-2 lg:grid-cols-4">
+        <div className="mt-12 grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
           {services.map(({ icon: Icon, title, desc, price, unit, slug, accent, dog }, i) => (
             <article
               key={title}
