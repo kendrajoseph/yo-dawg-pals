@@ -1,7 +1,28 @@
 import { Link } from "react-router-dom";
+import { dogs } from "@/assets/dogs";
 
 const SiteFooter = () => (
   <footer className="relative bg-primary text-primary-foreground">
+    {/* Dog pack strip */}
+    <div className="overflow-hidden border-t-2 border-primary-foreground/15 bg-secondary py-4">
+      <div className="marquee flex gap-8 whitespace-nowrap">
+        {Array.from({ length: 2 }).map((_, g) => (
+          <div key={g} className="flex shrink-0 items-end gap-8">
+            {dogs.map((d, i) => (
+              <img
+                key={`${g}-${i}`}
+                src={d}
+                alt=""
+                aria-hidden
+                className="h-14 w-auto sm:h-16"
+                style={{ transform: `rotate(${(i % 2 === 0 ? -1 : 1) * 4}deg)` }}
+              />
+            ))}
+          </div>
+        ))}
+      </div>
+    </div>
+
     {/* Marquee strip */}
     <div className="overflow-hidden border-y border-primary-foreground/10 bg-accent py-3 text-accent-foreground">
       <div className="marquee flex gap-12 whitespace-nowrap font-display text-2xl">

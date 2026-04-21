@@ -1,6 +1,6 @@
 import { Footprints, Home, Bed, GraduationCap, ArrowRight } from "lucide-react";
 import { Link } from "react-router-dom";
-import pack from "@/assets/yodawg-pack.svg";
+import { dog1, dog3, dog5, dog6, dog7, dog8, dog2, dog4 } from "@/assets/dogs";
 
 const services = [
   {
@@ -11,6 +11,7 @@ const services = [
     unit: "/ 30 min",
     slug: "walk",
     accent: "bg-accent text-accent-foreground",
+    dog: dog1,
   },
   {
     icon: Home,
@@ -20,6 +21,7 @@ const services = [
     unit: "/ visit",
     slug: "sitting",
     accent: "bg-secondary text-secondary-foreground",
+    dog: dog3,
   },
   {
     icon: Bed,
@@ -29,6 +31,7 @@ const services = [
     unit: "/ night",
     slug: "boarding",
     accent: "bg-clay text-clay-foreground",
+    dog: dog4,
   },
   {
     icon: GraduationCap,
@@ -38,8 +41,11 @@ const services = [
     unit: "/ session",
     slug: "training",
     accent: "bg-electric text-electric-foreground",
+    dog: dog7,
   },
 ];
+
+const packStrip = [dog2, dog5, dog6, dog8, dog1, dog3, dog4, dog7];
 
 const ServicesSection = () => {
   return (
@@ -65,23 +71,37 @@ const ServicesSection = () => {
           </p>
         </div>
 
-        {/* Dog pack illustration band */}
+        {/* Dog pack illustration band — individual dogs scattered */}
         <div className="mt-14 overflow-hidden rounded-3xl border-2 border-primary bg-card p-6 shadow-pop sm:p-10">
-          <img
-            src={pack}
-            alt="Eight illustrated dog faces — every breed welcome"
-            className="mx-auto w-full max-w-3xl"
-            loading="lazy"
-          />
+          <div className="flex flex-wrap items-end justify-center gap-x-2 gap-y-4 sm:gap-x-4">
+            {packStrip.map((d, i) => (
+              <img
+                key={i}
+                src={d}
+                alt=""
+                aria-hidden
+                loading="lazy"
+                className="h-20 w-auto transition-transform duration-300 hover:-translate-y-2 hover:rotate-3 sm:h-28 md:h-32"
+                style={{ transform: `rotate(${(i % 2 === 0 ? -1 : 1) * (2 + (i % 3))}deg)` }}
+              />
+            ))}
+          </div>
         </div>
 
         <div className="mt-12 grid gap-5 sm:grid-cols-2 lg:grid-cols-4">
-          {services.map(({ icon: Icon, title, desc, price, unit, slug, accent }, i) => (
+          {services.map(({ icon: Icon, title, desc, price, unit, slug, accent, dog }, i) => (
             <article
               key={title}
-              className="group relative flex flex-col rounded-2xl border-2 border-primary bg-card p-6 shadow-pop-sm transition-all duration-200 hover:-translate-y-1 hover:shadow-pop"
+              className="group relative flex flex-col rounded-2xl border-2 border-primary bg-card p-6 pt-12 shadow-pop-sm transition-all duration-200 hover:-translate-y-1 hover:shadow-pop"
               style={{ transform: `rotate(${i % 2 === 0 ? "-0.6deg" : "0.6deg"})` }}
             >
+              {/* floating dog mascot */}
+              <img
+                src={dog}
+                alt=""
+                aria-hidden
+                className="pointer-events-none absolute -right-3 -top-10 h-24 w-auto rotate-6 drop-shadow-[3px_3px_0_hsl(var(--primary))] transition-transform duration-300 group-hover:-translate-y-1 group-hover:rotate-3"
+              />
               <div className={`mb-5 grid h-12 w-12 place-items-center rounded-xl ${accent}`}>
                 <Icon className="h-6 w-6" />
               </div>

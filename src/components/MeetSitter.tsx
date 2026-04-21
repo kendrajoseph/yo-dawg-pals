@@ -2,6 +2,7 @@ import { Heart, ShieldCheck, MapPin } from "lucide-react";
 import { Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import sitterPortrait from "@/assets/sitter-portrait.png";
+import { dog6, dog7 } from "@/assets/dogs";
 
 const MeetSitter = () => {
   return (
@@ -23,6 +24,19 @@ const MeetSitter = () => {
               loading="lazy"
             />
           </div>
+          {/* peeking dog buddies */}
+          <img
+            src={dog7}
+            alt=""
+            aria-hidden
+            className="absolute -bottom-6 -left-6 z-10 h-24 w-auto -rotate-12 drop-shadow-[4px_4px_0_hsl(var(--primary))] sm:h-28"
+          />
+          <img
+            src={dog6}
+            alt=""
+            aria-hidden
+            className="absolute -bottom-4 right-0 z-10 hidden h-20 w-auto rotate-6 drop-shadow-[4px_4px_0_hsl(var(--primary))] sm:block"
+          />
         </div>
 
         {/* Bio */}

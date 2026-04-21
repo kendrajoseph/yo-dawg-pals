@@ -1,4 +1,5 @@
 import { Star } from "lucide-react";
+import { dog2, dog6, dog1 } from "@/assets/dogs";
 
 const testimonials = [
   {
@@ -8,6 +9,7 @@ const testimonials = [
     role: "Bernedoodle parents",
     bg: "bg-card",
     rotate: "-rotate-1",
+    dog: dog2,
   },
   {
     quote:
@@ -16,6 +18,7 @@ const testimonials = [
     role: "Rescue mutt dad",
     bg: "bg-accent text-accent-foreground",
     rotate: "rotate-1",
+    dog: dog6,
   },
   {
     quote:
@@ -24,6 +27,7 @@ const testimonials = [
     role: "German Shepherd mom",
     bg: "bg-card",
     rotate: "-rotate-1",
+    dog: dog1,
   },
 ];
 
@@ -41,11 +45,17 @@ const TestimonialsSection = () => {
         </div>
 
         <div className="mt-14 grid gap-6 md:grid-cols-3">
-          {testimonials.map(({ quote, name, role, bg, rotate }) => (
+          {testimonials.map(({ quote, name, role, bg, rotate, dog }) => (
             <figure
               key={name}
-              className={`flex flex-col rounded-2xl border-2 border-primary p-7 shadow-pop-sm transition-all duration-200 hover:-translate-y-1 hover:rotate-0 hover:shadow-pop ${bg} ${rotate}`}
+              className={`relative flex flex-col rounded-2xl border-2 border-primary p-7 shadow-pop-sm transition-all duration-200 hover:-translate-y-1 hover:rotate-0 hover:shadow-pop ${bg} ${rotate}`}
             >
+              <img
+                src={dog}
+                alt=""
+                aria-hidden
+                className="pointer-events-none absolute -right-4 -top-10 h-20 w-auto -rotate-6 drop-shadow-[3px_3px_0_hsl(var(--primary))]"
+              />
               <div className="mb-4 flex gap-0.5 text-clay">
                 {Array.from({ length: 5 }).map((_, i) => (
                   <Star key={i} className="h-4 w-4 fill-current" />
