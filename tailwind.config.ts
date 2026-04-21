@@ -17,7 +17,7 @@ export default {
         display: ['"Archivo Black"', "Impact", "sans-serif"],
         body: ['Hind', "system-ui", "sans-serif"],
         tag: ['"Permanent Marker"', "cursive"],
-        logo: ['"UnifrakturMaguntia"', '"Archivo Black"', "serif"],
+        logo: ['"Rubik Spray Paint"', '"Bungee Shade"', '"Archivo Black"', "sans-serif"],
       },
       colors: {
         border: "hsl(var(--border))",
