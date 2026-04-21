@@ -27,7 +27,7 @@ const services = [
     icon: Bed,
     title: "Boarding",
     desc: "Overnight stays in a calm, dog-friendly home while you're away.",
-    price: "$55",
+    price: "$70",
     unit: "/ night",
     slug: "boarding",
     accent: "bg-clay text-clay-foreground",
