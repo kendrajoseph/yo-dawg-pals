@@ -10,6 +10,7 @@ import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Calendar } from "@/components/ui/calendar";
+import { Checkbox } from "@/components/ui/checkbox";
 import { toast } from "@/hooks/use-toast";
 import { Plus, Trash2, Check, X, CalendarOff } from "lucide-react";
 import { cn } from "@/lib/utils";
@@ -20,6 +21,8 @@ import {
 
 type Avail = { id: string; weekday: number; start_minute: number; end_minute: number };
 type Blocked = { id: string; blocked_date: string; reason: string | null };
+type Service = { id: string; name: string; slug: string };
+type AvailService = { availability_id: string; service_id: string };
 type Booking = {
   id: string; start_at: string; end_at: string; status: string;
   total_cents: number; deposit_cents: number;
@@ -34,35 +37,91 @@ const SitterDashboard = () => {
   const [avail, setAvail] = useState<Avail[]>([]);
   const [blocked, setBlocked] = useState<Blocked[]>([]);
   const [bookings, setBookings] = useState<Booking[]>([]);
+  const [services, setServices] = useState<Service[]>([]);
+  const [availServices, setAvailServices] = useState<AvailService[]>([]);
   const [newAvail, setNewAvail] = useState({ weekday: 1, start: "09:00", end: "17:00" });
+  const [newServiceIds, setNewServiceIds] = useState<string[]>([]);
   const [blockDate, setBlockDate] = useState<Date | undefined>();
   const [blockReason, setBlockReason] = useState("");
 
   const load = async () => {
     if (!user) return;
-    const [{ data: a }, { data: b }, { data: bk }] = await Promise.all([
+    const [{ data: a }, { data: b }, { data: bk }, { data: s }] = await Promise.all([
       supabase.from("availability").select("*").eq("sitter_id", user.id).order("weekday"),
       supabase.from("blocked_dates").select("*").eq("sitter_id", user.id).order("blocked_date"),
       supabase.from("bookings")
         .select("id, start_at, end_at, status, total_cents, deposit_cents, notes, services(name), pets(name), profiles!bookings_customer_id_fkey(full_name)")
         .eq("sitter_id", user.id).order("start_at", { ascending: true }),
+      supabase.from("services").select("id, name, slug").eq("is_active", true).order("sort_order"),
     ]);
     setAvail((a ?? []) as Avail[]);
     setBlocked((b ?? []) as Blocked[]);
     setBookings((bk ?? []) as unknown as Booking[]);
+    setServices((s ?? []) as Service[]);
+
+    const slotIds = (a ?? []).map((x) => x.id);
+    if (slotIds.length) {
+      const { data: avs } = await supabase
+        .from("availability_services")
+        .select("availability_id, service_id")
+        .in("availability_id", slotIds);
+      setAvailServices((avs ?? []) as AvailService[]);
+    } else {
+      setAvailServices([]);
+    }
+
+    setNewServiceIds((prev) => (prev.length ? prev : (s ?? []).map((x) => x.id)));
   };
   useEffect(() => { load(); }, [user]);
+
+  const tagsBySlot = useMemo(() => {
+    const m = new Map<string, Set<string>>();
+    for (const r of availServices) {
+      if (!m.has(r.availability_id)) m.set(r.availability_id, new Set());
+      m.get(r.availability_id)!.add(r.service_id);
+    }
+    return m;
+  }, [availServices]);
+
+  const toggleSlotService = async (slotId: string, serviceId: string, on: boolean) => {
+    if (on) {
+      const { error } = await supabase
+        .from("availability_services")
+        .insert({ availability_id: slotId, service_id: serviceId });
+      if (error) return toast({ title: "Failed", description: error.message, variant: "destructive" });
+      setAvailServices((prev) => [...prev, { availability_id: slotId, service_id: serviceId }]);
+    } else {
+      const { error } = await supabase
+        .from("availability_services")
+        .delete()
+        .eq("availability_id", slotId)
+        .eq("service_id", serviceId);
+      if (error) return toast({ title: "Failed", description: error.message, variant: "destructive" });
+      setAvailServices((prev) =>
+        prev.filter((r) => !(r.availability_id === slotId && r.service_id === serviceId)),
+      );
+    }
+  };
 
   const addAvail = async () => {
     if (!user) return;
     const start = timeToMinutes(newAvail.start);
     const end = timeToMinutes(newAvail.end);
     if (end <= start) return toast({ title: "End must be after start", variant: "destructive" });
-    const { error } = await supabase.from("availability").insert({
+    if (newServiceIds.length === 0)
+      return toast({ title: "Pick at least one service for this slot", variant: "destructive" });
+
+    const { data: inserted, error } = await supabase.from("availability").insert({
       sitter_id: user.id, weekday: newAvail.weekday, start_minute: start, end_minute: end,
-    });
-    if (error) toast({ title: "Failed", description: error.message, variant: "destructive" });
-    else { toast({ title: "Availability added" }); load(); }
+    }).select("id").single();
+    if (error || !inserted)
+      return toast({ title: "Failed", description: error?.message, variant: "destructive" });
+
+    const links = newServiceIds.map((sid) => ({ availability_id: inserted.id, service_id: sid }));
+    const { error: linkErr } = await supabase.from("availability_services").insert(links);
+    if (linkErr) toast({ title: "Slot saved, tagging failed", description: linkErr.message, variant: "destructive" });
+    else toast({ title: "Availability added" });
+    load();
   };
 
   const removeAvail = async (id: string) => {
@@ -99,6 +158,10 @@ const SitterDashboard = () => {
     const past = bookings.filter((b) => new Date(b.start_at) <= new Date());
     return { upcoming, past };
   }, [bookings]);
+
+  const toggleNewServiceId = (id: string, on: boolean) => {
+    setNewServiceIds((prev) => (on ? [...new Set([...prev, id])] : prev.filter((x) => x !== id)));
+  };
 
   return (
     <main className="min-h-screen bg-background texture-grain">
@@ -157,6 +220,9 @@ const SitterDashboard = () => {
 
         {/* Availability */}
         <h2 className="mt-12 font-display text-2xl uppercase text-primary">Weekly availability</h2>
+        <p className="mt-1 text-sm text-muted-foreground">
+          Tag each slot with the services it covers — customers only see times that match the service they're booking.
+        </p>
         <Card className="mt-3 border-4 border-primary p-4 shadow-pop sm:p-5">
           <div className="grid gap-3 sm:grid-cols-[1fr,auto,auto,auto] sm:items-end">
             <div>
@@ -182,23 +248,77 @@ const SitterDashboard = () => {
             </Button>
           </div>
 
+          <div className="mt-3">
+            <Label className="text-xs uppercase tracking-wide text-muted-foreground">
+              Services this new slot covers
+            </Label>
+            <div className="mt-2 flex flex-wrap gap-3">
+              {services.map((s) => {
+                const checked = newServiceIds.includes(s.id);
+                return (
+                  <label key={s.id} className={cn(
+                    "flex cursor-pointer items-center gap-2 border-2 border-primary px-3 py-1.5 text-sm transition-colors",
+                    checked ? "bg-accent text-accent-foreground" : "bg-card hover:bg-muted",
+                  )}>
+                    <Checkbox
+                      checked={checked}
+                      onCheckedChange={(v) => toggleNewServiceId(s.id, v === true)}
+                    />
+                    <span className="font-display uppercase">{s.name}</span>
+                  </label>
+                );
+              })}
+              {services.length === 0 && (
+                <span className="text-xs text-muted-foreground">No active services configured.</span>
+              )}
+            </div>
+          </div>
+
           {avail.length > 0 ? (
-            <ul className="mt-4 grid gap-2 sm:grid-cols-2">
-              {avail.map((a) => (
-                <li key={a.id} className="flex items-center justify-between border-2 border-primary bg-muted px-3 py-2">
-                  <span className="text-sm">
-                    <span className="font-display uppercase">{DAYS[a.weekday]}</span> · {minutesToTime(a.start_minute)}–{minutesToTime(a.end_minute)}
-                  </span>
-                  <button onClick={() => removeAvail(a.id)} aria-label="Remove">
-                    <Trash2 className="h-4 w-4 text-destructive" />
-                  </button>
-                </li>
-              ))}
+            <ul className="mt-5 grid gap-2">
+              {avail.map((a) => {
+                const tagged = tagsBySlot.get(a.id) ?? new Set<string>();
+                return (
+                  <li key={a.id} className="border-2 border-primary bg-muted px-3 py-2.5">
+                    <div className="flex items-center justify-between gap-3">
+                      <span className="text-sm">
+                        <span className="font-display uppercase">{DAYS[a.weekday]}</span> · {minutesToTime(a.start_minute)}–{minutesToTime(a.end_minute)}
+                      </span>
+                      <button onClick={() => removeAvail(a.id)} aria-label="Remove slot">
+                        <Trash2 className="h-4 w-4 text-destructive" />
+                      </button>
+                    </div>
+                    <div className="mt-2 flex flex-wrap gap-2">
+                      {services.map((s) => {
+                        const on = tagged.has(s.id);
+                        return (
+                          <button
+                            key={s.id}
+                            type="button"
+                            onClick={() => toggleSlotService(a.id, s.id, !on)}
+                            className={cn(
+                              "border-2 border-primary px-2 py-1 text-xs font-display uppercase transition-colors",
+                              on ? "bg-secondary text-secondary-foreground" : "bg-card text-muted-foreground hover:bg-card/80",
+                            )}
+                            aria-pressed={on}
+                          >
+                            {on ? "✓ " : ""}{s.name}
+                          </button>
+                        );
+                      })}
+                      {tagged.size === 0 && (
+                        <span className="text-xs text-destructive">⚠ No services — this slot is hidden from booking.</span>
+                      )}
+                    </div>
+                  </li>
+                );
+              })}
             </ul>
           ) : (
             <p className="mt-3 text-sm text-muted-foreground">No availability yet — customers can't book until you add some.</p>
           )}
         </Card>
+
 
         {/* Blocked dates */}
         <h2 className="mt-12 font-display text-2xl uppercase text-primary">Blocked days</h2>

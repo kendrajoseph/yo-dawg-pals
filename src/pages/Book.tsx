@@ -21,7 +21,8 @@ type Service = {
   price_cents: number; duration_minutes: number; unit_label: string | null;
 };
 type Pet = { id: string; name: string; breed: string | null; photo_url: string | null };
-type Avail = { sitter_id: string; weekday: number; start_minute: number; end_minute: number };
+type Avail = { id: string; sitter_id: string; weekday: number; start_minute: number; end_minute: number };
+type AvailService = { availability_id: string; service_id: string };
 type Blocked = { sitter_id: string; blocked_date: string };
 type Booking = { sitter_id: string; start_at: string; end_at: string };
 
@@ -36,6 +37,7 @@ const Book = () => {
   const [services, setServices] = useState<Service[]>([]);
   const [pets, setPets] = useState<Pet[]>([]);
   const [availability, setAvailability] = useState<Avail[]>([]);
+  const [availServices, setAvailServices] = useState<AvailService[]>([]);
   const [blocked, setBlocked] = useState<Blocked[]>([]);
   const [existing, setExisting] = useState<Booking[]>([]);
   const [sitterId, setSitterId] = useState<string | null>(null);
@@ -51,14 +53,16 @@ const Book = () => {
   // Load services + availability + bookings (public reads)
   useEffect(() => {
     (async () => {
-      const [{ data: s }, { data: a }, { data: bd }] = await Promise.all([
+      const [{ data: s }, { data: a }, { data: bd }, { data: avs }] = await Promise.all([
         supabase.from("services").select("*").eq("is_active", true).order("sort_order"),
-        supabase.from("availability").select("sitter_id, weekday, start_minute, end_minute"),
+        supabase.from("availability").select("id, sitter_id, weekday, start_minute, end_minute"),
         supabase.from("blocked_dates").select("sitter_id, blocked_date"),
+        supabase.from("availability_services").select("availability_id, service_id"),
       ]);
       setServices((s ?? []) as Service[]);
       setAvailability((a ?? []) as Avail[]);
       setBlocked((bd ?? []) as Blocked[]);
+      setAvailServices((avs ?? []) as AvailService[]);
       // pick the first sitter with availability, fallback to any sitter (will be null if none)
       const sid = (a ?? [])[0]?.sitter_id ?? null;
       setSitterId(sid);
@@ -90,11 +94,27 @@ const Book = () => {
 
   const service = useMemo(() => services.find((s) => s.id === serviceId) ?? null, [serviceId, services]);
 
-  // Compute available slots for the selected date for the chosen sitter
+  // Slots-by-availability-id keyed for fast lookups
+  const slotServiceMap = useMemo(() => {
+    const m = new Map<string, Set<string>>();
+    for (const r of availServices) {
+      if (!m.has(r.availability_id)) m.set(r.availability_id, new Set());
+      m.get(r.availability_id)!.add(r.service_id);
+    }
+    return m;
+  }, [availServices]);
+
+  // Filter availability rows by selected service (only slots tagged for it)
+  const availabilityForService = useMemo(() => {
+    if (!service) return availability;
+    return availability.filter((a) => slotServiceMap.get(a.id)?.has(service.id));
+  }, [availability, slotServiceMap, service]);
+
+  // Compute available slots for the selected date for the chosen sitter + service
   const slots = useMemo<number[]>(() => {
     if (!date || !service || !sitterId) return [];
     const wd = date.getDay();
-    const dayBlocks = availability.filter((a) => a.sitter_id === sitterId && a.weekday === wd);
+    const dayBlocks = availabilityForService.filter((a) => a.sitter_id === sitterId && a.weekday === wd);
     if (dayBlocks.length === 0) return [];
     const isBlocked = blocked.some(
       (b) => b.sitter_id === sitterId && isSameDay(new Date(b.blocked_date + "T12:00:00"), date),
@@ -110,9 +130,7 @@ const Book = () => {
         const start = new Date(date); start.setHours(0, 0, 0, 0);
         const slotStart = new Date(start.getTime() + m * 60_000);
         const slotEnd = new Date(slotStart.getTime() + dur * 60_000);
-        // skip past
         if (slotStart.getTime() < Date.now() + 60 * 60_000) continue;
-        // conflict with existing
         const conflict = existing.some((b) => {
           const bs = new Date(b.start_at).getTime();
           const be = new Date(b.end_at).getTime();
@@ -122,7 +140,7 @@ const Book = () => {
       }
     }
     return out;
-  }, [date, service, sitterId, availability, blocked, existing]);
+  }, [date, service, sitterId, availabilityForService, blocked, existing]);
 
   const next = () => {
     if (step === 0 && !serviceId) return toast({ title: "Pick a service", variant: "destructive" });
@@ -176,13 +194,18 @@ const Book = () => {
     if (d > addDays(today, 60)) return true;
     if (!sitterId) return true;
     const wd = d.getDay();
-    const has = availability.some((a) => a.sitter_id === sitterId && a.weekday === wd);
+    const has = availabilityForService.some((a) => a.sitter_id === sitterId && a.weekday === wd);
     if (!has) return true;
     const isBlocked = blocked.some(
       (b) => b.sitter_id === sitterId && isSameDay(new Date(b.blocked_date + "T12:00:00"), d),
     );
     return isBlocked;
   };
+
+  // When the chosen service changes, clear any previously-picked time slot
+  // (it might no longer be valid for the new service).
+  useEffect(() => { setSlot(null); }, [serviceId]);
+
 
   return (
     <main className="min-h-screen bg-background texture-grain">
