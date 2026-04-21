@@ -1,6 +1,6 @@
 import { Footprints, Home, Bed, ArrowRight } from "lucide-react";
 import { Link } from "react-router-dom";
-import { dog1, dog3, dog5, dog6, dog7, dog8, dog2, dog4 } from "@/assets/dogs";
+import { dog1, dog3, dog4 } from "@/assets/dogs";
 
 const services = [
   {
@@ -35,7 +35,6 @@ const services = [
   },
 ];
 
-const packStrip = [dog2, dog5, dog6, dog8, dog1, dog3, dog4, dog7];
 
 const ServicesSection = () => {
   return (
@@ -61,22 +60,8 @@ const ServicesSection = () => {
           </p>
         </div>
 
-        {/* Dog pack illustration band — individual dogs scattered */}
-        <div className="mt-14 overflow-hidden rounded-3xl border-2 border-primary bg-card p-6 shadow-pop sm:p-10">
-          <div className="flex flex-wrap items-end justify-center gap-x-2 gap-y-4 sm:gap-x-4">
-            {packStrip.map((d, i) => (
-              <img
-                key={i}
-                src={d}
-                alt=""
-                aria-hidden
-                loading="lazy"
-                className="h-20 w-auto transition-transform duration-300 hover:-translate-y-2 hover:rotate-3 sm:h-28 md:h-32"
-                style={{ transform: `rotate(${(i % 2 === 0 ? -1 : 1) * (2 + (i % 3))}deg)` }}
-              />
-            ))}
-          </div>
-        </div>
+
+
 
         <div className="mt-12 grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
           {services.map(({ icon: Icon, title, desc, price, unit, slug, accent, dog }, i) => (
