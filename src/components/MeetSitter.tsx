@@ -40,22 +40,22 @@ const MeetSitter = () => {
           <h2 className="mt-4 font-display text-4xl leading-[0.95] text-primary sm:text-5xl">
             Meet your
             <br />
-            <span className="text-accent">sitter.</span>
+            <span className="text-gradient-spray">sitter.</span>
           </h2>
-          <p className="mt-4 text-base text-foreground/80 sm:text-lg">
+          <p className="mt-4 text-base text-foreground/85 sm:text-lg">
             Hi! I'm the human behind Yo Dawg — a lifelong dog lover offering
             personal, one-on-one walks, sits, boarding & basic training with the
-            care your pup deserves. <span className="font-tag text-xl text-clay">trail-ready, treat-stocked.</span>
+            care your pup deserves. <span className="font-tag text-xl text-tag">trail-ready, treat-stocked.</span>
           </p>
 
           <div className="mt-6 flex flex-wrap justify-center gap-2 md:justify-start">
-            <span className="inline-flex items-center gap-1.5 border-2 border-primary bg-secondary px-3 py-1 text-xs font-display uppercase tracking-wide text-secondary-foreground">
+            <span className="inline-flex items-center gap-1.5 border-2 border-primary bg-secondary px-3 py-1 text-xs font-display uppercase tracking-wide text-secondary-foreground shadow-pop">
               <ShieldCheck className="h-3.5 w-3.5" /> Fully insured
             </span>
-            <span className="inline-flex items-center gap-1.5 border-2 border-primary bg-highlight px-3 py-1 text-xs font-display uppercase tracking-wide text-highlight-foreground">
+            <span className="inline-flex items-center gap-1.5 border-2 border-primary bg-tag px-3 py-1 text-xs font-display uppercase tracking-wide text-tag-foreground shadow-pop-accent">
               <Heart className="h-3.5 w-3.5" /> Pet first-aid
             </span>
-            <span className="inline-flex items-center gap-1.5 border-2 border-primary bg-accent px-3 py-1 text-xs font-display uppercase tracking-wide text-accent-foreground">
+            <span className="inline-flex items-center gap-1.5 border-2 border-primary bg-accent px-3 py-1 text-xs font-display uppercase tracking-wide text-accent-foreground shadow-pop-tag">
               🐾 All breeds
             </span>
           </div>
