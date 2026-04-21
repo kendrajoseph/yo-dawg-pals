@@ -188,16 +188,18 @@ const Book = () => {
     <main className="min-h-screen bg-background texture-grain">
       <SiteNav />
       <section className="mx-auto max-w-3xl px-5 py-10 sm:px-6 sm:py-14">
-        <span className="font-tag text-2xl text-clay -rotate-2 inline-block">lock it in</span>
-        <h1 className="font-display text-5xl text-primary sm:text-6xl">Book a service.</h1>
+        <span className="font-tag text-2xl text-tag -rotate-2 inline-block">lock it in</span>
+        <h1 className="font-display text-5xl text-primary sm:text-6xl spray-glow">
+          Book a <span className="text-gradient-spray">service.</span>
+        </h1>
 
         {/* Stepper */}
         <ol className="mt-6 grid grid-cols-4 gap-2">
           {STEPS.map((label, i) => (
             <li key={label} className={cn(
-              "border-2 border-primary px-2 py-2 text-center font-display text-xs uppercase tracking-tight",
-              i < step ? "bg-secondary text-secondary-foreground" :
-              i === step ? "bg-accent text-accent-foreground shadow-pop" :
+              "border-2 border-primary px-2 py-2 text-center font-display text-xs uppercase tracking-tight transition-all",
+              i < step ? "bg-secondary text-secondary-foreground shadow-pop" :
+              i === step ? "bg-accent text-accent-foreground shadow-pop-tag -rotate-1" :
               "bg-card text-muted-foreground"
             )}>
               <span className="hidden sm:inline">{i + 1}. </span>{label}
@@ -205,7 +207,7 @@ const Book = () => {
           ))}
         </ol>
 
-        <Card className="mt-6 border-4 border-primary p-5 shadow-pop sm:p-6">
+        <Card className="mt-6 border-4 border-primary p-5 shadow-pop-lg sm:p-6">
           {/* Step 0: service */}
           {step === 0 && (
             <div>
@@ -265,8 +267,8 @@ const Book = () => {
                         key={m}
                         onClick={() => setSlot(m)}
                         className={cn(
-                          "border-2 border-primary px-2 py-2 font-display text-xs uppercase",
-                          slot === m ? "bg-accent text-accent-foreground shadow-pop" : "bg-card hover:bg-highlight",
+                          "border-2 border-primary px-2 py-2 font-display text-xs uppercase transition-all",
+                          slot === m ? "bg-tag text-tag-foreground shadow-pop-accent -translate-y-0.5" : "bg-card hover:bg-accent hover:text-accent-foreground hover:-translate-y-0.5",
                         )}
                       >
                         {minutesToTime(m)}
@@ -348,11 +350,11 @@ const Book = () => {
               <ArrowLeft className="h-4 w-4" /> Back
             </Button>
             {step < STEPS.length - 1 ? (
-              <Button onClick={next} className="bg-primary font-display uppercase shadow-pop-accent">
+              <Button onClick={next} className="bg-accent text-accent-foreground font-display uppercase shadow-pop-tag hover:-translate-y-0.5 transition-transform">
                 Continue <ArrowRight className="h-4 w-4" />
               </Button>
             ) : (
-              <Button onClick={submit} disabled={submitting} className="bg-primary font-display uppercase shadow-pop-accent">
+              <Button onClick={submit} disabled={submitting} className="bg-tag text-tag-foreground font-display uppercase shadow-pop-accent hover:-translate-y-0.5 transition-transform">
                 {submitting ? "Booking…" : (<>Confirm booking <Check className="h-4 w-4" /></>)}
               </Button>
             )}
@@ -360,7 +362,7 @@ const Book = () => {
         </Card>
 
         {/* Tips */}
-        <p className="mt-6 inline-flex items-center gap-2 font-tag text-clay text-lg -rotate-1">
+        <p className="mt-6 inline-flex items-center gap-2 font-tag text-tag text-lg -rotate-1">
           <CalendarDays className="h-4 w-4" /> showing the next 60 days · weekly availability set by your sitter
         </p>
       </section>
