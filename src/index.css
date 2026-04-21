@@ -170,6 +170,9 @@
     letter-spacing: 0.02em;
     text-transform: uppercase;
     font-weight: 400;
+    transform: skewX(-12deg);
+    display: inline-block;
+    transform-origin: left center;
   }
   .text-gradient-sunlight {
     background: var(--gradient-text);
