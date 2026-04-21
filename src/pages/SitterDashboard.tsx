@@ -86,8 +86,8 @@ const SitterDashboard = () => {
     load();
   };
 
-  const updateBookingStatus = async (id: string, status: string) => {
-    const patch: Record<string, unknown> = { status };
+  const updateBookingStatus = async (id: string, status: "pending_payment" | "confirmed" | "cancelled" | "completed" | "refunded") => {
+    const patch: { status: typeof status; paid_at?: string } = { status };
     if (status === "confirmed") patch.paid_at = new Date().toISOString();
     const { error } = await supabase.from("bookings").update(patch).eq("id", id);
     if (error) toast({ title: "Failed", description: error.message, variant: "destructive" });
