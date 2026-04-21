@@ -165,6 +165,11 @@
     font-family: 'Permanent Marker', cursive;
     letter-spacing: 0.01em;
   }
+  .font-logo {
+    font-family: 'UnifrakturMaguntia', 'Archivo Black', serif;
+    letter-spacing: 0;
+    text-transform: none;
+  }
   .text-gradient-sunlight {
     background: var(--gradient-text);
     -webkit-background-clip: text;
