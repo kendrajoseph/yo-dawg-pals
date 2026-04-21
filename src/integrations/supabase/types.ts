@@ -100,6 +100,7 @@ export type Database = {
       }
       bookings: {
         Row: {
+          cancelled_at: string | null
           created_at: string
           customer_id: string
           deposit_cents: number
@@ -107,17 +108,21 @@ export type Database = {
           id: string
           notes: string | null
           paid_at: string | null
+          payment_amount_cents: number | null
           pet_id: string
+          refund_id: string | null
           service_id: string
           sitter_id: string
           start_at: string
           status: Database["public"]["Enums"]["booking_status"]
+          stripe_charge_id: string | null
           stripe_payment_intent: string | null
           stripe_session_id: string | null
           total_cents: number
           updated_at: string
         }
         Insert: {
+          cancelled_at?: string | null
           created_at?: string
           customer_id: string
           deposit_cents: number
@@ -125,17 +130,21 @@ export type Database = {
           id?: string
           notes?: string | null
           paid_at?: string | null
+          payment_amount_cents?: number | null
           pet_id: string
+          refund_id?: string | null
           service_id: string
           sitter_id: string
           start_at: string
           status?: Database["public"]["Enums"]["booking_status"]
+          stripe_charge_id?: string | null
           stripe_payment_intent?: string | null
           stripe_session_id?: string | null
           total_cents: number
           updated_at?: string
         }
         Update: {
+          cancelled_at?: string | null
           created_at?: string
           customer_id?: string
           deposit_cents?: number
@@ -143,11 +152,14 @@ export type Database = {
           id?: string
           notes?: string | null
           paid_at?: string | null
+          payment_amount_cents?: number | null
           pet_id?: string
+          refund_id?: string | null
           service_id?: string
           sitter_id?: string
           start_at?: string
           status?: Database["public"]["Enums"]["booking_status"]
+          stripe_charge_id?: string | null
           stripe_payment_intent?: string | null
           stripe_session_id?: string | null
           total_cents?: number
@@ -316,9 +328,11 @@ export type Database = {
           id: string
           is_active: boolean
           name: string
+          payment_mode: string
           price_cents: number
           slug: string
           sort_order: number
+          stripe_price_id: string | null
           unit_label: string | null
         }
         Insert: {
@@ -328,9 +342,11 @@ export type Database = {
           id?: string
           is_active?: boolean
           name: string
+          payment_mode?: string
           price_cents: number
           slug: string
           sort_order?: number
+          stripe_price_id?: string | null
           unit_label?: string | null
         }
         Update: {
@@ -340,9 +356,11 @@ export type Database = {
           id?: string
           is_active?: boolean
           name?: string
+          payment_mode?: string
           price_cents?: number
           slug?: string
           sort_order?: number
+          stripe_price_id?: string | null
           unit_label?: string | null
         }
         Relationships: []
