@@ -2,6 +2,7 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "npm:@supabase/supabase-js@2";
 import { type StripeEnv, verifyWebhook } from "../_shared/stripe.ts";
+import { notifyAnnekeOfPaidBooking } from "../_shared/notify-anneke.ts";
 
 const supabase = createClient(
   Deno.env.get("SUPABASE_URL")!,
@@ -38,6 +39,8 @@ serve(async (req) => {
           stripe_session_id: session.id,
         })
         .eq("id", bookingId);
+
+      await notifyAnnekeOfPaidBooking(bookingId);
     }
 
     if (event.type === "charge.refunded") {
