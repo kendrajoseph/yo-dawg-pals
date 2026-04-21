@@ -370,10 +370,22 @@ const Book = () => {
                 <Row label="Duration" value={`${service.duration_minutes} min`} />
                 <Row label="Pet" value={pets.find((p) => p.id === petId)?.name ?? ""} />
                 <Row label="Total" value={formatPriceWithDecimals(service.price_cents)} />
-                <Row label="Deposit (25%)" value={formatPriceWithDecimals(Math.round(service.price_cents * 0.25))} accent />
+                {service.payment_mode === "deposit" && (
+                  <Row label="Due now (25% deposit)" value={formatPriceWithDecimals(computePaymentAmount(service))} accent />
+                )}
+                {service.payment_mode === "full" && (
+                  <Row label="Due now (full)" value={formatPriceWithDecimals(computePaymentAmount(service))} accent />
+                )}
+                {service.payment_mode === "free" && (
+                  <Row label="Due now" value="Free" accent />
+                )}
               </dl>
               <p className="mt-4 text-xs text-muted-foreground">
-                A 25% deposit will be requested next. Balance is due after the service.
+                {service.payment_mode === "free"
+                  ? "No payment needed — your meet & greet will be confirmed instantly."
+                  : service.payment_mode === "full"
+                  ? "Full payment is collected at booking. Free cancellation up to 24h before your service."
+                  : "A 25% deposit is collected now to lock in your slot. Balance is due after the service. Free cancellation up to 24h before."}
               </p>
             </div>
           )}
