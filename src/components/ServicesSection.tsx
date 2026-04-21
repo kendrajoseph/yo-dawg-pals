@@ -1,6 +1,6 @@
 import { Footprints, Home, Bed, ArrowRight } from "lucide-react";
 import { Link } from "react-router-dom";
-import { dog1, dog3, dog5, dog6, dog7, dog8, dog2, dog4 } from "@/assets/dogs";
+import { dog1, dog3, dog4 } from "@/assets/dogs";
 
 const services = [
   {
