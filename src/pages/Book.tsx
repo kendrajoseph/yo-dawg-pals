@@ -94,11 +94,27 @@ const Book = () => {
 
   const service = useMemo(() => services.find((s) => s.id === serviceId) ?? null, [serviceId, services]);
 
-  // Compute available slots for the selected date for the chosen sitter
+  // Slots-by-availability-id keyed for fast lookups
+  const slotServiceMap = useMemo(() => {
+    const m = new Map<string, Set<string>>();
+    for (const r of availServices) {
+      if (!m.has(r.availability_id)) m.set(r.availability_id, new Set());
+      m.get(r.availability_id)!.add(r.service_id);
+    }
+    return m;
+  }, [availServices]);
+
+  // Filter availability rows by selected service (only slots tagged for it)
+  const availabilityForService = useMemo(() => {
+    if (!service) return availability;
+    return availability.filter((a) => slotServiceMap.get(a.id)?.has(service.id));
+  }, [availability, slotServiceMap, service]);
+
+  // Compute available slots for the selected date for the chosen sitter + service
   const slots = useMemo<number[]>(() => {
     if (!date || !service || !sitterId) return [];
     const wd = date.getDay();
-    const dayBlocks = availability.filter((a) => a.sitter_id === sitterId && a.weekday === wd);
+    const dayBlocks = availabilityForService.filter((a) => a.sitter_id === sitterId && a.weekday === wd);
     if (dayBlocks.length === 0) return [];
     const isBlocked = blocked.some(
       (b) => b.sitter_id === sitterId && isSameDay(new Date(b.blocked_date + "T12:00:00"), date),
@@ -114,9 +130,7 @@ const Book = () => {
         const start = new Date(date); start.setHours(0, 0, 0, 0);
         const slotStart = new Date(start.getTime() + m * 60_000);
         const slotEnd = new Date(slotStart.getTime() + dur * 60_000);
-        // skip past
         if (slotStart.getTime() < Date.now() + 60 * 60_000) continue;
-        // conflict with existing
         const conflict = existing.some((b) => {
           const bs = new Date(b.start_at).getTime();
           const be = new Date(b.end_at).getTime();
@@ -126,7 +140,7 @@ const Book = () => {
       }
     }
     return out;
-  }, [date, service, sitterId, availability, blocked, existing]);
+  }, [date, service, sitterId, availabilityForService, blocked, existing]);
 
   const next = () => {
     if (step === 0 && !serviceId) return toast({ title: "Pick a service", variant: "destructive" });
