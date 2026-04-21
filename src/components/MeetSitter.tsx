@@ -32,18 +32,18 @@ const MeetSitter = () => {
   }, []);
 
   return (
-    <section id="sitters" className="relative overflow-hidden bg-background py-24 sm:py-32">
+    <section id="sitters" className="relative overflow-hidden bg-background py-16 sm:py-24 md:py-32">
       <div aria-hidden className="pointer-events-none absolute inset-0 texture-topo opacity-40" />
 
-      <div className="relative mx-auto grid max-w-6xl items-center gap-12 px-5 sm:px-8 md:grid-cols-[auto,1fr] md:gap-20">
+      <div className="relative mx-auto grid max-w-6xl items-center gap-14 px-5 sm:gap-12 sm:px-8 md:grid-cols-[auto,1fr] md:gap-20">
         {/* Portrait carousel */}
         <div className="relative mx-auto md:mx-0">
           {/* sticker badge */}
-          <div className="absolute -right-3 -top-4 z-20 grid h-20 w-20 -rotate-12 place-items-center rounded-full border-2 border-primary bg-secondary text-center font-display text-secondary-foreground shadow-pop-sm">
-            <span className="text-xs leading-tight">Hi.<br />I'm Anneke</span>
+          <div className="absolute -right-2 -top-3 z-20 grid h-16 w-16 -rotate-12 place-items-center rounded-full border-2 border-primary bg-secondary text-center font-display text-secondary-foreground shadow-pop-sm sm:-right-3 sm:-top-4 sm:h-20 sm:w-20">
+            <span className="text-[10px] leading-tight sm:text-xs">Hi.<br />I'm Anneke</span>
           </div>
           <div className="-rotate-2 overflow-hidden rounded-3xl border-2 border-primary bg-card shadow-pop transition-transform duration-500 hover:rotate-0">
-            <div className="relative h-80 w-72 sm:h-96 sm:w-80">
+            <div className="relative h-72 w-64 sm:h-96 sm:w-80">
               {carouselPhotos.map((photo, i) => (
                 <img
                   key={photo.src}
@@ -76,7 +76,7 @@ const MeetSitter = () => {
             src={dog7}
             alt=""
             aria-hidden
-            className="absolute -bottom-6 -left-6 z-10 h-24 w-auto -rotate-12 drop-shadow-[4px_4px_0_hsl(var(--primary))] sm:h-28"
+            className="absolute -bottom-4 -left-3 z-10 h-20 w-auto -rotate-12 drop-shadow-[4px_4px_0_hsl(var(--primary))] sm:-bottom-6 sm:-left-6 sm:h-28"
           />
           <img
             src={dog6}
@@ -92,7 +92,7 @@ const MeetSitter = () => {
             <MapPin className="h-3.5 w-3.5" />
             Now booking locally
           </span>
-          <h2 className="mt-5 font-display text-5xl leading-[0.95] text-primary sm:text-6xl">
+          <h2 className="mt-5 font-display text-4xl leading-[0.95] text-primary sm:text-5xl md:text-6xl">
             Meet your{" "}
             <span className="font-serif italic text-clay">sitter.</span>
           </h2>
@@ -114,11 +114,11 @@ const MeetSitter = () => {
             </li>
           </ul>
 
-          <div className="mt-9 flex flex-col items-start gap-3 sm:flex-row sm:items-center">
+          <div className="mt-9 flex flex-col items-stretch gap-3 sm:flex-row sm:items-center">
             <Button
               asChild
               size="lg"
-              className="h-12 rounded-full bg-primary px-7 text-sm font-semibold text-primary-foreground shadow-pop-sm transition-transform hover:-translate-y-0.5"
+              className="h-12 w-full rounded-full bg-primary px-7 text-sm font-semibold text-primary-foreground shadow-pop-sm transition-transform hover:-translate-y-0.5 sm:w-auto"
             >
               <Link to="/book">Book a meet & greet</Link>
             </Button>
@@ -126,7 +126,7 @@ const MeetSitter = () => {
               asChild
               size="lg"
               variant="ghost"
-              className="h-12 rounded-full px-5 text-sm font-semibold hover:bg-muted"
+              className="h-12 w-full rounded-full px-5 text-sm font-semibold hover:bg-muted sm:w-auto"
             >
               <Link to="/account">My account →</Link>
             </Button>

@@ -38,14 +38,14 @@ const services = [
 
 const ServicesSection = () => {
   return (
-    <section id="services" className="relative bg-background py-24 sm:py-32">
+    <section id="services" className="relative bg-background py-16 sm:py-24 md:py-32">
       <div aria-hidden className="pointer-events-none absolute inset-0 texture-halftone-light opacity-60" />
 
       <div className="relative mx-auto max-w-7xl px-5 sm:px-8">
-        <div className="flex flex-col gap-6 md:flex-row md:items-end md:justify-between">
+        <div className="flex flex-col gap-5 md:flex-row md:items-end md:justify-between md:gap-6">
           <div className="max-w-2xl">
             <span className="text-xs font-tag text-clay">What we do</span>
-            <h2 className="mt-3 font-display text-5xl leading-[0.95] text-primary sm:text-6xl">
+            <h2 className="mt-3 font-display text-4xl leading-[0.95] text-primary sm:text-5xl md:text-6xl">
               Care that fits the way
               <br />
               you and your dog{" "}
@@ -63,7 +63,7 @@ const ServicesSection = () => {
 
 
 
-        <div className="mt-12 grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
+        <div className="mt-14 grid gap-7 sm:mt-12 sm:grid-cols-2 sm:gap-5 lg:grid-cols-3">
           {services.map(({ icon: Icon, title, desc, price, unit, slug, accent, dog }, i) => (
             <article
               key={title}
