@@ -10,6 +10,7 @@ import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Calendar } from "@/components/ui/calendar";
+import { Checkbox } from "@/components/ui/checkbox";
 import { toast } from "@/hooks/use-toast";
 import { Plus, Trash2, Check, X, CalendarOff } from "lucide-react";
 import { cn } from "@/lib/utils";
@@ -20,6 +21,8 @@ import {
 
 type Avail = { id: string; weekday: number; start_minute: number; end_minute: number };
 type Blocked = { id: string; blocked_date: string; reason: string | null };
+type Service = { id: string; name: string; slug: string };
+type AvailService = { availability_id: string; service_id: string };
 type Booking = {
   id: string; start_at: string; end_at: string; status: string;
   total_cents: number; deposit_cents: number;
@@ -34,35 +37,91 @@ const SitterDashboard = () => {
   const [avail, setAvail] = useState<Avail[]>([]);
   const [blocked, setBlocked] = useState<Blocked[]>([]);
   const [bookings, setBookings] = useState<Booking[]>([]);
+  const [services, setServices] = useState<Service[]>([]);
+  const [availServices, setAvailServices] = useState<AvailService[]>([]);
   const [newAvail, setNewAvail] = useState({ weekday: 1, start: "09:00", end: "17:00" });
+  const [newServiceIds, setNewServiceIds] = useState<string[]>([]);
   const [blockDate, setBlockDate] = useState<Date | undefined>();
   const [blockReason, setBlockReason] = useState("");
 
   const load = async () => {
     if (!user) return;
-    const [{ data: a }, { data: b }, { data: bk }] = await Promise.all([
+    const [{ data: a }, { data: b }, { data: bk }, { data: s }] = await Promise.all([
       supabase.from("availability").select("*").eq("sitter_id", user.id).order("weekday"),
       supabase.from("blocked_dates").select("*").eq("sitter_id", user.id).order("blocked_date"),
       supabase.from("bookings")
         .select("id, start_at, end_at, status, total_cents, deposit_cents, notes, services(name), pets(name), profiles!bookings_customer_id_fkey(full_name)")
         .eq("sitter_id", user.id).order("start_at", { ascending: true }),
+      supabase.from("services").select("id, name, slug").eq("is_active", true).order("sort_order"),
     ]);
     setAvail((a ?? []) as Avail[]);
     setBlocked((b ?? []) as Blocked[]);
     setBookings((bk ?? []) as unknown as Booking[]);
+    setServices((s ?? []) as Service[]);
+
+    const slotIds = (a ?? []).map((x) => x.id);
+    if (slotIds.length) {
+      const { data: avs } = await supabase
+        .from("availability_services")
+        .select("availability_id, service_id")
+        .in("availability_id", slotIds);
+      setAvailServices((avs ?? []) as AvailService[]);
+    } else {
+      setAvailServices([]);
+    }
+
+    setNewServiceIds((prev) => (prev.length ? prev : (s ?? []).map((x) => x.id)));
   };
   useEffect(() => { load(); }, [user]);
+
+  const tagsBySlot = useMemo(() => {
+    const m = new Map<string, Set<string>>();
+    for (const r of availServices) {
+      if (!m.has(r.availability_id)) m.set(r.availability_id, new Set());
+      m.get(r.availability_id)!.add(r.service_id);
+    }
+    return m;
+  }, [availServices]);
+
+  const toggleSlotService = async (slotId: string, serviceId: string, on: boolean) => {
+    if (on) {
+      const { error } = await supabase
+        .from("availability_services")
+        .insert({ availability_id: slotId, service_id: serviceId });
+      if (error) return toast({ title: "Failed", description: error.message, variant: "destructive" });
+      setAvailServices((prev) => [...prev, { availability_id: slotId, service_id: serviceId }]);
+    } else {
+      const { error } = await supabase
+        .from("availability_services")
+        .delete()
+        .eq("availability_id", slotId)
+        .eq("service_id", serviceId);
+      if (error) return toast({ title: "Failed", description: error.message, variant: "destructive" });
+      setAvailServices((prev) =>
+        prev.filter((r) => !(r.availability_id === slotId && r.service_id === serviceId)),
+      );
+    }
+  };
 
   const addAvail = async () => {
     if (!user) return;
     const start = timeToMinutes(newAvail.start);
     const end = timeToMinutes(newAvail.end);
     if (end <= start) return toast({ title: "End must be after start", variant: "destructive" });
-    const { error } = await supabase.from("availability").insert({
+    if (newServiceIds.length === 0)
+      return toast({ title: "Pick at least one service for this slot", variant: "destructive" });
+
+    const { data: inserted, error } = await supabase.from("availability").insert({
       sitter_id: user.id, weekday: newAvail.weekday, start_minute: start, end_minute: end,
-    });
-    if (error) toast({ title: "Failed", description: error.message, variant: "destructive" });
-    else { toast({ title: "Availability added" }); load(); }
+    }).select("id").single();
+    if (error || !inserted)
+      return toast({ title: "Failed", description: error?.message, variant: "destructive" });
+
+    const links = newServiceIds.map((sid) => ({ availability_id: inserted.id, service_id: sid }));
+    const { error: linkErr } = await supabase.from("availability_services").insert(links);
+    if (linkErr) toast({ title: "Slot saved, tagging failed", description: linkErr.message, variant: "destructive" });
+    else toast({ title: "Availability added" });
+    load();
   };
 
   const removeAvail = async (id: string) => {
@@ -99,6 +158,10 @@ const SitterDashboard = () => {
     const past = bookings.filter((b) => new Date(b.start_at) <= new Date());
     return { upcoming, past };
   }, [bookings]);
+
+  const toggleNewServiceId = (id: string, on: boolean) => {
+    setNewServiceIds((prev) => (on ? [...new Set([...prev, id])] : prev.filter((x) => x !== id)));
+  };
 
   return (
     <main className="min-h-screen bg-background texture-grain">
