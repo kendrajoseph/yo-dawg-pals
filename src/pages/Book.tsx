@@ -194,13 +194,18 @@ const Book = () => {
     if (d > addDays(today, 60)) return true;
     if (!sitterId) return true;
     const wd = d.getDay();
-    const has = availability.some((a) => a.sitter_id === sitterId && a.weekday === wd);
+    const has = availabilityForService.some((a) => a.sitter_id === sitterId && a.weekday === wd);
     if (!has) return true;
     const isBlocked = blocked.some(
       (b) => b.sitter_id === sitterId && isSameDay(new Date(b.blocked_date + "T12:00:00"), d),
     );
     return isBlocked;
   };
+
+  // When the chosen service changes, clear any previously-picked time slot
+  // (it might no longer be valid for the new service).
+  useEffect(() => { setSlot(null); }, [serviceId]);
+
 
   return (
     <main className="min-h-screen bg-background texture-grain">
