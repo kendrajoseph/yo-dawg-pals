@@ -4,30 +4,39 @@ import { dog2, dog6, dog1 } from "@/assets/dogs";
 const testimonials = [
   {
     quote:
-      "Our pup Biscuit comes home tired, happy and a little better behaved every single time. Genuinely the best in Hamilton.",
-    name: "Maya & Biscuit",
-    role: "Bernedoodle parents",
+      "Anneke is always my first choice. My Moose adores her and that makes me happy when he's with someone he loves extra.",
+    name: "Natalia & Moose",
+    role: "Aussie shepherd mix",
     bg: "bg-card",
     rotate: "-rotate-1",
     dog: dog2,
   },
   {
     quote:
-      "Booked a last-minute weekend boarding and felt completely at ease the whole trip. Got cute photo updates too.",
-    name: "Jordan",
-    role: "Rescue mutt dad",
+      "Anneke was kind enough to stay at our home while we were on vacation with our 6 mo old Aussie. We had been working on training and Anneke kept up with it as well as improved his skills. She took wonderful care of our house too. Thank you!",
+    name: "Loie & Dexter",
+    role: "Aussie shepherd parents",
     bg: "bg-accent text-accent-foreground",
     rotate: "rotate-1",
     dog: dog6,
   },
   {
     quote:
-      "Training sessions actually stuck. My anxious shepherd now walks past squirrels like a gentleman.",
-    name: "Priya & Mango",
-    role: "German Shepherd mom",
+      "Anneke has worked with all kinds of dogs, all with certain needs and issues. She approaches confidently while also emanating a sense of calm, making dogs want to approach her. She cares deeply for all animals and that shines through especially with rescues.",
+    name: "Shaun Harnack",
+    role: "Owner, Dog Hero",
     bg: "bg-card",
     rotate: "-rotate-1",
     dog: dog1,
+  },
+  {
+    quote:
+      "Anneke was amazing with my 5 month old havoc potato, Jax. She was super engaged with him and created a fun environment. He was having such a time and a half, he barely noticed when I got home. Will definitely be using Yo Dawg again.",
+    name: "Jax's human",
+    role: "5-month-old havoc potato",
+    bg: "bg-secondary text-secondary-foreground",
+    rotate: "rotate-1",
+    dog: dog2,
   },
 ];
 
