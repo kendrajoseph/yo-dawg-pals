@@ -3,7 +3,7 @@ import { Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import SiteNav from "@/components/SiteNav";
 import wordmark from "@/assets/yodawg-wordmark.svg";
-import { dog3, dog5, dog8 } from "@/assets/dogs";
+import { dog3 } from "@/assets/dogs";
 
 const HeroSection = () => {
   return (
