@@ -52,18 +52,18 @@ const services = [
 const walkSteps = [
   {
     icon: CalendarClock,
-    title: "Pick a window",
-    text: "Solo walks use premium request windows. Group walks use softer windows like morning, afternoon, or evening.",
+    title: "Choose your window",
+    text: "Solo walks use specific request windows. Group walks use softer windows like morning, afternoon, or evening.",
   },
   {
     icon: Users,
-    title: "Anneke makes the call",
-    text: "Group dogs are matched by pace, temperament, and compatibility instead of random overlap on a calendar.",
+    title: "Anneke confirms the fit",
+    text: "Group dogs are matched by pace, temperament, and compatibility so the calendar never forces the wrong mix.",
   },
   {
     icon: Footprints,
-    title: "Then timing gets locked in",
-    text: "Solo walks are paid upfront. Group walks are only paid once the final timing and match are approved.",
+    title: "Exact timing comes after",
+    text: "Solo walks are paid when requested. Group walks are only paid once Anneke approves the match and confirms the final time.",
   },
 ];
 
@@ -75,15 +75,15 @@ const ServicesSection = () => {
       <div className="relative mx-auto max-w-7xl px-5 sm:px-8">
         <div className="flex flex-col gap-5 md:flex-row md:items-end md:justify-between md:gap-6">
           <div className="max-w-2xl">
-            <span className="text-xs font-tag text-clay">What we do</span>
+            <span className="text-xs font-tag text-clay">Services</span>
             <h2 className="mt-3 font-display text-4xl leading-[0.95] text-primary sm:text-5xl md:text-6xl">
-              Care that fits the way
+              Choose the kind of care
               <br />
-              you and your dog <span className="underline-accent">actually live.</span>
+              your dog <span className="underline-accent">actually needs.</span>
             </h2>
           </div>
           <p className="max-w-sm text-base leading-relaxed text-foreground/75">
-            Separate solo and group walks, one clear booking flow, and one person actually deciding timing and fit.
+            Clear options, clear pricing, and a booking flow that reflects real life — especially for walks that need judgment, not random slots.
           </p>
         </div>
 

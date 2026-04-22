@@ -31,15 +31,15 @@ const HeroSection = () => {
           </span>
 
           <h1 className="mt-5 font-display text-[2.625rem] leading-[0.95] sm:mt-6 sm:text-6xl md:text-[5rem] lg:text-[5.75rem]">
-            Walks for
+            Thoughtful care
             <br />
-            <span className="text-accent">good boys</span>
+            for <span className="text-accent">Hamilton dogs</span>
             <br />
-            <span className="font-serif italic font-normal text-secondary">& wild ones.</span>
+            <span className="font-serif italic font-normal text-secondary">and the people who love them.</span>
           </h1>
 
           <p className="mt-5 max-w-lg text-base leading-relaxed text-primary-foreground/75 sm:mt-7 sm:text-lg">
-            Premium solo walks, thoughtfully matched group walks, drop-in sits and cozy overnight boarding — all handled by one Hamilton dog person who actually knows your pup.
+            Premium solo walks, carefully matched group walks, dependable drop-in sits, and cozy home-style boarding — all handled personally by Anneke, with timing and care shaped around what actually works for your dog.
           </p>
 
           <div className="mt-7 flex flex-col items-stretch gap-3 sm:mt-9 sm:flex-row sm:items-center">
@@ -49,7 +49,7 @@ const HeroSection = () => {
               className="group h-13 w-full rounded-full bg-accent px-7 text-base font-semibold text-accent-foreground shadow-glow transition-transform hover:-translate-y-0.5 hover:bg-accent sm:h-14 sm:w-auto"
             >
               <Link to="/book">
-                Book a service
+                Book care
                 <ArrowRight className="ml-1 h-4 w-4 transition-transform group-hover:translate-x-1" />
               </Link>
             </Button>
@@ -59,7 +59,7 @@ const HeroSection = () => {
               variant="ghost"
               className="h-12 w-full rounded-full px-5 text-base font-semibold text-primary-foreground hover:bg-primary-foreground/10 hover:text-primary-foreground sm:h-14 sm:w-auto"
             >
-              <Link to="/#services">See services →</Link>
+               <Link to="/#services">How it works →</Link>
             </Button>
           </div>
 
@@ -71,10 +71,10 @@ const HeroSection = () => {
                 ))}
               </div>
               <span className="text-sm font-semibold">5.0</span>
-              <span className="text-sm text-primary-foreground/65">· 80+ happy pups</span>
+              <span className="text-sm text-primary-foreground/65">· trusted by 80+ Hamilton pups</span>
             </div>
             <div className="text-sm text-primary-foreground/65">
-              <span className="font-semibold text-primary-foreground">Insured</span> & first-aid certified
+              <span className="font-semibold text-primary-foreground">Insured</span> & pet first-aid certified
             </div>
           </div>
         </div>
@@ -103,7 +103,7 @@ const HeroSection = () => {
             <img src={dog3} alt="" aria-hidden className="h-10 w-auto shrink-0 sm:h-12" />
             <div>
               <p className="font-serif text-xs italic leading-snug sm:text-sm">
-                "Comes home tired, happy and a little better behaved every time."
+                "The walks feel personal, structured, and exactly right for our dog."
               </p>
               <p className="mt-1 text-[10px] font-tag text-muted-foreground sm:text-xs">— Maya & Biscuit</p>
             </div>
@@ -115,10 +115,10 @@ const HeroSection = () => {
         <div className="marquee flex gap-8 whitespace-nowrap font-display text-xl sm:gap-12 sm:text-2xl">
           {Array.from({ length: 2 }).map((_, g) => (
             <div key={g} className="flex shrink-0 items-center gap-8 sm:gap-12">
-              <span>★ Solo walks</span>
-              <span>★ Group walks</span>
-              <span>★ Sits</span>
-              <span>★ Boards</span>
+              <span>★ Premium solo walks</span>
+              <span>★ Thoughtful group matching</span>
+              <span>★ Drop-in sits</span>
+              <span>★ Home-style boarding</span>
               <span>★ Hamilton, ON</span>
               <span>★ Since 2015</span>
             </div>
