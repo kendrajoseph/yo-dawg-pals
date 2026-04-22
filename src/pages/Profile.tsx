@@ -302,7 +302,7 @@ const Profile = () => {
                       className="border-2 border-primary"
                     />
                     <p className="text-xs text-muted-foreground">
-                      Used for pickup, drop-off, and quick notes from Anneke.
+                      Used for pickup, drop-off, and quick care notes.
                     </p>
                     {errors.mobile_phone && (
                       <p className="text-sm font-medium text-destructive">{errors.mobile_phone}</p>
@@ -320,7 +320,7 @@ const Profile = () => {
                         Turn on text updates
                       </Label>
                       <p className="mt-1 text-sm text-muted-foreground">
-                        Anneke can send simple, personal updates when your dog is picked up, dropped off, or if there is a quick note worth sharing.
+                        Text updates can be sent when your dog is picked up, dropped off, or if there is a quick note worth sharing.
                       </p>
                       <div className="mt-3 flex items-center gap-3">
                         <Checkbox

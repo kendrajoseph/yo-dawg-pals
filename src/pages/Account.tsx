@@ -82,7 +82,7 @@ type ServiceAlertRow = {
 const kindLabel: Record<BookingUpdateRow["kind"], string> = {
   pickup: "Picked up",
   dropoff: "Dropped off",
-  note: "Anneke note",
+  note: "Care note",
 };
 
 const formatUpdateTime = (iso: string) =>
@@ -195,8 +195,8 @@ const Account = () => {
                 <h2 className="font-display text-xl uppercase text-primary">Text updates</h2>
                 <p className="mt-1 text-sm text-muted-foreground">
                   {profileSettings.sms_opt_in && profileSettings.mobile_phone
-                    ? `Anneke will text ${profileSettings.mobile_phone} for pickup, drop-off, and quick care notes.`
-                    : "Turn on text updates so Anneke can keep you posted in a simple, personal way while your dog is with her."}
+                    ? `Text updates will go to ${profileSettings.mobile_phone} for pickup, drop-off, and quick care notes.`
+                    : "Turn on text updates to get simple care updates while your dog is with us."}
                 </p>
               </div>
             </div>

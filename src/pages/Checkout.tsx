@@ -99,11 +99,11 @@ const Checkout = () => {
             <p className="font-tag text-2xl text-clay">
               {booking.status === "requested" ? "This request isn't ready for payment yet." : `This booking is already ${STATUS_LABELS[booking.status] ?? booking.status}.`}
             </p>
-            <p className="mt-3 text-sm text-muted-foreground">
-              {booking.status === "requested"
-                ? "Anneke is still reviewing fit and final timing. Payment opens once she approves it."
-                : "You can see the latest details in your account."}
-            </p>
+              <p className="mt-3 text-sm text-muted-foreground">
+                {booking.status === "requested"
+                  ? "Your request is still being reviewed. Payment opens once it is approved."
+                  : "You can see the latest details in your account."}
+              </p>
             <Button asChild className="mt-4 font-display uppercase">
               <Link to="/account">Back to account</Link>
             </Button>
@@ -126,7 +126,7 @@ const Checkout = () => {
           Pay & <span className="text-gradient-sunrise">confirm.</span>
         </h1>
         <p className="mt-3 max-w-2xl text-sm text-foreground/75">
-          Anneke has reviewed the request and set the details below — payment locks this slot in.
+          Your request has been reviewed and the details below are now ready for payment.
         </p>
 
         <Card className="mt-6 border-4 border-primary p-5 shadow-pop sm:p-6">
@@ -170,7 +170,7 @@ const Checkout = () => {
           <BookingCheckout bookingId={booking.id} returnUrl={`${window.location.origin}/booking/${booking.id}/success?session_id={CHECKOUT_SESSION_ID}`} />
         </div>
 
-        <p className="mt-4 text-xs text-muted-foreground">Payments are processed securely. If Anneke added approved extra time or a late pickup fee, it is already included above.</p>
+        <p className="mt-4 text-xs text-muted-foreground">Payments are processed securely. Any approved extra time or late pickup fees are already included above.</p>
       </section>
       <SiteFooter />
     </main>
