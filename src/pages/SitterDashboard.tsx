@@ -132,6 +132,29 @@ type PetApproval = {
   services: { name: string } | null;
 };
 
+type TemperamentTag = {
+  id: string;
+  slug: string;
+  label: string;
+  description: string | null;
+  visibility: "owner" | "internal";
+  risk_services: string[];
+  risk_message: string | null;
+};
+
+type FitAlert = {
+  id: string;
+  pet_id: string;
+  service_id: string;
+  booking_id: string | null;
+  title: string;
+  message: string;
+  severity: "warning" | "critical";
+  is_resolved: boolean;
+  conflicting_tag_ids: string[];
+  created_at: string;
+};
+
 type Draft = {
   date: string;
   endDate: string;
@@ -270,7 +293,7 @@ const tabMeta: Array<{ value: TabKey; label: string; icon: typeof LayoutDashboar
 
 const SitterDashboard = () => {
   const db = supabase as any;
-  const { user } = useAuth();
+  const { user, canManageDashboard } = useAuth();
 
   const [activeTab, setActiveTab] = useState<TabKey>("overview");
   const [selectedRequestId, setSelectedRequestId] = useState<string | null>(null);
@@ -295,6 +318,9 @@ const SitterDashboard = () => {
   const [profileDetails, setProfileDetails] = useState<Record<string, ProfileDetails>>({});
   const [bookingUpdates, setBookingUpdates] = useState<Record<string, BookingUpdate[]>>({});
   const [petProfiles, setPetProfiles] = useState<Record<string, PetProfile>>({});
+  const [temperamentTags, setTemperamentTags] = useState<TemperamentTag[]>([]);
+  const [petTagIdsByPet, setPetTagIdsByPet] = useState<Record<string, string[]>>({});
+  const [fitAlerts, setFitAlerts] = useState<FitAlert[]>([]);
 
   const [newAvailability, setNewAvailability] = useState({ weekday: 1, start: "09:00", end: "12:00", maxBookings: 1 });
   const [newServiceIds, setNewServiceIds] = useState<string[]>([]);
@@ -340,6 +366,8 @@ const SitterDashboard = () => {
       { data: approvalRows },
       { data: messageRows },
       { data: alertRows },
+      { data: tagRows },
+      { data: fitAlertRows },
     ] = await Promise.all([
       db.from("availability").select("*").eq("sitter_id", user.id).order("weekday").order("start_minute"),
       db.from("blocked_dates").select("*").eq("sitter_id", user.id).order("blocked_date"),
@@ -362,6 +390,8 @@ const SitterDashboard = () => {
       db.from("sitter_pet_approvals").select("id, pet_id, service_id, status, notes, pets(name), services(name)").eq("sitter_id", user.id).order("updated_at", { ascending: false }),
       db.from("client_messages").select("id, customer_id, booking_id, kind, subject, message, send_email, send_sms, delivered_email_at, delivered_sms_at, created_at").eq("sitter_id", user.id).order("created_at", { ascending: false }).limit(50),
       db.from("service_alerts").select("id, kind, title, message, starts_at, ends_at, is_active, pin_to_profile, created_at").eq("sitter_id", user.id).order("starts_at", { ascending: false }).limit(20),
+      db.from("pet_temperament_tags").select("id, slug, label, description, visibility, risk_services, risk_message").eq("is_active", true).order("sort_order"),
+      db.from("pet_fit_alerts").select("id, pet_id, service_id, booking_id, title, message, severity, is_resolved, conflicting_tag_ids, created_at").eq("is_resolved", false).order("created_at", { ascending: false }).limit(20),
     ]);
 
     const nextAvailability = (avail ?? []) as Availability[];
@@ -377,17 +407,29 @@ const SitterDashboard = () => {
     setPetApprovals((approvalRows ?? []) as PetApproval[]);
     setClientMessages((messageRows ?? []) as ClientMessage[]);
     setServiceAlerts((alertRows ?? []) as ServiceAlert[]);
+    setTemperamentTags((tagRows ?? []) as TemperamentTag[]);
+    setFitAlerts((fitAlertRows ?? []) as FitAlert[]);
 
     const customerIds = [...new Set(nextBookings.map((row) => row.customer_id))];
     const petIds = [...new Set(nextBookings.map((row) => row.pet_id))];
 
     if (petIds.length > 0) {
-      const { data: petRows } = await db.from("pets").select("*").in("id", petIds);
+      const [{ data: petRows }, { data: petTagRows }] = await Promise.all([
+        db.from("pets").select("*").in("id", petIds),
+        db.from("pet_tag_assignments").select("pet_id, tag_id").in("pet_id", petIds),
+      ]);
       setPetProfiles(
         Object.fromEntries(((petRows ?? []) as PetProfile[]).map((pet) => [pet.id, pet])),
       );
+      setPetTagIdsByPet(
+        ((petTagRows ?? []) as Array<{ pet_id: string; tag_id: string }>).reduce<Record<string, string[]>>((acc, row) => {
+          acc[row.pet_id] = [...(acc[row.pet_id] ?? []), row.tag_id];
+          return acc;
+        }, {}),
+      );
     } else {
       setPetProfiles({});
+      setPetTagIdsByPet({});
     }
 
     if (customerIds.length > 0) {
