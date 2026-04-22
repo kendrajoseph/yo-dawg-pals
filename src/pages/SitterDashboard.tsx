@@ -2206,6 +2206,22 @@ const SitterDashboard = () => {
                       </div>
 
                       <div className="rounded-md border border-border bg-muted/40 p-4">
+                        <h3 className="font-display text-base uppercase text-primary">Services used</h3>
+                        <div className="mt-3 flex flex-wrap gap-2 text-sm">
+                          {selectedClientServiceHistory.length === 0 ? (
+                            <p className="text-muted-foreground">No service history yet.</p>
+                          ) : (
+                            selectedClientServiceHistory.map((service) => (
+                              <span key={service.label} className="rounded-md border border-border bg-card px-3 py-2">
+                                <span className="font-display uppercase text-primary">{service.label}</span>
+                                <span className="ml-2 text-xs text-muted-foreground">{service.count}×</span>
+                              </span>
+                            ))
+                          )}
+                        </div>
+                      </div>
+
+                      <div className="rounded-md border border-border bg-muted/40 p-4">
                         <h3 className="font-display text-base uppercase text-primary">Recent messages</h3>
                         <div className="mt-3 space-y-2 text-sm">
                           {selectedClientMessageLog.length === 0 ? (
@@ -2229,6 +2245,60 @@ const SitterDashboard = () => {
                         </div>
                       </div>
                     </div>
+
+                    {canManageDashboard && selectedClientProfile && (
+                      <div className="mt-4 rounded-md border border-border bg-card p-4">
+                        <div className="flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between">
+                          <div>
+                            <h3 className="font-display text-base uppercase text-primary">Admin-only client notes</h3>
+                            <p className="text-sm text-muted-foreground">Private relationship notes and a quick quality rating only admins can see.</p>
+                          </div>
+                          <div className="rounded-md bg-muted px-3 py-2 text-xs font-tag text-muted-foreground">Hidden from clients</div>
+                        </div>
+
+                        <div className="mt-4 grid gap-4 lg:grid-cols-[auto,1fr]">
+                          <div>
+                            <Label>Star rating</Label>
+                            <div className="mt-2 flex flex-wrap gap-2">
+                              {[1, 2, 3, 4, 5].map((rating) => {
+                                const active = rating <= clientAdminDraft.star_rating;
+                                return (
+                                  <button
+                                    key={rating}
+                                    type="button"
+                                    onClick={() => saveClientAdminProfile(selectedClientId, { ...clientAdminDraft, star_rating: rating })}
+                                    disabled={savingClientProfile}
+                                    className={cn(
+                                      "grid h-10 w-10 place-items-center rounded-md border transition-colors",
+                                      active ? "border-primary bg-accent text-primary" : "border-border bg-muted/40 text-muted-foreground",
+                                    )}
+                                    aria-label={`Set ${selectedClientProfile.full_name} rating to ${rating} stars`}
+                                  >
+                                    <Star className={cn("h-4 w-4", active && "fill-current")} />
+                                  </button>
+                                );
+                              })}
+                            </div>
+                          </div>
+
+                          <div>
+                            <Label>Internal notes</Label>
+                            <Textarea
+                              defaultValue={clientAdminDraft.internal_notes}
+                              key={`${selectedClientId}-${selectedClientAdminProfile?.internal_notes ?? ""}`}
+                              maxLength={1500}
+                              placeholder="Anything only the admin team should know about working with this client…"
+                              className="mt-2 min-h-28"
+                              onBlur={(event) => {
+                                const nextNotes = event.target.value;
+                                if (nextNotes === clientAdminDraft.internal_notes) return;
+                                saveClientAdminProfile(selectedClientId, { ...clientAdminDraft, internal_notes: nextNotes });
+                              }}
+                            />
+                          </div>
+                        </div>
+                      </div>
+                    )}
                   )}
                 </Card>
 
