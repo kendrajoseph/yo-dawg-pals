@@ -23,8 +23,8 @@ type Booking = {
   requested_window_label?: string | null;
   scheduled_start_at?: string | null;
   start_at: string;
-  services: { name: string; slug: string } | null;
-  service_variants: { name: string } | null;
+  services: { name: string; slug: string; payment_mode?: string | null } | null;
+  service_variants: { name: string; payment_mode?: string | null } | null;
   pets: { name: string } | null;
 };
 
@@ -46,7 +46,7 @@ const BookingSuccess = () => {
     const fetchOnce = async () => {
       const { data } = await db
         .from("bookings")
-        .select("id, status, total_cents, deposit_cents, payment_amount_cents, extra_time_fee_cents, late_pickup_fee_cents, notes, booking_kind, requested_date, requested_window_label, scheduled_start_at, start_at, services(name, slug), service_variants(name), pets(name)")
+        .select("id, status, total_cents, deposit_cents, payment_amount_cents, extra_time_fee_cents, late_pickup_fee_cents, notes, booking_kind, requested_date, requested_window_label, scheduled_start_at, start_at, services(name, slug, payment_mode), service_variants(name, payment_mode), pets(name)")
         .eq("id", id)
         .single();
       if (cancelled) return null;
@@ -75,6 +75,27 @@ const BookingSuccess = () => {
   }, [db, id, sessionId, user]);
 
   const waitingForWebhook = !!sessionId && ["pending_payment", "awaiting_payment"].includes(booking?.status ?? "");
+  const paymentMode = booking?.service_variants?.payment_mode ?? booking?.services?.payment_mode ?? null;
+  const isFreeService = paymentMode === "free";
+  const showPaymentBox = !!booking && !isFreeService;
+  const showNextStepBox = !!booking && !isFreeService;
+
+  const getPaymentHeading = () => {
+    if (!booking) return "Payment";
+    if (booking.status === "requested") return "Payment";
+    if (booking.payment_amount_cents != null) return "Paid / due now";
+    return "Status";
+  };
+
+  const getPaymentValue = () => {
+    if (!booking) return "";
+    if (booking.status === "requested") return "Pending approval";
+    if (booking.payment_amount_cents != null) {
+      return formatPriceWithDecimals(booking.payment_amount_cents ?? booking.deposit_cents);
+    }
+
+    return STATUS_LABELS[booking.status] ?? booking.status;
+  };
 
   const getHeadline = () => {
     if (!booking) return "";
@@ -122,16 +143,12 @@ const BookingSuccess = () => {
                 <div className="font-display text-xs uppercase text-muted-foreground">Total</div>
                 <div className="font-display text-2xl">{formatPriceWithDecimals(booking.total_cents)}</div>
               </div>
-              <div className="border-2 border-primary bg-highlight p-3">
-                <div className="font-display text-xs uppercase">{booking.payment_amount_cents ? "Paid / due now" : booking.status === "requested" ? "Payment" : "Status"}</div>
-                <div className="font-display text-2xl text-clay">
-                  {booking.payment_amount_cents
-                    ? formatPriceWithDecimals(booking.payment_amount_cents ?? booking.deposit_cents)
-                    : booking.status === "requested"
-                    ? "Not open yet"
-                    : STATUS_LABELS[booking.status] ?? booking.status}
+              {showPaymentBox && (
+                <div className="border-2 border-primary bg-highlight p-3">
+                  <div className="font-display text-xs uppercase">{getPaymentHeading()}</div>
+                  <div className="font-display text-2xl text-clay">{getPaymentValue()}</div>
                 </div>
-              </div>
+              )}
               {(booking.extra_time_fee_cents > 0 || booking.late_pickup_fee_cents > 0) && (
                 <div className="border-2 border-primary bg-card p-3 sm:col-span-2">
                   <div className="font-display text-xs uppercase text-muted-foreground">Approved fee adjustments</div>
@@ -144,9 +161,11 @@ const BookingSuccess = () => {
               )}
             </div>
 
-            <div className="mt-6 border-2 border-dashed border-primary/40 bg-muted p-3 text-left text-xs text-muted-foreground">
-              <span className="font-display uppercase text-foreground">Next step:</span> {getBodyCopy()}
-            </div>
+            {showNextStepBox && (
+              <div className="mt-6 border-2 border-dashed border-primary/40 bg-muted p-3 text-left text-xs text-muted-foreground">
+                <span className="font-display uppercase text-foreground">Next step:</span> {getBodyCopy()}
+              </div>
+            )}
 
             <div className="mt-6 flex flex-wrap justify-center gap-2">
               <Button asChild className="bg-primary font-display uppercase shadow-pop-accent"><Link to="/account">View my bookings</Link></Button>
