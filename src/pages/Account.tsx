@@ -6,7 +6,7 @@ import SiteNav from "@/components/SiteNav";
 import SiteFooter from "@/components/SiteFooter";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
-import { BellRing, CalendarPlus, ChevronRight, CreditCard, Mail, PawPrint, Smartphone, User, X } from "lucide-react";
+import { BellRing, CalendarPlus, ChevronRight, CreditCard, Mail, PawPrint, Smartphone, Trash2, User, X } from "lucide-react";
 import { formatBookingSchedule, formatPriceWithDecimals, STATUS_LABELS, STATUS_STYLES } from "@/lib/booking";
 import { toast } from "@/hooks/use-toast";
 import {
@@ -103,6 +103,7 @@ const Account = () => {
   const [serviceAlerts, setServiceAlerts] = useState<ServiceAlertRow[]>([]);
   const [loading, setLoading] = useState(true);
   const [cancellingId, setCancellingId] = useState<string | null>(null);
+  const [deletingId, setDeletingId] = useState<string | null>(null);
 
   const load = async () => {
     if (!user) return;
@@ -167,6 +168,20 @@ const Account = () => {
     } else {
       toast({ title: "Booking cancelled", description: "No refund was issued for this cancellation." });
     }
+    load();
+  };
+
+  const handleDelete = async (booking: BookingRow) => {
+    setDeletingId(booking.id);
+    const { error } = await db.from("bookings").delete().eq("id", booking.id);
+    setDeletingId(null);
+
+    if (error) {
+      toast({ title: "Couldn't delete booking", description: error.message, variant: "destructive" });
+      return;
+    }
+
+    toast({ title: "Booking deleted", description: "The cancelled booking has been removed from your account." });
     load();
   };
 
@@ -335,6 +350,29 @@ const Account = () => {
                               <AlertDialogCancel>Keep booking</AlertDialogCancel>
                               <AlertDialogAction disabled={cancellingId === booking.id} onClick={() => handleCancel(booking)}>
                                 {cancellingId === booking.id ? "Cancelling…" : "Cancel booking"}
+                              </AlertDialogAction>
+                            </AlertDialogFooter>
+                          </AlertDialogContent>
+                        </AlertDialog>
+                      )}
+                      {booking.status === "cancelled" && (
+                        <AlertDialog>
+                          <AlertDialogTrigger asChild>
+                            <Button size="sm" variant="ghost" className="font-display uppercase text-destructive hover:text-destructive">
+                              <Trash2 className="h-4 w-4" /> Delete
+                            </Button>
+                          </AlertDialogTrigger>
+                          <AlertDialogContent>
+                            <AlertDialogHeader>
+                              <AlertDialogTitle>Delete this cancelled booking?</AlertDialogTitle>
+                              <AlertDialogDescription>
+                                This removes the cancelled booking from your account history and cannot be undone.
+                              </AlertDialogDescription>
+                            </AlertDialogHeader>
+                            <AlertDialogFooter>
+                              <AlertDialogCancel>Keep booking</AlertDialogCancel>
+                              <AlertDialogAction disabled={deletingId === booking.id} onClick={() => handleDelete(booking)}>
+                                {deletingId === booking.id ? "Deleting…" : "Delete booking"}
                               </AlertDialogAction>
                             </AlertDialogFooter>
                           </AlertDialogContent>
