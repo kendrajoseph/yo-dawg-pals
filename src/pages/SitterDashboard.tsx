@@ -1065,6 +1065,15 @@ const SitterDashboard = () => {
       return toast({ title: "Approve the pet first", description: "This service needs a fit decision before it can be approved.", variant: "destructive" });
     }
 
+    const approvedBasePrice = parseCurrencyInput(draft.approvedBasePrice);
+    if (approvedBasePrice == null) {
+      return toast({ title: "Enter a valid approved price", description: "Use a dollar amount like 32 or 32.50.", variant: "destructive" });
+    }
+
+    if (service.slug === "group-walk" && !draft.packOutingId) {
+      return toast({ title: "Choose a pack outing", description: "Pick one of the backend outing blocks for this approval.", variant: "destructive" });
+    }
+
     const minimumDuration = variant.duration_minutes ?? 0;
     const startMinute = service.slug === "boarding" ? (service.boarding_checkin_minute ?? 12 * 60) : timeToMinutes(draft.start);
     const endMinute = service.slug === "boarding" ? (service.boarding_checkout_minute ?? 12 * 60) : timeToMinutes(draft.end);
@@ -1090,7 +1099,7 @@ const SitterDashboard = () => {
       ? Math.ceil(extraTimeMinutes / service.extra_time_increment_minutes) * service.extra_time_fee_cents
       : 0;
     const latePickupFeeCents = draft.latePickup ? service.late_pickup_fee_cents ?? 0 : 0;
-    const totalCents = (variant.price_cents ?? booking.base_price_cents ?? booking.total_cents) + extraTimeFeeCents + latePickupFeeCents;
+    const totalCents = approvedBasePrice + extraTimeFeeCents + latePickupFeeCents;
     const paymentAmount = variant.payment_mode === "free" ? 0 : variant.payment_mode === "deposit" ? Math.round(totalCents * 0.25) : totalCents;
     const nextStatus = variant.payment_mode === "free" ? "confirmed" : "awaiting_payment";
 
@@ -1101,6 +1110,7 @@ const SitterDashboard = () => {
       approved_by: user.id,
       group_assignment_label: draft.groupLabel || null,
       internal_notes: draft.internalNotes || null,
+      base_price_cents: approvedBasePrice,
       extra_time_minutes: extraTimeMinutes,
       extra_time_fee_cents: extraTimeFeeCents,
       late_pickup_fee_cents: latePickupFeeCents,
