@@ -41,10 +41,10 @@ const SiteNav = ({ variant = "light" }: SiteNavProps) => {
       )}
     >
       {isHome ? (
-        <div aria-hidden className="h-10 w-[136px] sm:w-[176px]" />
+        <div aria-hidden className="h-10 w-[136px] sm:w-[176px] md:w-[15rem]" />
       ) : (
         <Link to="/" className="flex items-center" aria-label="Back to Yo Dawg home">
-          <img src={wordmark} alt="Yo Dawg" className="h-auto w-full max-w-[9.5rem] sm:max-w-[11.5rem]" loading="eager" />
+          <img src={wordmark} alt="Yo Dawg" className="h-auto w-full max-w-[9.5rem] sm:max-w-[11.5rem] md:max-w-[15rem]" loading="eager" />
         </Link>
       )}
 
