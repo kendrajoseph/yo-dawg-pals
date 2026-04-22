@@ -399,23 +399,15 @@ const Book = () => {
         notes: notes || null,
       };
 
-      bookingPayload = isRequestFlow
-        ? {
-            ...basePayload,
-            status: "requested",
-            booking_kind: "requested",
-            requested_date: format(date, "yyyy-MM-dd"),
-            requested_window_label: `${minutesToTime(slot ?? 0)}–${minutesToTime((slot ?? 0) + selectedVariant.duration_minutes)}`,
-            requested_window_start_minute: slot,
-            requested_window_end_minute: (slot ?? 0) + selectedVariant.duration_minutes,
-          }
-        : {
-            ...basePayload,
-            scheduled_start_at: startAt,
-            scheduled_end_at: endAt,
-            status: "pending_payment",
-            booking_kind: "instant",
-          };
+      bookingPayload = {
+        ...basePayload,
+        status: "requested",
+        booking_kind: "requested",
+        requested_date: format(date, "yyyy-MM-dd"),
+        requested_window_label: `${minutesToTime(slot ?? 0)}–${minutesToTime((slot ?? 0) + selectedVariant.duration_minutes)}`,
+        requested_window_start_minute: slot,
+        requested_window_end_minute: (slot ?? 0) + selectedVariant.duration_minutes,
+      };
     }
 
     const { data, error } = await db.from("bookings").insert(bookingPayload).select("id").single();
@@ -426,17 +418,7 @@ const Book = () => {
       return;
     }
 
-    if (isRequestFlow) {
-      navigate(`/booking/${data.id}/success`);
-      return;
-    }
-
-    if (selectedVariant.payment_mode === "free") {
-      navigate(`/booking/${data.id}/success`);
-      return;
-    }
-
-    navigate(`/booking/${data.id}/checkout`);
+    navigate(`/booking/${data.id}/success`);
   };
 
   useEffect(() => {
@@ -465,18 +447,12 @@ const Book = () => {
     if (isRequestFlow) {
       return `Anneke reviews this request before it is confirmed. ${service.requires_pet_approval ? "Pet approval is part of the review." : ""}`.trim();
     }
-    if (selectedVariant.payment_mode === "free") return "No payment needed — your meet & greet will confirm right away.";
-    if (selectedVariant.payment_mode === "full") return "Full payment is collected now to lock the booking in.";
-    return "A 25% deposit is collected now and the remaining balance is settled later.";
+    if (selectedVariant.payment_mode === "free") return "Anneke still confirms the final fit and timing first, then the visit is locked in without payment.";
+    if (selectedVariant.payment_mode === "full") return "Anneke confirms the match and final time first, then payment opens to lock the booking in.";
+    return "Anneke confirms the match and final time first, then the 25% deposit opens and the remaining balance is settled later.";
   })();
 
-  const submitLabel = !service || !selectedVariant
-    ? "Continue"
-    : isRequestFlow
-    ? "Send request"
-    : selectedVariant.payment_mode === "free"
-    ? "Book now"
-    : "Continue to payment";
+  const submitLabel = !service || !selectedVariant ? "Continue" : "Send request";
 
   const feeSummary = service && selectedVariant ? [
     service.turnaround_buffer_minutes ? `${service.turnaround_buffer_minutes}-minute buffer built in` : null,
