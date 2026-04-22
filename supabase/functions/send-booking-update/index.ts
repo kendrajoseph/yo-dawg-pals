@@ -11,11 +11,22 @@ const bodySchema = z.object({
   sendSms: z.boolean().default(true),
 });
 
-const json = (body: unknown, status = 200) =>
+const json = (body: unknown, _status = 200) =>
   new Response(JSON.stringify(body), {
-    status,
+    status: 200,
     headers: { ...corsHeaders, "Content-Type": "application/json" },
   });
+
+const toE164 = (phone: string) => {
+  const trimmed = phone.trim();
+  if (!trimmed) return "";
+  if (trimmed.startsWith("+")) return trimmed;
+
+  const digits = trimmed.replace(/\D/g, "");
+  if (digits.length === 10) return `+1${digits}`;
+  if (digits.length === 11 && digits.startsWith("1")) return `+${digits}`;
+  return `+${digits}`;
+};
 
 const kindText = {
   pickup: "picked up",
@@ -144,6 +155,7 @@ Deno.serve(async (req) => {
     const smsBody = cleanNote ? `${defaultMessage} ${cleanNote}` : defaultMessage;
 
     let smsSent = false;
+    let smsError: string | null = null;
     let message = cleanNote ?? defaultMessage;
 
     if (sendSms && profile?.sms_opt_in && profile?.mobile_phone) {
@@ -155,18 +167,20 @@ Deno.serve(async (req) => {
           "Content-Type": "application/x-www-form-urlencoded",
         },
         body: new URLSearchParams({
-          To: profile.mobile_phone,
-          From: twilioFromNumber,
+          To: toE164(profile.mobile_phone),
+          From: toE164(twilioFromNumber),
           Body: smsBody,
         }),
       });
 
       const twilioData = await twilioResponse.json();
       if (!twilioResponse.ok) {
-        throw new Error(`Twilio API error [${twilioResponse.status}]: ${JSON.stringify(twilioData)}`);
+        smsError = `SMS failed: Twilio API error [${twilioResponse.status}]: ${JSON.stringify(twilioData)}`;
+        console.error("send-booking-update sms error", { twilioData, status: twilioResponse.status });
+      } else {
+        smsSent = true;
+        message = cleanNote ?? defaultMessage;
       }
-      smsSent = true;
-      message = cleanNote ?? defaultMessage;
     }
 
     const { error: insertError } = await admin.from("booking_updates").insert({
@@ -184,8 +198,11 @@ Deno.serve(async (req) => {
     return json({
       ok: true,
       smsSent,
+      smsError,
       message: smsSent
         ? `Text sent to ${customerName}.`
+        : smsError
+          ? "Update saved, but SMS could not be sent."
         : sendSms
           ? "Update saved. SMS was skipped because the owner has not enabled text updates."
           : "Update saved without sending a text.",
@@ -194,6 +211,6 @@ Deno.serve(async (req) => {
   } catch (error) {
     console.error("send-booking-update error", error);
     const message = error instanceof Error ? error.message : "Unknown error";
-    return json({ error: message }, 500);
+    return json({ ok: false, error: message }, 500);
   }
 });

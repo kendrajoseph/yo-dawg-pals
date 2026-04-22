@@ -14,11 +14,22 @@ const bodySchema = z.object({
   sendSms: z.boolean().default(false),
 });
 
-const json = (body: unknown, status = 200) =>
+const json = (body: unknown, _status = 200) =>
   new Response(JSON.stringify(body), {
-    status,
+    status: 200,
     headers: { ...corsHeaders, "Content-Type": "application/json" },
   });
+
+const toE164 = (phone: string) => {
+  const trimmed = phone.trim();
+  if (!trimmed) return "";
+  if (trimmed.startsWith("+")) return trimmed;
+
+  const digits = trimmed.replace(/\D/g, "");
+  if (digits.length === 10) return `+1${digits}`;
+  if (digits.length === 11 && digits.startsWith("1")) return `+${digits}`;
+  return `+${digits}`;
+};
 
 const kindLabel: Record<string, string> = {
   service_update: "Service update",
@@ -125,6 +136,7 @@ Deno.serve(async (req) => {
 
     let emailSent = false;
     let smsSent = false;
+    let smsError: string | null = null;
 
     if (sendEmail) {
       const recipientEmail = (await admin.auth.admin.getUserById(customerId)).data.user?.email;
@@ -165,19 +177,20 @@ Deno.serve(async (req) => {
           "Content-Type": "application/x-www-form-urlencoded",
         },
         body: new URLSearchParams({
-          To: profile.mobile_phone,
-          From: twilioFromNumber,
+          To: toE164(profile.mobile_phone),
+          From: toE164(twilioFromNumber),
           Body: smsBody,
         }),
       });
 
       const twilioData = await twilioResponse.json();
       if (!twilioResponse.ok) {
-        throw new Error(`Twilio API error [${twilioResponse.status}]: ${JSON.stringify(twilioData)}`);
+        smsError = `SMS failed: Twilio API error [${twilioResponse.status}]: ${JSON.stringify(twilioData)}`;
+        console.error("send-client-message sms error", { twilioData, status: twilioResponse.status });
+      } else {
+        smsSent = true;
+        await admin.from("client_messages").update({ delivered_sms_at: new Date().toISOString() }).eq("id", insertRow.id);
       }
-
-      smsSent = true;
-      await admin.from("client_messages").update({ delivered_sms_at: new Date().toISOString() }).eq("id", insertRow.id);
     }
 
     return json({
@@ -185,11 +198,16 @@ Deno.serve(async (req) => {
       id: insertRow.id,
       emailSent,
       smsSent,
-      message: emailSent || smsSent ? "Client message sent." : "Client message saved in the app.",
+      smsError,
+      message: smsError
+        ? "Client message saved, but SMS could not be sent."
+        : emailSent || smsSent
+          ? "Client message sent."
+          : "Client message saved in the app.",
     });
   } catch (error) {
     console.error("send-client-message error", error);
     const message = error instanceof Error ? error.message : "Unknown error";
-    return json({ error: message }, 500);
+    return json({ ok: false, error: message }, 500);
   }
 });
