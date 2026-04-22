@@ -14,6 +14,7 @@ import {
   Megaphone,
   MessageSquare,
   Minus,
+  Pencil,
   Plus,
   Send,
   ShieldCheck,
@@ -205,6 +206,27 @@ type AlertDraft = {
   pinToProfile: boolean;
 };
 
+type SnapshotEditor =
+  | {
+      kind: "slot";
+      id: string;
+      weekday: number;
+      start: string;
+      end: string;
+      maxBookings: number;
+      serviceIds: string[];
+    }
+  | {
+      kind: "window";
+      id: string;
+      serviceId: string;
+      weekday: number;
+      label: string;
+      start: string;
+      end: string;
+      maxBookings: number;
+    };
+
 type TabKey = "overview" | "clients" | "schedule" | "care" | "alerts";
 type MessageAudience = "single" | "group";
 
@@ -257,6 +279,7 @@ const SitterDashboard = () => {
   const [messageAudience, setMessageAudience] = useState<MessageAudience>("single");
   const [selectedRecipientIds, setSelectedRecipientIds] = useState<string[]>([]);
   const [activePetProfileId, setActivePetProfileId] = useState<string | null>(null);
+  const [snapshotEditor, setSnapshotEditor] = useState<SnapshotEditor | null>(null);
   const requestCardRefs = useRef<Record<string, HTMLDivElement | null>>({});
 
   const [availability, setAvailability] = useState<Availability[]>([]);
@@ -686,6 +709,113 @@ const SitterDashboard = () => {
     const { error } = await db.from("walk_windows").delete().eq("id", id);
     if (error) toast({ title: "Failed", description: error.message, variant: "destructive" });
     else load();
+  };
+
+  const openSlotEditor = (slot: Availability) => {
+    setSnapshotEditor({
+      kind: "slot",
+      id: slot.id,
+      weekday: slot.weekday,
+      start: formatMinuteTime(slot.start_minute),
+      end: formatMinuteTime(slot.end_minute),
+      maxBookings: slot.max_bookings,
+      serviceIds: Array.from(tagsBySlot.get(slot.id) ?? []),
+    });
+  };
+
+  const openWindowEditor = (window: WalkWindow) => {
+    setSnapshotEditor({
+      kind: "window",
+      id: window.id,
+      serviceId: window.service_id,
+      weekday: window.weekday,
+      label: window.window_label,
+      start: formatMinuteTime(window.start_minute),
+      end: formatMinuteTime(window.end_minute),
+      maxBookings: window.max_bookings,
+    });
+  };
+
+  const saveSnapshotEditor = async () => {
+    if (!snapshotEditor) return;
+
+    const start = timeToMinutes(snapshotEditor.start);
+    const end = timeToMinutes(snapshotEditor.end);
+    if (end <= start) {
+      toast({ title: "End must be after start", variant: "destructive" });
+      return;
+    }
+
+    if (snapshotEditor.kind === "slot") {
+      if (snapshotEditor.serviceIds.length === 0) {
+        toast({ title: "Pick at least one service", variant: "destructive" });
+        return;
+      }
+
+      const sameDayRanges = availability
+        .filter((slot) => slot.weekday === snapshotEditor.weekday && slot.id !== snapshotEditor.id)
+        .map((slot) => ({ start: slot.start_minute, end: slot.end_minute }));
+
+      if (hasBufferedMinuteConflict(sameDayRanges, start, end)) {
+        toast({ title: "Leave a 30 minute gap between booking blocks", variant: "destructive" });
+        return;
+      }
+
+      const { error } = await db
+        .from("availability")
+        .update({
+          weekday: snapshotEditor.weekday,
+          start_minute: start,
+          end_minute: end,
+          max_bookings: Math.max(1, snapshotEditor.maxBookings),
+        })
+        .eq("id", snapshotEditor.id);
+
+      if (error) {
+        toast({ title: "Couldn't update block", description: error.message, variant: "destructive" });
+        return;
+      }
+
+      await db.from("availability_services").delete().eq("availability_id", snapshotEditor.id);
+      const { error: linkError } = await db
+        .from("availability_services")
+        .insert(snapshotEditor.serviceIds.map((serviceId) => ({ availability_id: snapshotEditor.id, service_id: serviceId })));
+
+      if (linkError) {
+        toast({ title: "Block updated, but service tags failed", description: linkError.message, variant: "destructive" });
+        return;
+      }
+    } else {
+      const sameDayRanges = walkWindows
+        .filter((window) => window.weekday === snapshotEditor.weekday && window.id !== snapshotEditor.id)
+        .map((window) => ({ start: window.start_minute, end: window.end_minute }));
+
+      if (hasBufferedMinuteConflict(sameDayRanges, start, end)) {
+        toast({ title: "Walk windows need a 30 minute gap", variant: "destructive" });
+        return;
+      }
+
+      const { error } = await db
+        .from("walk_windows")
+        .update({
+          service_id: snapshotEditor.serviceId,
+          weekday: snapshotEditor.weekday,
+          window_label: snapshotEditor.label,
+          start_minute: start,
+          end_minute: end,
+          max_bookings: Math.max(1, snapshotEditor.maxBookings),
+        })
+        .eq("id", snapshotEditor.id);
+
+      if (error) {
+        toast({ title: "Couldn't update walk window", description: error.message, variant: "destructive" });
+        return;
+      }
+    }
+
+    toast({ title: "Schedule updated" });
+    setSnapshotEditor(null);
+    load();
   };
 
   const updateBookingStatus = async (id: string, status: "cancelled" | "completed") => {
@@ -1177,7 +1307,12 @@ const SitterDashboard = () => {
                           <div key={slot.id} className="rounded-md border border-border bg-card px-3 py-2">
                             <div className="flex items-center justify-between gap-2">
                               <span>{formatMinuteTime(slot.start_minute)}–{formatMinuteTime(slot.end_minute)}</span>
-                              <span className="text-xs text-muted-foreground">Cap {slot.max_bookings}</span>
+                              <div className="flex items-center gap-3">
+                                <span className="text-xs text-muted-foreground">Cap {slot.max_bookings}</span>
+                                <button type="button" onClick={() => openSlotEditor(slot)} aria-label="Edit booking block" className="text-muted-foreground transition-colors hover:text-primary">
+                                  <Pencil className="h-4 w-4" />
+                                </button>
+                              </div>
                             </div>
                             <div className="mt-2 flex flex-wrap gap-1">
                               {exactSlotServices.filter((service) => tagsBySlot.get(slot.id)?.has(service.id)).map((service) => (
@@ -1190,7 +1325,12 @@ const SitterDashboard = () => {
                           <div key={window.id} className="rounded-md border border-border bg-card px-3 py-2">
                             <div className="flex items-center justify-between gap-2">
                               <span>{formatMinuteTime(window.start_minute)}–{formatMinuteTime(window.end_minute)}</span>
-                              <span className="text-xs text-muted-foreground">{serviceMap.get(window.service_id)?.name ?? "Walk"}</span>
+                              <div className="flex items-center gap-3">
+                                <span className="text-xs text-muted-foreground">{serviceMap.get(window.service_id)?.name ?? "Walk"}</span>
+                                <button type="button" onClick={() => openWindowEditor(window)} aria-label="Edit walk window" className="text-muted-foreground transition-colors hover:text-primary">
+                                  <Pencil className="h-4 w-4" />
+                                </button>
+                              </div>
                             </div>
                             <div className="mt-1 text-xs text-muted-foreground">{window.window_label} · cap {window.max_bookings}</div>
                           </div>
@@ -2135,6 +2275,144 @@ const SitterDashboard = () => {
             </div>
           ) : (
             <p className="text-sm text-muted-foreground">This pet profile is not available yet.</p>
+          )}
+        </DialogContent>
+      </Dialog>
+      <Dialog open={!!snapshotEditor} onOpenChange={(open) => !open && setSnapshotEditor(null)}>
+        <DialogContent className="border border-border bg-background shadow-soft sm:max-w-2xl">
+          <DialogHeader>
+            <DialogTitle className="font-display text-2xl uppercase text-primary">
+              {snapshotEditor?.kind === "slot" ? "Edit booking block" : "Edit walk window"}
+            </DialogTitle>
+          </DialogHeader>
+
+          {snapshotEditor && (
+            <div className="grid gap-4">
+              <div className="grid gap-4 md:grid-cols-2">
+                <div>
+                  <Label>Day</Label>
+                  <select
+                    className="mt-1 h-10 w-full rounded-md border border-input bg-background px-3 text-sm"
+                    value={snapshotEditor.weekday}
+                    onChange={(event) =>
+                      setSnapshotEditor((current) => (current ? { ...current, weekday: Number(event.target.value) } : current))
+                    }
+                  >
+                    {DAYS.map((day, index) => (
+                      <option key={day} value={index}>{day}</option>
+                    ))}
+                  </select>
+                </div>
+
+                {snapshotEditor.kind === "window" ? (
+                  <div>
+                    <Label>Walk type</Label>
+                    <select
+                      className="mt-1 h-10 w-full rounded-md border border-input bg-background px-3 text-sm"
+                      value={snapshotEditor.serviceId}
+                      onChange={(event) =>
+                        setSnapshotEditor((current) => current?.kind === "window" ? { ...current, serviceId: event.target.value } : current)
+                      }
+                    >
+                      {walkServices.map((service) => (
+                        <option key={service.id} value={service.id}>{service.name}</option>
+                      ))}
+                    </select>
+                  </div>
+                ) : (
+                  <div>
+                    <Label>Capacity</Label>
+                    <Input
+                      type="number"
+                      min={1}
+                      value={snapshotEditor.maxBookings}
+                      onChange={(event) =>
+                        setSnapshotEditor((current) => (current ? { ...current, maxBookings: Math.max(1, Number(event.target.value) || 1) } : current))
+                      }
+                    />
+                  </div>
+                )}
+
+                <div>
+                  <Label>Start</Label>
+                  <Input
+                    type="time"
+                    value={snapshotEditor.start}
+                    onChange={(event) => setSnapshotEditor((current) => (current ? { ...current, start: event.target.value } : current))}
+                  />
+                </div>
+                <div>
+                  <Label>End</Label>
+                  <Input
+                    type="time"
+                    value={snapshotEditor.end}
+                    onChange={(event) => setSnapshotEditor((current) => (current ? { ...current, end: event.target.value } : current))}
+                  />
+                </div>
+
+                {snapshotEditor.kind === "window" ? (
+                  <>
+                    <div>
+                      <Label>Label</Label>
+                      <Input
+                        value={snapshotEditor.label}
+                        onChange={(event) =>
+                          setSnapshotEditor((current) => current?.kind === "window" ? { ...current, label: event.target.value } : current)
+                        }
+                      />
+                    </div>
+                    <div>
+                      <Label>Capacity</Label>
+                      <Input
+                        type="number"
+                        min={1}
+                        value={snapshotEditor.maxBookings}
+                        onChange={(event) =>
+                          setSnapshotEditor((current) => (current ? { ...current, maxBookings: Math.max(1, Number(event.target.value) || 1) } : current))
+                        }
+                      />
+                    </div>
+                  </>
+                ) : (
+                  <div className="md:col-span-2">
+                    <Label>Services in this block</Label>
+                    <div className="mt-2 grid gap-2 sm:grid-cols-2">
+                      {exactSlotServices.map((service) => {
+                        const checked = snapshotEditor.serviceIds.includes(service.id);
+                        return (
+                          <label key={service.id} className="flex items-center gap-2 rounded-md border border-border bg-muted/40 px-3 py-2 text-sm">
+                            <Checkbox
+                              checked={checked}
+                              onCheckedChange={(next) => {
+                                setSnapshotEditor((current) => {
+                                  if (!current || current.kind !== "slot") return current;
+                                  return {
+                                    ...current,
+                                    serviceIds: next === true
+                                      ? [...new Set([...current.serviceIds, service.id])]
+                                      : current.serviceIds.filter((id) => id !== service.id),
+                                  };
+                                });
+                              }}
+                            />
+                            <span>{service.name}</span>
+                          </label>
+                        );
+                      })}
+                    </div>
+                  </div>
+                )}
+              </div>
+
+              <div className="flex justify-end gap-2">
+                <Button type="button" variant="outline" onClick={() => setSnapshotEditor(null)} className="font-display uppercase">
+                  Cancel
+                </Button>
+                <Button type="button" onClick={saveSnapshotEditor} className="font-display uppercase">
+                  Save changes
+                </Button>
+              </div>
+            </div>
           )}
         </DialogContent>
       </Dialog>
