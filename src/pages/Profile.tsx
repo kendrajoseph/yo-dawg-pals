@@ -10,30 +10,40 @@ import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
+import { Checkbox } from "@/components/ui/checkbox";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { Camera, LogOut, Save, ArrowLeft } from "lucide-react";
+import { Camera, LogOut, Save, ArrowLeft, Smartphone } from "lucide-react";
 import { toast } from "sonner";
 
-const profileSchema = z.object({
-  full_name: z
-    .string()
-    .trim()
-    .min(1, "Name is required")
-    .max(100, "Name must be 100 characters or less"),
-  phone: z
-    .string()
-    .trim()
-    .max(30, "Phone must be 30 characters or less")
-    .regex(/^[\d\s()+\-.]*$/, "Phone can only contain digits, spaces, and ()+-.")
-    .optional()
-    .or(z.literal("")),
-  bio: z
-    .string()
-    .trim()
-    .max(1000, "Notes must be 1000 characters or less")
-    .optional()
-    .or(z.literal("")),
-});
+const phoneField = z
+  .string()
+  .trim()
+  .max(30, "Phone must be 30 characters or less")
+  .regex(/^[\d\s()+\-.]*$/, "Phone can only contain digits, spaces, and ()+-.")
+  .optional()
+  .or(z.literal(""));
+
+const profileSchema = z
+  .object({
+    full_name: z
+      .string()
+      .trim()
+      .min(1, "Name is required")
+      .max(100, "Name must be 100 characters or less"),
+    phone: phoneField,
+    mobile_phone: phoneField,
+    sms_opt_in: z.boolean(),
+    bio: z
+      .string()
+      .trim()
+      .max(1000, "Notes must be 1000 characters or less")
+      .optional()
+      .or(z.literal("")),
+  })
+  .refine((data) => !data.sms_opt_in || Boolean(data.mobile_phone?.trim()), {
+    message: "Add a mobile number before turning on text updates",
+    path: ["mobile_phone"],
+  });
 
 const Profile = () => {
   const { user, signOut } = useAuth();
@@ -45,7 +55,13 @@ const Profile = () => {
   const [uploading, setUploading] = useState(false);
   const [createdAt, setCreatedAt] = useState<string | null>(null);
   const [avatarUrl, setAvatarUrl] = useState<string | null>(null);
-  const [form, setForm] = useState({ full_name: "", phone: "", bio: "" });
+  const [form, setForm] = useState({
+    full_name: "",
+    phone: "",
+    mobile_phone: "",
+    sms_opt_in: false,
+    bio: "",
+  });
   const [errors, setErrors] = useState<Record<string, string>>({});
 
   useEffect(() => {
@@ -53,7 +69,7 @@ const Profile = () => {
     (async () => {
       const { data, error } = await supabase
         .from("profiles")
-        .select("full_name, phone, bio, avatar_url, created_at")
+        .select("full_name, phone, bio, avatar_url, created_at, mobile_phone, sms_opt_in")
         .eq("id", user.id)
         .maybeSingle();
 
@@ -63,6 +79,8 @@ const Profile = () => {
         setForm({
           full_name: data.full_name ?? "",
           phone: data.phone ?? "",
+          mobile_phone: (data as { mobile_phone?: string | null }).mobile_phone ?? "",
+          sms_opt_in: Boolean((data as { sms_opt_in?: boolean | null }).sms_opt_in),
           bio: data.bio ?? "",
         });
         setAvatarUrl(data.avatar_url);
@@ -137,6 +155,8 @@ const Profile = () => {
       .update({
         full_name: result.data.full_name,
         phone: result.data.phone || null,
+        mobile_phone: result.data.mobile_phone || null,
+        sms_opt_in: result.data.sms_opt_in,
         bio: result.data.bio || null,
       })
       .eq("id", user.id);
@@ -145,7 +165,7 @@ const Profile = () => {
     if (error) {
       toast.error("Couldn't save: " + error.message);
     } else {
-      toast.success("Profile saved");
+      toast.success(result.data.sms_opt_in ? "Profile saved. Text updates are on." : "Profile saved");
     }
   };
 
@@ -248,22 +268,71 @@ const Profile = () => {
                   </p>
                 </div>
 
-                <div className="space-y-2">
-                  <Label htmlFor="phone" className="font-display uppercase">
-                    Phone
-                  </Label>
-                  <Input
-                    id="phone"
-                    type="tel"
-                    placeholder="(555) 123-4567"
-                    value={form.phone}
-                    onChange={(e) => setForm({ ...form, phone: e.target.value })}
-                    maxLength={30}
-                    className="border-2 border-primary"
-                  />
-                  {errors.phone && (
-                    <p className="text-sm font-medium text-destructive">{errors.phone}</p>
-                  )}
+                <div className="grid gap-6 md:grid-cols-2">
+                  <div className="space-y-2">
+                    <Label htmlFor="phone" className="font-display uppercase">
+                      Phone
+                    </Label>
+                    <Input
+                      id="phone"
+                      type="tel"
+                      placeholder="(555) 123-4567"
+                      value={form.phone}
+                      onChange={(e) => setForm({ ...form, phone: e.target.value })}
+                      maxLength={30}
+                      className="border-2 border-primary"
+                    />
+                    {errors.phone && (
+                      <p className="text-sm font-medium text-destructive">{errors.phone}</p>
+                    )}
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label htmlFor="mobile_phone" className="font-display uppercase">
+                      Mobile for text updates
+                    </Label>
+                    <Input
+                      id="mobile_phone"
+                      type="tel"
+                      placeholder="(555) 987-6543"
+                      value={form.mobile_phone}
+                      onChange={(e) => setForm({ ...form, mobile_phone: e.target.value })}
+                      maxLength={30}
+                      className="border-2 border-primary"
+                    />
+                    <p className="text-xs text-muted-foreground">
+                      Used for pickup, drop-off, and quick notes from Anneke.
+                    </p>
+                    {errors.mobile_phone && (
+                      <p className="text-sm font-medium text-destructive">{errors.mobile_phone}</p>
+                    )}
+                  </div>
+                </div>
+
+                <div className="rounded-xl border-2 border-primary bg-card p-4 shadow-pop-sm">
+                  <div className="flex items-start gap-3">
+                    <div className="mt-0.5 grid h-9 w-9 shrink-0 place-items-center rounded-full bg-secondary text-secondary-foreground">
+                      <Smartphone className="h-4 w-4" />
+                    </div>
+                    <div className="flex-1">
+                      <Label htmlFor="sms_opt_in" className="font-display uppercase text-primary">
+                        Turn on text updates
+                      </Label>
+                      <p className="mt-1 text-sm text-muted-foreground">
+                        Anneke can send simple, personal updates when your dog is picked up, dropped off, or if there is a quick note worth sharing.
+                      </p>
+                      <div className="mt-3 flex items-center gap-3">
+                        <Checkbox
+                          id="sms_opt_in"
+                          checked={form.sms_opt_in}
+                          onCheckedChange={(checked) => setForm({ ...form, sms_opt_in: checked === true })}
+                        />
+                        <Label htmlFor="sms_opt_in" className="text-sm text-foreground">
+                          Yes, send me organized text updates about my dog’s care.
+                        </Label>
+                      </div>
+                    </div>
+                  </div>
                 </div>
 
                 <div className="space-y-2">

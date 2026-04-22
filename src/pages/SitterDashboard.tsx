@@ -20,7 +20,17 @@ import {
   STATUS_STYLES,
   timeToMinutes,
 } from "@/lib/booking";
-import { CalendarOff, Check, Plus, Save, Trash2, Users, X } from "lucide-react";
+import {
+  CalendarOff,
+  Check,
+  MessageSquare,
+  Plus,
+  Save,
+  Smartphone,
+  Trash2,
+  Users,
+  X,
+} from "lucide-react";
 
 type Availability = { id: string; weekday: number; start_minute: number; end_minute: number };
 type Blocked = { id: string; blocked_date: string; reason: string | null };
@@ -57,10 +67,33 @@ type Booking = {
 };
 
 type Draft = { date: string; start: string; end: string; groupLabel: string; internalNotes: string };
+type ProfileDetails = { full_name: string; mobile_phone: string | null; sms_opt_in: boolean };
+type BookingUpdate = {
+  id: string;
+  booking_id: string;
+  kind: "pickup" | "dropoff" | "note";
+  message: string | null;
+  sent_via_sms: boolean;
+  created_at: string;
+};
+type UpdateDraft = { note: string; sendSms: boolean };
 
 const WALK_SLUGS = new Set(["solo-walk", "group-walk"]);
 
 const formatMinuteTime = (minute: number) => `${String(Math.floor(minute / 60)).padStart(2, "0")}:${String(minute % 60).padStart(2, "0")}`;
+const formatUpdateTime = (iso: string) =>
+  new Date(iso).toLocaleString(undefined, {
+    month: "short",
+    day: "numeric",
+    hour: "numeric",
+    minute: "2-digit",
+  });
+
+const updateKindLabel: Record<BookingUpdate["kind"], string> = {
+  pickup: "Picked up",
+  dropoff: "Dropped off",
+  note: "Note sent",
+};
 
 const SitterDashboard = () => {
   const db = supabase as any;
@@ -71,14 +104,17 @@ const SitterDashboard = () => {
   const [services, setServices] = useState<Service[]>([]);
   const [availabilityServices, setAvailabilityServices] = useState<AvailabilityService[]>([]);
   const [walkWindows, setWalkWindows] = useState<WalkWindow[]>([]);
-  const [profileNames, setProfileNames] = useState<Record<string, string>>({});
+  const [profileDetails, setProfileDetails] = useState<Record<string, ProfileDetails>>({});
+  const [bookingUpdates, setBookingUpdates] = useState<Record<string, BookingUpdate[]>>({});
   const [newAvailability, setNewAvailability] = useState({ weekday: 1, start: "09:00", end: "17:00" });
   const [newServiceIds, setNewServiceIds] = useState<string[]>([]);
   const [blockDate, setBlockDate] = useState<Date | undefined>();
   const [blockReason, setBlockReason] = useState("");
   const [newWindow, setNewWindow] = useState({ serviceId: "", weekday: 1, label: "Morning", start: "09:00", end: "11:00" });
   const [scheduleDrafts, setScheduleDrafts] = useState<Record<string, Draft>>({});
+  const [updateDrafts, setUpdateDrafts] = useState<Record<string, UpdateDraft>>({});
   const [savingBookingId, setSavingBookingId] = useState<string | null>(null);
+  const [sendingUpdateId, setSendingUpdateId] = useState<string | null>(null);
 
   const load = async () => {
     if (!user) return;
@@ -95,22 +131,51 @@ const SitterDashboard = () => {
       db.from("walk_windows").select("id, service_id, weekday, start_minute, end_minute, window_label, sort_order").eq("sitter_id", user.id).order("weekday").order("sort_order"),
     ]);
 
-    setAvailability((avail ?? []) as Availability[]);
+    const nextAvailability = (avail ?? []) as Availability[];
+    const nextBookings = (bookingRows ?? []) as Booking[];
+    const nextServices = (serviceRows ?? []) as Service[];
+
+    setAvailability(nextAvailability);
     setBlocked((blockedDates ?? []) as Blocked[]);
-    setBookings((bookingRows ?? []) as Booking[]);
-    setServices((serviceRows ?? []) as Service[]);
+    setBookings(nextBookings);
+    setServices(nextServices);
     setWalkWindows((walkWindowRows ?? []) as WalkWindow[]);
 
-    const customerIds = [...new Set(((bookingRows ?? []) as Booking[]).map((row) => row.customer_id))];
+    const customerIds = [...new Set(nextBookings.map((row) => row.customer_id))];
     if (customerIds.length > 0) {
-      const { data: profileRows } = await db.from("profiles").select("id, full_name").in("id", customerIds);
-      const nextNames = Object.fromEntries(((profileRows ?? []) as { id: string; full_name: string | null }[]).map((row) => [row.id, row.full_name || "Customer"]));
-      setProfileNames(nextNames);
+      const { data: profileRows } = await db.from("profiles").select("id, full_name, mobile_phone, sms_opt_in").in("id", customerIds);
+      const nextProfiles = Object.fromEntries(
+        ((profileRows ?? []) as { id: string; full_name: string | null; mobile_phone?: string | null; sms_opt_in?: boolean | null }[]).map((row) => [
+          row.id,
+          {
+            full_name: row.full_name || "Customer",
+            mobile_phone: row.mobile_phone ?? null,
+            sms_opt_in: Boolean(row.sms_opt_in),
+          },
+        ]),
+      );
+      setProfileDetails(nextProfiles);
     } else {
-      setProfileNames({});
+      setProfileDetails({});
     }
 
-    const slotIds = (avail ?? []).map((row: Availability) => row.id);
+    if (nextBookings.length > 0) {
+      const { data: updatesRows } = await db
+        .from("booking_updates")
+        .select("id, booking_id, kind, message, sent_via_sms, created_at")
+        .in("booking_id", nextBookings.map((booking) => booking.id))
+        .order("created_at", { ascending: false });
+
+      const groupedUpdates = ((updatesRows ?? []) as BookingUpdate[]).reduce<Record<string, BookingUpdate[]>>((acc, update) => {
+        acc[update.booking_id] = [...(acc[update.booking_id] ?? []), update];
+        return acc;
+      }, {});
+      setBookingUpdates(groupedUpdates);
+    } else {
+      setBookingUpdates({});
+    }
+
+    const slotIds = nextAvailability.map((row) => row.id);
     if (slotIds.length > 0) {
       const { data: tagged } = await db.from("availability_services").select("availability_id, service_id").in("availability_id", slotIds);
       setAvailabilityServices((tagged ?? []) as AvailabilityService[]);
@@ -118,10 +183,10 @@ const SitterDashboard = () => {
       setAvailabilityServices([]);
     }
 
-    setNewServiceIds((current) => current.length ? current : ((serviceRows ?? []) as Service[]).filter((service) => !WALK_SLUGS.has(service.slug)).map((service) => service.id));
+    setNewServiceIds((current) => current.length ? current : nextServices.filter((service) => !WALK_SLUGS.has(service.slug)).map((service) => service.id));
     setNewWindow((current) => ({
       ...current,
-      serviceId: current.serviceId || ((serviceRows ?? []) as Service[]).find((service) => WALK_SLUGS.has(service.slug))?.id || "",
+      serviceId: current.serviceId || nextServices.find((service) => WALK_SLUGS.has(service.slug))?.id || "",
     }));
   };
 
@@ -147,6 +212,12 @@ const SitterDashboard = () => {
   );
   const upcomingExactBookings = useMemo(
     () => bookings.filter((booking) => booking.booking_kind !== "requested" && new Date(booking.start_at) > new Date()),
+    [bookings],
+  );
+  const careUpdateBookings = useMemo(
+    () => bookings
+      .filter((booking) => booking.status === "confirmed" && new Date(booking.scheduled_start_at ?? booking.start_at) > new Date(Date.now() - 12 * 60 * 60 * 1000))
+      .sort((a, b) => new Date(a.scheduled_start_at ?? a.start_at).getTime() - new Date(b.scheduled_start_at ?? b.start_at).getTime()),
     [bookings],
   );
   const pastBookings = useMemo(
@@ -270,6 +341,15 @@ const SitterDashboard = () => {
     }));
   };
 
+  const getUpdateDraft = (bookingId: string): UpdateDraft => updateDrafts[bookingId] ?? { note: "", sendSms: true };
+
+  const patchUpdateDraft = (bookingId: string, patch: Partial<UpdateDraft>) => {
+    setUpdateDrafts((current) => ({
+      ...current,
+      [bookingId]: { ...getUpdateDraft(bookingId), ...patch },
+    }));
+  };
+
   const saveWalkBooking = async (booking: Booking) => {
     const draft = getDraft(booking);
     const startMinute = timeToMinutes(draft.start);
@@ -305,6 +385,32 @@ const SitterDashboard = () => {
     load();
   };
 
+  const sendOwnerUpdate = async (booking: Booking, kind: "pickup" | "dropoff" | "note") => {
+    const draft = getUpdateDraft(booking.id);
+    setSendingUpdateId(`${booking.id}-${kind}`);
+    const { data, error } = await supabase.functions.invoke("send-booking-update", {
+      body: {
+        bookingId: booking.id,
+        kind,
+        note: draft.note || undefined,
+        sendSms: draft.sendSms,
+      },
+    });
+    setSendingUpdateId(null);
+
+    if (error) {
+      toast({ title: "Couldn't send update", description: error.message, variant: "destructive" });
+      return;
+    }
+
+    patchUpdateDraft(booking.id, { note: "" });
+    toast({
+      title: data?.smsSent ? "Update sent" : "Update saved",
+      description: data?.message || (data?.smsSent ? "The owner received a text update." : "The update was logged without sending a text."),
+    });
+    load();
+  };
+
   return (
     <main className="min-h-screen bg-background texture-grain">
       <SiteNav />
@@ -312,10 +418,120 @@ const SitterDashboard = () => {
         <span className="inline-block -rotate-2 font-tag text-2xl text-clay">control room</span>
         <h1 className="font-display text-5xl text-primary sm:text-6xl">Sitter dashboard.</h1>
         <p className="mt-3 max-w-3xl text-sm text-foreground/75">
-          Walks run on request windows now: you decide the final timing, which dogs fit together, and when a group walk is ready for payment.
+          Keep the day simple: schedule requests, send clear owner updates, and manage the calendar without extra steps.
         </p>
 
-        <h2 className="mt-10 font-display text-2xl uppercase text-primary">Walk request queue</h2>
+        <h2 className="mt-10 font-display text-2xl uppercase text-primary">Today’s owner updates</h2>
+        <p className="mt-1 text-sm text-muted-foreground">
+          Use the big actions below when a dog is picked up, dropped off, or when you want to send a quick personal note.
+        </p>
+        {careUpdateBookings.length === 0 ? (
+          <p className="mt-2 text-sm text-muted-foreground">No confirmed care visits need updates right now.</p>
+        ) : (
+          <div className="mt-3 grid gap-4">
+            {careUpdateBookings.map((booking) => {
+              const owner = profileDetails[booking.customer_id] ?? { full_name: "Customer", mobile_phone: null, sms_opt_in: false };
+              const draft = getUpdateDraft(booking.id);
+              const updates = bookingUpdates[booking.id] ?? [];
+              const smsReady = owner.sms_opt_in && Boolean(owner.mobile_phone);
+              return (
+                <Card key={booking.id} className="border-4 border-primary p-4 shadow-pop sm:p-5">
+                  <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
+                    <div>
+                      <div className="flex flex-wrap items-center gap-2">
+                        <span className="font-display text-xl uppercase">{booking.pets?.name}</span>
+                        <span className={`px-2 py-0.5 text-xs font-display uppercase ${STATUS_STYLES[booking.status] ?? ""}`}>
+                          {STATUS_LABELS[booking.status] ?? booking.status}
+                        </span>
+                      </div>
+                      <p className="mt-1 text-sm text-foreground/80">
+                        {booking.services?.name} · {formatBookingSchedule(booking)}
+                      </p>
+                      <p className="mt-1 text-sm text-muted-foreground">Owner: {owner.full_name}</p>
+                    </div>
+                    <div className="rounded-xl border-2 border-primary bg-muted px-3 py-2 text-sm">
+                      <div className="flex items-center gap-2 font-display uppercase text-primary">
+                        <Smartphone className="h-4 w-4" />
+                        {smsReady ? "Texts on" : "Log only"}
+                      </div>
+                      <div className="mt-1 text-xs text-muted-foreground">
+                        {smsReady ? owner.mobile_phone : "No mobile number or text opt-in on file"}
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="mt-4 grid gap-3 md:grid-cols-[1fr,1fr] xl:grid-cols-[1fr,1fr,1.2fr,auto] xl:items-end">
+                    <Button
+                      onClick={() => sendOwnerUpdate(booking, "pickup")}
+                      disabled={sendingUpdateId === `${booking.id}-pickup`}
+                      className="h-12 bg-primary font-display uppercase shadow-pop-accent"
+                    >
+                      {sendingUpdateId === `${booking.id}-pickup` ? "Sending…" : "Picked up"}
+                    </Button>
+                    <Button
+                      onClick={() => sendOwnerUpdate(booking, "dropoff")}
+                      disabled={sendingUpdateId === `${booking.id}-dropoff`}
+                      variant="outline"
+                      className="h-12 border-2 border-primary font-display uppercase"
+                    >
+                      {sendingUpdateId === `${booking.id}-dropoff` ? "Sending…" : "Dropped off"}
+                    </Button>
+                    <div>
+                      <Label>Quick note</Label>
+                      <Input
+                        value={draft.note}
+                        maxLength={240}
+                        onChange={(event) => patchUpdateDraft(booking.id, { note: event.target.value })}
+                        placeholder="Happy walk, muddy paws, ate well, calm in the car…"
+                      />
+                    </div>
+                    <Button
+                      onClick={() => sendOwnerUpdate(booking, "note")}
+                      disabled={sendingUpdateId === `${booking.id}-note` || draft.note.trim().length === 0}
+                      variant="secondary"
+                      className="h-12 font-display uppercase"
+                    >
+                      <MessageSquare className="h-4 w-4" />
+                      {sendingUpdateId === `${booking.id}-note` ? "Sending…" : "Send note"}
+                    </Button>
+                  </div>
+
+                  <div className="mt-3 flex items-center gap-3 rounded-lg border border-border px-3 py-2 text-sm">
+                    <Checkbox
+                      id={`send-sms-${booking.id}`}
+                      checked={draft.sendSms}
+                      onCheckedChange={(checked) => patchUpdateDraft(booking.id, { sendSms: checked === true })}
+                    />
+                    <Label htmlFor={`send-sms-${booking.id}`} className="text-sm text-foreground">
+                      Text the owner when possible
+                    </Label>
+                  </div>
+
+                  {updates.length > 0 && (
+                    <div className="mt-4 border-t border-border pt-4">
+                      <h3 className="font-display text-sm uppercase text-primary">Recent updates</h3>
+                      <ul className="mt-2 space-y-2">
+                        {updates.slice(0, 3).map((update) => (
+                          <li key={update.id} className="border border-border bg-muted/50 px-3 py-2 text-sm">
+                            <div className="flex flex-wrap items-center justify-between gap-2">
+                              <span className="font-display text-xs uppercase text-primary">{updateKindLabel[update.kind]}</span>
+                              <span className="text-[11px] text-muted-foreground">
+                                {formatUpdateTime(update.created_at)}{update.sent_via_sms ? " · texted" : ""}
+                              </span>
+                            </div>
+                            {update.message && <p className="mt-1 text-foreground/80">{update.message}</p>}
+                          </li>
+                        ))}
+                      </ul>
+                    </div>
+                  )}
+                </Card>
+              );
+            })}
+          </div>
+        )}
+
+        <h2 className="mt-12 font-display text-2xl uppercase text-primary">Walk request queue</h2>
         {requestBookings.length === 0 ? (
           <p className="mt-2 text-sm text-muted-foreground">No walk requests waiting right now.</p>
         ) : (
@@ -323,6 +539,7 @@ const SitterDashboard = () => {
             {requestBookings.map((booking) => {
               const draft = getDraft(booking);
               const isGroup = booking.services?.slug === "group-walk";
+              const owner = profileDetails[booking.customer_id];
               return (
                 <Card key={booking.id} className="border-4 border-primary p-4 shadow-pop sm:p-5">
                   <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
@@ -334,7 +551,7 @@ const SitterDashboard = () => {
                         </span>
                       </div>
                       <p className="mt-1 text-sm text-foreground/80">
-                        {profileNames[booking.customer_id] ?? "Customer"} · <span className="font-tag text-lg text-clay">{booking.pets?.name}</span>
+                        {owner?.full_name ?? "Customer"} · <span className="font-tag text-lg text-clay">{booking.pets?.name}</span>
                       </p>
                       <p className="mt-1 text-sm text-muted-foreground">Requested: {formatBookingSchedule(booking)}</p>
                       {booking.notes && <p className="mt-2 text-xs text-muted-foreground">Customer notes: “{booking.notes}”</p>}
@@ -498,7 +715,7 @@ const SitterDashboard = () => {
                       </span>
                     </div>
                     <p className="mt-1 text-sm">
-                      {formatBookingSchedule(booking)} · {profileNames[booking.customer_id] ?? "Customer"} · <span className="font-tag text-lg text-clay">{booking.pets?.name}</span>
+                      {formatBookingSchedule(booking)} · {profileDetails[booking.customer_id]?.full_name ?? "Customer"} · <span className="font-tag text-lg text-clay">{booking.pets?.name}</span>
                     </p>
                     {booking.notes && <p className="mt-1 text-xs text-muted-foreground">“{booking.notes}”</p>}
                   </div>
