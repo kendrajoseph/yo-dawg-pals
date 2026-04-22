@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { addDays, format } from "date-fns";
 import { Link } from "react-router-dom";
 import {
@@ -249,10 +249,12 @@ const SitterDashboard = () => {
   const { user } = useAuth();
 
   const [activeTab, setActiveTab] = useState<TabKey>("overview");
+  const [selectedRequestId, setSelectedRequestId] = useState<string | null>(null);
   const [clientSearch, setClientSearch] = useState("");
   const [selectedClientId, setSelectedClientId] = useState("");
   const [messageAudience, setMessageAudience] = useState<MessageAudience>("single");
   const [selectedRecipientIds, setSelectedRecipientIds] = useState<string[]>([]);
+  const requestCardRefs = useRef<Record<string, HTMLDivElement | null>>({});
 
   const [availability, setAvailability] = useState<Availability[]>([]);
   const [blocked, setBlocked] = useState<Blocked[]>([]);
@@ -417,6 +419,16 @@ const SitterDashboard = () => {
   useEffect(() => {
     load();
   }, [user]);
+
+  useEffect(() => {
+    if (activeTab !== "overview" || !selectedRequestId) return;
+
+    const frame = window.requestAnimationFrame(() => {
+      requestCardRefs.current[selectedRequestId]?.scrollIntoView({ behavior: "smooth", block: "start" });
+    });
+
+    return () => window.cancelAnimationFrame(frame);
+  }, [activeTab, selectedRequestId, bookings.length]);
 
   const serviceMap = useMemo(() => new Map(services.map((service) => [service.id, service])), [services]);
   const variantMap = useMemo(() => new Map(serviceVariants.map((variant) => [variant.id, variant])), [serviceVariants]);
@@ -1005,7 +1017,15 @@ const SitterDashboard = () => {
                               <p className="mt-1 text-sm text-foreground/80">{owner?.full_name ?? "Customer"} · {booking.pets?.name ?? "Pet"}</p>
                               <p className="mt-1 text-sm text-muted-foreground">{formatBookingSchedule(booking)}</p>
                             </div>
-                            <Button size="sm" variant="outline" onClick={() => setActiveTab("overview")} className="border-border font-display uppercase">
+                            <Button
+                              size="sm"
+                              variant="outline"
+                              onClick={() => {
+                                setSelectedRequestId(booking.id);
+                                setActiveTab("overview");
+                              }}
+                              className="border-border font-display uppercase"
+                            >
                               Review <ChevronRight className="h-4 w-4" />
                             </Button>
                           </div>
@@ -1146,7 +1166,16 @@ const SitterDashboard = () => {
                     const projectedTotal = (variant?.price_cents ?? booking.base_price_cents ?? booking.total_cents) + extraFee + lateFee;
 
                     return (
-                      <div key={booking.id} className="rounded-md border border-border bg-muted/40 p-4">
+                      <div
+                        key={booking.id}
+                        ref={(node) => {
+                          requestCardRefs.current[booking.id] = node;
+                        }}
+                        className={cn(
+                          "rounded-md border bg-muted/40 p-4 transition-all",
+                          selectedRequestId === booking.id ? "border-primary bg-card shadow-soft ring-2 ring-primary/20" : "border-border",
+                        )}
+                      >
                         <div className="flex flex-col gap-4 xl:flex-row xl:items-start xl:justify-between">
                           <div>
                             <div className="flex flex-wrap items-center gap-2">
