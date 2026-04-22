@@ -860,15 +860,15 @@ const SitterDashboard = () => {
     }));
   };
 
-  const beginWalkWindowEdit = (window: WalkWindow) => {
-    setEditingWalkWindowId(window.id);
+  const beginWalkWindowEdit = (walkWindow: WalkWindow) => {
+    setEditingWalkWindowId(walkWindow.id);
     setNewWindow({
-      serviceId: window.service_id,
-      weekday: window.weekday,
-      label: window.window_label,
-      start: formatMinuteTime(window.start_minute),
-      end: formatMinuteTime(window.end_minute),
-      maxBookings: window.max_bookings,
+      serviceId: walkWindow.service_id,
+      weekday: walkWindow.weekday,
+      label: walkWindow.window_label,
+      start: formatMinuteTime(walkWindow.start_minute),
+      end: formatMinuteTime(walkWindow.end_minute),
+      maxBookings: walkWindow.max_bookings,
     });
     window.requestAnimationFrame(() => {
       walkWindowEditorRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
