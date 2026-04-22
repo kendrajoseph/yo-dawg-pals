@@ -35,6 +35,7 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Textarea } from "@/components/ui/textarea";
 import { useAuth } from "@/hooks/useAuth";
@@ -160,8 +161,10 @@ type Draft = {
   endDate: string;
   start: string;
   end: string;
+  packOutingId: string;
   groupLabel: string;
   internalNotes: string;
+  approvedBasePrice: string;
   extraTimeMinutes: number;
   latePickup: boolean;
 };
@@ -270,6 +273,20 @@ const formatUpdateTime = (iso: string) =>
     hour: "numeric",
     minute: "2-digit",
   });
+
+const formatCurrencyInput = (cents: number) => (cents / 100).toFixed(2);
+
+const parseCurrencyInput = (value: string) => {
+  const normalized = Number.parseFloat(value);
+  if (!Number.isFinite(normalized) || normalized < 0) return null;
+  return Math.round(normalized * 100);
+};
+
+const nextDateForWeekday = (fromDate: string, weekday: number) => {
+  const base = new Date(`${fromDate}T12:00:00`);
+  const offset = (weekday - base.getDay() + 7) % 7;
+  return format(addDays(base, offset), "yyyy-MM-dd");
+};
 
 const updateKindLabel: Record<BookingUpdate["kind"], string> = {
   pickup: "Picked up",
@@ -887,6 +904,14 @@ const SitterDashboard = () => {
     const variant = booking.service_variant_id ? variantMap.get(booking.service_variant_id) : null;
     const boardingStart = service?.boarding_checkin_minute ?? 12 * 60;
     const boardingEnd = service?.boarding_checkout_minute ?? 12 * 60;
+    const matchingPackOuting = walkWindows.find(
+      (window) =>
+        window.service_id === booking.service_id &&
+        window.window_label === booking.group_assignment_label &&
+        booking.requested_window_start_minute === window.start_minute &&
+        booking.requested_window_end_minute === window.end_minute,
+    );
+
     return {
       date: booking.requested_date ?? format(new Date(booking.start_at), "yyyy-MM-dd"),
       endDate:
@@ -901,8 +926,10 @@ const SitterDashboard = () => {
         booking.requested_window_end_minute != null
           ? formatMinuteTime(booking.requested_window_end_minute)
           : formatMinuteTime(service?.slug === "boarding" ? boardingEnd : (variant?.duration_minutes ?? 60) + timeToMinutes("09:00")),
+      packOutingId: matchingPackOuting?.id ?? "",
       groupLabel: booking.group_assignment_label ?? "",
       internalNotes: booking.internal_notes ?? "",
+      approvedBasePrice: formatCurrencyInput(variant?.price_cents ?? booking.base_price_cents ?? booking.total_cents),
       extraTimeMinutes: booking.extra_time_minutes ?? 0,
       latePickup: Boolean(booking.late_pickup_fee_cents),
     };
@@ -914,6 +941,23 @@ const SitterDashboard = () => {
       ...current,
       [booking.id]: { ...buildDefaultDraft(booking), ...(current[booking.id] ?? {}), ...patch },
     }));
+  };
+
+  const applyPackOutingToDraft = (booking: Booking, outingId: string) => {
+    const outing = walkWindows.find((window) => window.id === outingId);
+    if (!outing) {
+      patchDraft(booking, { packOutingId: "" });
+      return;
+    }
+
+    const nextDate = nextDateForWeekday(getDraft(booking).date, outing.weekday);
+    patchDraft(booking, {
+      packOutingId: outing.id,
+      date: nextDate,
+      start: formatMinuteTime(outing.start_minute),
+      end: formatMinuteTime(outing.end_minute),
+      groupLabel: outing.window_label,
+    });
   };
 
   const getUpdateDraft = (bookingId: string): UpdateDraft => updateDrafts[bookingId] ?? { note: "", sendSms: true };
@@ -1021,6 +1065,15 @@ const SitterDashboard = () => {
       return toast({ title: "Approve the pet first", description: "This service needs a fit decision before it can be approved.", variant: "destructive" });
     }
 
+    const approvedBasePrice = parseCurrencyInput(draft.approvedBasePrice);
+    if (approvedBasePrice == null) {
+      return toast({ title: "Enter a valid approved price", description: "Use a dollar amount like 32 or 32.50.", variant: "destructive" });
+    }
+
+    if (service.slug === "group-walk" && !draft.packOutingId) {
+      return toast({ title: "Choose a pack outing", description: "Pick one of the backend outing blocks for this approval.", variant: "destructive" });
+    }
+
     const minimumDuration = variant.duration_minutes ?? 0;
     const startMinute = service.slug === "boarding" ? (service.boarding_checkin_minute ?? 12 * 60) : timeToMinutes(draft.start);
     const endMinute = service.slug === "boarding" ? (service.boarding_checkout_minute ?? 12 * 60) : timeToMinutes(draft.end);
@@ -1046,7 +1099,7 @@ const SitterDashboard = () => {
       ? Math.ceil(extraTimeMinutes / service.extra_time_increment_minutes) * service.extra_time_fee_cents
       : 0;
     const latePickupFeeCents = draft.latePickup ? service.late_pickup_fee_cents ?? 0 : 0;
-    const totalCents = (variant.price_cents ?? booking.base_price_cents ?? booking.total_cents) + extraTimeFeeCents + latePickupFeeCents;
+    const totalCents = approvedBasePrice + extraTimeFeeCents + latePickupFeeCents;
     const paymentAmount = variant.payment_mode === "free" ? 0 : variant.payment_mode === "deposit" ? Math.round(totalCents * 0.25) : totalCents;
     const nextStatus = variant.payment_mode === "free" ? "confirmed" : "awaiting_payment";
 
@@ -1057,6 +1110,7 @@ const SitterDashboard = () => {
       approved_by: user.id,
       group_assignment_label: draft.groupLabel || null,
       internal_notes: draft.internalNotes || null,
+      base_price_cents: approvedBasePrice,
       extra_time_minutes: extraTimeMinutes,
       extra_time_fee_cents: extraTimeFeeCents,
       late_pickup_fee_cents: latePickupFeeCents,
@@ -1496,11 +1550,13 @@ const SitterDashboard = () => {
                     const owner = profileDetails[booking.customer_id];
                     const approval = petApprovals.find((item) => item.pet_id === booking.pet_id && item.service_id === booking.service_id);
                     const isBoarding = service?.slug === "boarding";
+                    const packOutingOptions = walkWindows.filter((window) => window.service_id === booking.service_id);
+                    const approvedBasePriceCents = parseCurrencyInput(draft.approvedBasePrice) ?? (variant?.price_cents ?? booking.base_price_cents ?? booking.total_cents);
                     const extraFee = service?.extra_time_fee_cents && service.extra_time_increment_minutes
                       ? Math.ceil(Math.max(0, draft.extraTimeMinutes) / service.extra_time_increment_minutes) * service.extra_time_fee_cents
                       : 0;
                     const lateFee = draft.latePickup ? service?.late_pickup_fee_cents ?? 0 : 0;
-                    const projectedTotal = (variant?.price_cents ?? booking.base_price_cents ?? booking.total_cents) + extraFee + lateFee;
+                    const projectedTotal = approvedBasePriceCents + extraFee + lateFee;
 
                     return (
                       <div
@@ -1544,6 +1600,23 @@ const SitterDashboard = () => {
                         </div>
 
                         <div className="mt-4 grid gap-3 md:grid-cols-2 xl:grid-cols-6 xl:items-end">
+                          {booking.services?.slug === "group-walk" && (
+                            <div>
+                              <Label>Pack outing</Label>
+                              <Select value={draft.packOutingId} onValueChange={(value) => applyPackOutingToDraft(booking, value)}>
+                                <SelectTrigger>
+                                  <SelectValue placeholder="Choose a backend outing" />
+                                </SelectTrigger>
+                                <SelectContent>
+                                  {packOutingOptions.map((outing) => (
+                                    <SelectItem key={outing.id} value={outing.id}>
+                                      {`${DAYS[outing.weekday]} · ${outing.window_label} · ${formatMinuteTime(outing.start_minute)}–${formatMinuteTime(outing.end_minute)}`}
+                                    </SelectItem>
+                                  ))}
+                                </SelectContent>
+                              </Select>
+                            </div>
+                          )}
                           <div>
                             <Label>{isBoarding ? "Check-in day" : "Date"}</Label>
                             <Input value={draft.date} type="date" onChange={(event) => patchDraft(booking, { date: event.target.value, ...(isBoarding ? { endDate: format(addDays(new Date(`${event.target.value}T00:00:00`), 1), "yyyy-MM-dd") } : {}) })} />
@@ -1563,11 +1636,21 @@ const SitterDashboard = () => {
                             <Input value={draft.end} type="time" onChange={(event) => patchDraft(booking, { end: event.target.value })} />
                           </div>
                           <div>
-                            <Label>{booking.services?.slug === "group-walk" ? "Group label" : "Internal note"}</Label>
+                            <Label>{booking.services?.slug === "group-walk" ? "Pack label" : "Internal note"}</Label>
                             <Input
                               value={booking.services?.slug === "group-walk" ? draft.groupLabel : draft.internalNotes}
-                              onChange={(event) => patchDraft(booking, booking.services?.slug === "group-walk" ? { groupLabel: event.target.value } : { internalNotes: event.target.value })}
-                              placeholder={booking.services?.slug === "group-walk" ? "Calm midday crew" : "Handled by back gate"}
+                              onChange={(event) => patchDraft(booking, booking.services?.slug === "group-walk" ? { groupLabel: event.target.value, packOutingId: "" } : { internalNotes: event.target.value })}
+                              placeholder={booking.services?.slug === "group-walk" ? "Afternoon adrenaline junkies" : "Handled by back gate"}
+                            />
+                          </div>
+                          <div>
+                            <Label>Approved price</Label>
+                            <Input
+                              type="number"
+                              min={0}
+                              step="0.01"
+                              value={draft.approvedBasePrice}
+                              onChange={(event) => patchDraft(booking, { approvedBasePrice: event.target.value })}
                             />
                           </div>
                           <div>
