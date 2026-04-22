@@ -596,15 +596,20 @@ const SitterDashboard = () => {
       return toast({ title: "Approve the pet first", description: "This service needs a fit decision before it can be approved.", variant: "destructive" });
     }
 
-    const startMinute = timeToMinutes(draft.start);
-    const endMinute = timeToMinutes(draft.end);
+    const minimumDuration = variant.duration_minutes ?? 0;
+    const startMinute = service.slug === "boarding" ? (service.boarding_checkin_minute ?? 12 * 60) : timeToMinutes(draft.start);
+    const endMinute = service.slug === "boarding" ? (service.boarding_checkout_minute ?? 12 * 60) : timeToMinutes(draft.end);
     if (endMinute <= startMinute && service.slug !== "boarding") return toast({ title: "End must be after start", variant: "destructive" });
+    if (service.slug !== "boarding" && endMinute - startMinute < minimumDuration) {
+      return toast({ title: `This service needs at least ${minimumDuration} minutes`, variant: "destructive" });
+    }
 
     setSavingBookingId(booking.id);
     const startAt = new Date(`${draft.date}T00:00:00`);
     startAt.setMinutes(startMinute);
-    const endAt = new Date(`${(service.slug === "boarding" ? draft.endDate : draft.date)}T00:00:00`);
-    endAt.setMinutes(service.slug === "boarding" ? timeToMinutes(draft.end) : endMinute);
+    const boardingEndDate = format(addDays(new Date(`${draft.date}T00:00:00`), 1), "yyyy-MM-dd");
+    const endAt = new Date(`${(service.slug === "boarding" ? boardingEndDate : draft.date)}T00:00:00`);
+    endAt.setMinutes(endMinute);
 
     const extraTimeMinutes = Math.max(0, draft.extraTimeMinutes);
     const extraTimeFeeCents = service.extra_time_fee_cents && service.extra_time_increment_minutes
