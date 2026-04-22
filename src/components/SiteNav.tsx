@@ -4,7 +4,7 @@ import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/hooks/useAuth";
 import { cn } from "@/lib/utils";
-import wordmark from "@/assets/yodawg-logo-transparent.png";
+import wordmark from "@/assets/yodawg-nav-logo.svg";
 
 interface SiteNavProps {
   /** "dark" = on hero (light text on navy). "light" = on cream pages. */
