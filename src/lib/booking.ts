@@ -64,8 +64,8 @@ export const STATUS_STYLES: Record<string, string> = {
 
 export const STATUS_LABELS: Record<string, string> = {
   requested: "Request received",
-  pending_payment: "Awaiting payment",
-  awaiting_payment: "Ready for payment",
+  pending_payment: "Payment ready",
+  awaiting_payment: "Payment ready",
   confirmed: "Confirmed",
   cancelled: "Cancelled",
   completed: "Completed",

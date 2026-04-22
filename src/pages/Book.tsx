@@ -452,10 +452,7 @@ const Book = () => {
     return "Anneke confirms the match and final time first, then the 25% deposit opens and the remaining balance is settled later.";
   })();
 
-  const submitLabel = !service || !selectedVariant
-    ? "Continue"
-    ? "Send request"
-    : "Send request";
+  const submitLabel = !service || !selectedVariant ? "Continue" : "Send request";
 
   const feeSummary = service && selectedVariant ? [
     service.turnaround_buffer_minutes ? `${service.turnaround_buffer_minutes}-minute buffer built in` : null,
