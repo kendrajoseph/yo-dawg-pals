@@ -21,7 +21,7 @@ serve(async (req) => {
 
     const { data: booking, error: bErr } = await supabase
       .from("bookings")
-      .select("id, customer_id, status, payment_amount_cents, total_cents, extra_time_fee_cents, late_pickup_fee_cents, services(name, payment_mode), service_variants(name, payment_mode)")
+      .select("id, customer_id, status, service_id, service_variant_id, payment_amount_cents, total_cents, extra_time_fee_cents, late_pickup_fee_cents, services(name, price_cents, payment_mode), service_variants(name, price_cents, payment_mode)")
       .eq("id", bookingId)
       .single();
     if (bErr || !booking) return new Response(JSON.stringify({ error: "Booking not found" }), { status: 404, headers: { ...corsHeaders, "Content-Type": "application/json" } });
@@ -31,8 +31,25 @@ serve(async (req) => {
     const service = (booking as any).services;
     const variant = (booking as any).service_variants;
     const paymentMode = variant?.payment_mode ?? service?.payment_mode;
-    const amountCents = booking.payment_amount_cents ?? booking.total_cents ?? 0;
+    const basePriceCents = variant?.price_cents ?? service?.price_cents ?? 0;
+    const totalCents = basePriceCents + (booking.extra_time_fee_cents ?? 0) + (booking.late_pickup_fee_cents ?? 0);
+    const amountCents = paymentMode === "free" ? 0 : paymentMode === "deposit" ? Math.round(totalCents * 0.25) : totalCents;
     const itemName = variant?.name ?? service?.name ?? "Booking";
+
+    if (booking.payment_amount_cents !== amountCents || booking.total_cents !== totalCents) {
+      const { error: syncError } = await supabase
+        .from("bookings")
+        .update({
+          base_price_cents: basePriceCents,
+          total_cents: totalCents,
+          payment_amount_cents: amountCents,
+        })
+        .eq("id", bookingId);
+
+      if (syncError) {
+        return new Response(JSON.stringify({ error: "Unable to sync booking price" }), { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } });
+      }
+    }
 
     if (paymentMode === "free" || amountCents === 0) {
       await supabase.from("bookings").update({ status: "confirmed", paid_at: new Date().toISOString() }).eq("id", bookingId);
