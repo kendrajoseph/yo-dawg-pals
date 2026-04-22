@@ -247,6 +247,7 @@ const Book = () => {
     if (isBlockedDay) return [];
 
     const duration = selectedVariant.duration_minutes;
+    const bufferMinutes = Math.max(service.turnaround_buffer_minutes ?? 0, 30);
     const output: number[] = [];
 
     for (const block of dayBlocks) {
@@ -258,8 +259,8 @@ const Book = () => {
         if (slotStart.getTime() < Date.now() + 60 * 60_000) continue;
 
         const overlapping = existing.filter((booking) => {
-          const bookingStart = new Date(booking.scheduled_start_at ?? booking.start_at).getTime();
-          const bookingEnd = new Date(booking.scheduled_end_at ?? booking.end_at).getTime();
+          const bookingStart = new Date(booking.scheduled_start_at ?? booking.start_at).getTime() - bufferMinutes * 60_000;
+          const bookingEnd = new Date(booking.scheduled_end_at ?? booking.end_at).getTime() + bufferMinutes * 60_000;
           return slotStart.getTime() < bookingEnd && slotEnd.getTime() > bookingStart;
         }).length;
 
@@ -437,19 +438,19 @@ const Book = () => {
   const reviewCopy = (() => {
     if (!service || !selectedVariant) return "";
     if (isBoarding) {
-      return `Boarding is booked as noon-to-noon by default. Extra time is billed at ${formatPriceWithDecimals(service.extra_time_fee_cents ?? 0)} per ${(service.extra_time_increment_minutes ?? 30)} minutes after a ${service.turnaround_buffer_minutes}-minute buffer, with the same fee for late pickup.`;
+      return `Boarding is fixed from 12pm to 12pm. Extended hours need Anneke's approval first, and approved extra time or late pickup is billed at ${formatPriceWithDecimals(service.extra_time_fee_cents ?? 0)} per ${(service.extra_time_increment_minutes ?? 30)} minutes.`;
     }
     if (isWalkWindowRequest) {
       return service.slug === "group-walk"
         ? "Anneke reviews dog fit, group compatibility, and the final hour block before she opens payment."
-        : "Anneke reviews the request, your dog’s fit, and the final solo time before she sends payment.";
+        : "Anneke reviews the request, your dog’s fit, and the final solo time before she opens payment.";
     }
     if (isRequestFlow) {
       return `Anneke reviews this request before it is confirmed. ${service.requires_pet_approval ? "Pet approval is part of the review." : ""}`.trim();
     }
     if (selectedVariant.payment_mode === "free") return "Anneke still confirms the final fit and timing first, then the visit is locked in without payment.";
     if (selectedVariant.payment_mode === "full") return "Anneke confirms the match and final time first, then payment opens to lock the booking in.";
-    return "Anneke confirms the match and final time first, then the 25% deposit opens and the remaining balance is settled later.";
+    return "Anneke confirms the match and final time first, then payment opens and the booking is locked in.";
   })();
 
   const submitLabel = !service || !selectedVariant ? "Continue" : "Send request";
@@ -567,7 +568,7 @@ const Book = () => {
                                 <span className="ml-1 text-xs opacity-70">{variant.unit_label}</span>
                               </div>
                               <div className={cn("mt-1 text-xs", activeVariant ? "text-tag-foreground/80" : "text-muted-foreground")}>
-                                {variant.duration_minutes >= 1440 ? "Overnight block" : `${variant.duration_minutes} minutes`} · {variant.payment_mode === "deposit" ? "25% deposit" : variant.payment_mode === "free" ? "No payment" : "Full payment after approval / booking"}
+                                 {variant.duration_minutes >= 1440 ? "Overnight block" : `${variant.duration_minutes} minutes`} · {variant.payment_mode === "free" ? "No payment" : "Payment opens after Anneke approves"}
                               </div>
                             </button>
                           );
@@ -614,7 +615,7 @@ const Book = () => {
                           ? `${format(date, "EEE, MMM d")} at ${minutesToTime(service.boarding_checkin_minute ?? 12 * 60)} → ${format(addDays(date, 1), "EEE, MMM d")} at ${minutesToTime(service.boarding_checkout_minute ?? 12 * 60)}`
                           : "Select a day to preview the noon-to-noon stay."}
                       </p>
-                      <p className="mt-3 text-xs text-muted-foreground">Add-on time and late pickup are reviewed by Anneke and added only when needed.</p>
+                      <p className="mt-3 text-xs text-muted-foreground">Extended hours need prior approval. Approved extra time or late pickup is added afterward.</p>
                     </div>
                   ) : isWalkWindowRequest ? (
                     <>
