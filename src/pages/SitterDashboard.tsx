@@ -17,6 +17,7 @@ import {
   DAYS,
   formatBookingSchedule,
   formatPriceWithDecimals,
+  minutesToTime,
   STATUS_LABELS,
   STATUS_STYLES,
   timeToMinutes,
