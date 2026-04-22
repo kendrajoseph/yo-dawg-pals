@@ -22,6 +22,7 @@ import {
   ShieldCheck,
   Smartphone,
   Sparkles,
+  Star,
   Trash2,
   UserRound,
   Users,
@@ -177,6 +178,12 @@ type ProfileDetails = {
   full_name: string;
   mobile_phone: string | null;
   sms_opt_in: boolean;
+};
+
+type ClientAdminProfile = {
+  client_id: string;
+  star_rating: number;
+  internal_notes: string | null;
 };
 
 type BookingUpdate = {
@@ -369,11 +376,13 @@ const SitterDashboard = () => {
   const [serviceAlerts, setServiceAlerts] = useState<ServiceAlert[]>([]);
   const [sitterNotifications, setSitterNotifications] = useState<SitterNotification[]>([]);
   const [profileDetails, setProfileDetails] = useState<Record<string, ProfileDetails>>({});
+  const [clientAdminProfiles, setClientAdminProfiles] = useState<Record<string, ClientAdminProfile>>({});
   const [bookingUpdates, setBookingUpdates] = useState<Record<string, BookingUpdate[]>>({});
   const [petProfiles, setPetProfiles] = useState<Record<string, PetProfile>>({});
   const [temperamentTags, setTemperamentTags] = useState<TemperamentTag[]>([]);
   const [petTagIdsByPet, setPetTagIdsByPet] = useState<Record<string, string[]>>({});
   const [fitAlerts, setFitAlerts] = useState<FitAlert[]>([]);
+  const [savingClientProfile, setSavingClientProfile] = useState(false);
 
   const [newAvailability, setNewAvailability] = useState({ weekday: 1, start: "09:00", end: "12:00", maxBookings: 1 });
   const [newServiceIds, setNewServiceIds] = useState<string[]>([]);
@@ -490,7 +499,9 @@ const SitterDashboard = () => {
     }
 
     if (customerIds.length > 0) {
-      const { data: profileRows } = await db.from("profiles").select("id, full_name, mobile_phone, sms_opt_in").in("id", customerIds);
+      const profileQuery = db.from("profiles").select("id, full_name, mobile_phone, sms_opt_in").in("id", customerIds);
+      const adminProfileQuery = db.from("client_admin_profiles").select("client_id, star_rating, internal_notes").in("client_id", customerIds);
+      const [{ data: profileRows }, { data: adminProfileRows }] = await Promise.all([profileQuery, adminProfileQuery]);
       setProfileDetails(
         Object.fromEntries(
           ((profileRows ?? []) as { id: string; full_name: string | null; mobile_phone?: string | null; sms_opt_in?: boolean | null }[]).map((row) => [
@@ -503,8 +514,14 @@ const SitterDashboard = () => {
           ]),
         ),
       );
+      setClientAdminProfiles(
+        Object.fromEntries(
+          ((adminProfileRows ?? []) as ClientAdminProfile[]).map((row) => [row.client_id, row]),
+        ),
+      );
     } else {
       setProfileDetails({});
+      setClientAdminProfiles({});
     }
 
     if (nextBookings.length > 0) {
@@ -551,6 +568,32 @@ const SitterDashboard = () => {
           "",
       };
     });
+  };
+
+  const saveClientAdminProfile = async (clientId: string, values: { star_rating: number; internal_notes: string }) => {
+    if (!user) return;
+
+    setSavingClientProfile(true);
+    const payload = {
+      client_id: clientId,
+      star_rating: Math.min(5, Math.max(1, values.star_rating)),
+      internal_notes: values.internal_notes.trim() || null,
+      last_updated_by: user.id,
+    };
+
+    const { error } = await db.from("client_admin_profiles").upsert(payload, { onConflict: "client_id" });
+    setSavingClientProfile(false);
+
+    if (error) {
+      toast({ title: "Couldn't save client notes", description: error.message, variant: "destructive" });
+      return;
+    }
+
+    setClientAdminProfiles((current) => ({
+      ...current,
+      [clientId]: payload,
+    }));
+    toast({ title: "Client profile updated" });
   };
 
   useEffect(() => {
@@ -618,10 +661,24 @@ const SitterDashboard = () => {
   }, [bookings, clientOptions, clientSearch]);
 
   const selectedClientProfile = selectedClientId ? profileDetails[selectedClientId] : null;
+  const selectedClientAdminProfile = selectedClientId ? clientAdminProfiles[selectedClientId] : null;
   const selectedClientBookings = useMemo(
     () => bookings.filter((booking) => booking.customer_id === selectedClientId),
     [bookings, selectedClientId],
   );
+  const selectedClientServiceHistory = useMemo(() => {
+    const counts = selectedClientBookings.reduce<Record<string, { label: string; count: number }>>((acc, booking) => {
+      const key = booking.service_variant_id ?? booking.service_id;
+      const label = booking.service_variants?.name ?? booking.services?.name ?? "Service";
+      acc[key] = {
+        label,
+        count: (acc[key]?.count ?? 0) + 1,
+      };
+      return acc;
+    }, {});
+
+    return Object.values(counts).sort((a, b) => b.count - a.count || a.label.localeCompare(b.label));
+  }, [selectedClientBookings]);
   const selectedClientMessageLog = useMemo(
     () => clientMessages.filter((message) => message.customer_id === selectedClientId).slice(0, 8),
     [clientMessages, selectedClientId],
@@ -690,6 +747,13 @@ const SitterDashboard = () => {
   );
   const ownerVisibleTags = useMemo(() => temperamentTags.filter((tag) => tag.visibility === "owner"), [temperamentTags]);
   const internalOnlyTags = useMemo(() => temperamentTags.filter((tag) => tag.visibility === "internal"), [temperamentTags]);
+  const clientAdminDraft = useMemo(
+    () => ({
+      star_rating: selectedClientAdminProfile?.star_rating ?? 3,
+      internal_notes: selectedClientAdminProfile?.internal_notes ?? "",
+    }),
+    [selectedClientAdminProfile],
+  );
 
   const pendingPetApprovals = useMemo(() => {
     const seen = new Set<string>();
@@ -2119,6 +2183,7 @@ const SitterDashboard = () => {
                   </div>
 
                   {selectedClientId && (
+                    <>
                     <div className="mt-4 grid gap-3 lg:grid-cols-2">
                       <div className="rounded-md border border-border bg-muted/40 p-4">
                         <h3 className="font-display text-base uppercase text-primary">Bookings</h3>
@@ -2136,6 +2201,22 @@ const SitterDashboard = () => {
                                 </div>
                                 <div className="mt-1 flex flex-wrap items-center gap-2 text-xs text-muted-foreground"><PetNameLabel name={booking.pets?.name ?? "Pet"} species={booking.pets?.species} /><span>·</span><span>{formatBookingSchedule(booking)}</span></div>
                               </div>
+                            ))
+                          )}
+                        </div>
+                      </div>
+
+                      <div className="rounded-md border border-border bg-muted/40 p-4">
+                        <h3 className="font-display text-base uppercase text-primary">Services used</h3>
+                        <div className="mt-3 flex flex-wrap gap-2 text-sm">
+                          {selectedClientServiceHistory.length === 0 ? (
+                            <p className="text-muted-foreground">No service history yet.</p>
+                          ) : (
+                            selectedClientServiceHistory.map((service) => (
+                              <span key={service.label} className="rounded-md border border-border bg-card px-3 py-2">
+                                <span className="font-display uppercase text-primary">{service.label}</span>
+                                <span className="ml-2 text-xs text-muted-foreground">{service.count}×</span>
+                              </span>
                             ))
                           )}
                         </div>
@@ -2165,6 +2246,61 @@ const SitterDashboard = () => {
                         </div>
                       </div>
                     </div>
+
+                    {canManageDashboard && selectedClientProfile && (
+                      <div className="mt-4 rounded-md border border-border bg-card p-4">
+                        <div className="flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between">
+                          <div>
+                            <h3 className="font-display text-base uppercase text-primary">Admin-only client notes</h3>
+                            <p className="text-sm text-muted-foreground">Private relationship notes and a quick quality rating only admins can see.</p>
+                          </div>
+                          <div className="rounded-md bg-muted px-3 py-2 text-xs font-tag text-muted-foreground">Hidden from clients</div>
+                        </div>
+
+                        <div className="mt-4 grid gap-4 lg:grid-cols-[auto,1fr]">
+                          <div>
+                            <Label>Star rating</Label>
+                            <div className="mt-2 flex flex-wrap gap-2">
+                              {[1, 2, 3, 4, 5].map((rating) => {
+                                const active = rating <= clientAdminDraft.star_rating;
+                                return (
+                                  <button
+                                    key={rating}
+                                    type="button"
+                                    onClick={() => saveClientAdminProfile(selectedClientId, { ...clientAdminDraft, star_rating: rating })}
+                                    disabled={savingClientProfile}
+                                    className={cn(
+                                      "grid h-10 w-10 place-items-center rounded-md border transition-colors",
+                                      active ? "border-primary bg-accent text-primary" : "border-border bg-muted/40 text-muted-foreground",
+                                    )}
+                                    aria-label={`Set ${selectedClientProfile.full_name} rating to ${rating} stars`}
+                                  >
+                                    <Star className={cn("h-4 w-4", active && "fill-current")} />
+                                  </button>
+                                );
+                              })}
+                            </div>
+                          </div>
+
+                          <div>
+                            <Label>Internal notes</Label>
+                            <Textarea
+                              defaultValue={clientAdminDraft.internal_notes}
+                              key={`${selectedClientId}-${selectedClientAdminProfile?.internal_notes ?? ""}`}
+                              maxLength={1500}
+                              placeholder="Anything only the admin team should know about working with this client…"
+                              className="mt-2 min-h-28"
+                              onBlur={(event) => {
+                                const nextNotes = event.target.value;
+                                if (nextNotes === clientAdminDraft.internal_notes) return;
+                                saveClientAdminProfile(selectedClientId, { ...clientAdminDraft, internal_notes: nextNotes });
+                              }}
+                            />
+                          </div>
+                        </div>
+                      </div>
+                    )}
+                    </>
                   )}
                 </Card>
 

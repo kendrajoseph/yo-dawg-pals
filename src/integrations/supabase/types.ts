@@ -279,6 +279,36 @@ export type Database = {
           },
         ]
       }
+      client_admin_profiles: {
+        Row: {
+          client_id: string
+          created_at: string
+          id: string
+          internal_notes: string | null
+          last_updated_by: string | null
+          star_rating: number
+          updated_at: string
+        }
+        Insert: {
+          client_id: string
+          created_at?: string
+          id?: string
+          internal_notes?: string | null
+          last_updated_by?: string | null
+          star_rating?: number
+          updated_at?: string
+        }
+        Update: {
+          client_id?: string
+          created_at?: string
+          id?: string
+          internal_notes?: string | null
+          last_updated_by?: string | null
+          star_rating?: number
+          updated_at?: string
+        }
+        Relationships: []
+      }
       client_message_reads: {
         Row: {
           client_message_id: string
