@@ -437,26 +437,15 @@ const Book = () => {
 
   const reviewCopy = (() => {
     if (!service || !selectedVariant) return "";
-    if (isBoarding) {
-      return `Boarding is fixed from 12pm to 12pm. Extended hours need Anneke's approval first, and approved extra time or late pickup is billed at ${formatPriceWithDecimals(service.extra_time_fee_cents ?? 0)} per ${(service.extra_time_increment_minutes ?? 30)} minutes.`;
-    }
-    if (isWalkWindowRequest) {
-      return service.slug === "group-walk"
-        ? "Anneke reviews dog fit, group compatibility, and the final hour block before she opens payment."
-        : "Anneke reviews the request, your dog’s fit, and the final solo time before she opens payment.";
-    }
-    if (isRequestFlow) {
-      return `Anneke reviews this request before it is confirmed. ${service.requires_pet_approval ? "Pet approval is part of the review." : ""}`.trim();
-    }
-    if (selectedVariant.payment_mode === "free") return "Anneke still confirms the final fit and timing first, then the visit is locked in without payment.";
-    if (selectedVariant.payment_mode === "full") return "Anneke confirms the match and final time first, then payment opens to lock the booking in.";
-    return "Anneke confirms the match and final time first, then payment opens and the booking is locked in.";
+    if (isBoarding) return "Boarding requests are confirmed before your stay is finalized.";
+    if (isWalkWindowRequest || isRequestFlow) return "Your request will be reviewed before it is confirmed.";
+    if (selectedVariant.payment_mode === "free") return "Your booking will be confirmed before it is finalized.";
+    return "Your booking will be confirmed before payment is requested.";
   })();
 
   const submitLabel = !service || !selectedVariant ? "Continue" : "Send request";
 
   const feeSummary = service && selectedVariant ? [
-    service.turnaround_buffer_minutes ? `${service.turnaround_buffer_minutes}-minute buffer built in` : null,
     service.extra_time_fee_cents && service.extra_time_increment_minutes
       ? `${formatPriceWithDecimals(service.extra_time_fee_cents)} / ${service.extra_time_increment_minutes} min add-on`
       : null,

@@ -11,7 +11,7 @@ const faqItems = [
   {
     question: "How do bookings work?",
     answer:
-      "Start by submitting a booking request with your preferred service, timing, and pet details. Anneke reviews each request personally and confirms availability, fit, and any next steps before care begins.",
+      "Start by submitting a booking request with your preferred service, timing, and pet details. We’ll review it and confirm the booking details with you.",
   },
   {
     question: "Do all dogs need to be a good fit for group walks?",
