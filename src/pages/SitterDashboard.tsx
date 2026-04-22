@@ -381,8 +381,8 @@ const SitterDashboard = () => {
     return map;
   }, [availabilityServices]);
 
-  const requestBookings = useMemo(() => bookings.filter((booking) => booking.booking_kind === "requested" && ["requested", "awaiting_payment", "confirmed"].includes(booking.status)), [bookings]);
-  const upcomingExactBookings = useMemo(() => bookings.filter((booking) => booking.booking_kind !== "requested" && new Date(booking.start_at) > new Date()), [bookings]);
+  const requestBookings = useMemo(() => bookings.filter((booking) => ["requested", "awaiting_payment", "pending_payment", "confirmed"].includes(booking.status)), [bookings]);
+  const upcomingExactBookings = useMemo(() => bookings.filter((booking) => booking.status === "confirmed" && new Date(booking.scheduled_start_at ?? booking.start_at) > new Date()), [bookings]);
   const careUpdateBookings = useMemo(
     () => bookings
       .filter((booking) => booking.status === "confirmed" && new Date(booking.scheduled_start_at ?? booking.start_at) > new Date(Date.now() - 12 * 60 * 60 * 1000))
@@ -636,7 +636,7 @@ const SitterDashboard = () => {
       return;
     }
 
-    toast({ title: nextStatus === "confirmed" ? "Request confirmed" : "Ready for payment" });
+    toast({ title: nextStatus === "confirmed" ? "Request confirmed" : "Payment opened" });
     load();
   };
 
