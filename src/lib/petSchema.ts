@@ -34,6 +34,8 @@ export const petSchema = z.object({
 
   insurance_provider: z.string().trim().max(120).optional().or(z.literal("")),
   insurance_policy: z.string().trim().max(80).optional().or(z.literal("")),
+
+  temperament_tag_ids: z.array(z.string().uuid()).max(12).default([]),
 });
 
 export type PetFormValues = z.input<typeof petSchema>;
@@ -69,6 +71,7 @@ export type Pet = {
   entry_instructions: string | null;
   insurance_provider: string | null;
   insurance_policy: string | null;
+  temperament_tag_ids?: string[];
 };
 
 export const emptyPetForm: PetFormValues = {
@@ -82,6 +85,7 @@ export const emptyPetForm: PetFormValues = {
   authorized_pickup_name: "", authorized_pickup_phone: "",
   entry_code: "", entry_instructions: "",
   insurance_provider: "", insurance_policy: "",
+  temperament_tag_ids: [],
 };
 
 export const petToForm = (p: Pet): PetFormValues => ({
@@ -113,4 +117,5 @@ export const petToForm = (p: Pet): PetFormValues => ({
   entry_instructions: p.entry_instructions ?? "",
   insurance_provider: p.insurance_provider ?? "",
   insurance_policy: p.insurance_policy ?? "",
+  temperament_tag_ids: p.temperament_tag_ids ?? [],
 });

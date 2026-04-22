@@ -11,6 +11,8 @@ type AuthCtx = {
   loading: boolean;
   isSitter: boolean;
   isAnneke: boolean;
+  isAdmin: boolean;
+  canManageDashboard: boolean;
   signOut: () => Promise<void>;
 };
 
@@ -21,6 +23,8 @@ const Ctx = createContext<AuthCtx>({
   loading: true,
   isSitter: false,
   isAnneke: false,
+  isAdmin: false,
+  canManageDashboard: false,
   signOut: async () => {},
 });
 
@@ -66,9 +70,11 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   };
 
   const isAnneke = user?.email?.toLowerCase() === ANNEKE_EMAIL;
+  const isAdmin = roles.includes("admin");
+  const canManageDashboard = isAnneke || isAdmin;
 
   return (
-    <Ctx.Provider value={{ user, session, roles, loading, isSitter: roles.includes("sitter") && isAnneke, isAnneke, signOut }}>
+    <Ctx.Provider value={{ user, session, roles, loading, isSitter: roles.includes("sitter") && isAnneke, isAnneke, isAdmin, canManageDashboard, signOut }}>
       {children}
     </Ctx.Provider>
   );

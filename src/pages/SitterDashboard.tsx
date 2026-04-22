@@ -132,6 +132,29 @@ type PetApproval = {
   services: { name: string } | null;
 };
 
+type TemperamentTag = {
+  id: string;
+  slug: string;
+  label: string;
+  description: string | null;
+  visibility: "owner" | "internal";
+  risk_services: string[];
+  risk_message: string | null;
+};
+
+type FitAlert = {
+  id: string;
+  pet_id: string;
+  service_id: string;
+  booking_id: string | null;
+  title: string;
+  message: string;
+  severity: "warning" | "critical";
+  is_resolved: boolean;
+  conflicting_tag_ids: string[];
+  created_at: string;
+};
+
 type Draft = {
   date: string;
   endDate: string;
@@ -270,7 +293,7 @@ const tabMeta: Array<{ value: TabKey; label: string; icon: typeof LayoutDashboar
 
 const SitterDashboard = () => {
   const db = supabase as any;
-  const { user } = useAuth();
+  const { user, canManageDashboard } = useAuth();
 
   const [activeTab, setActiveTab] = useState<TabKey>("overview");
   const [selectedRequestId, setSelectedRequestId] = useState<string | null>(null);
@@ -295,6 +318,9 @@ const SitterDashboard = () => {
   const [profileDetails, setProfileDetails] = useState<Record<string, ProfileDetails>>({});
   const [bookingUpdates, setBookingUpdates] = useState<Record<string, BookingUpdate[]>>({});
   const [petProfiles, setPetProfiles] = useState<Record<string, PetProfile>>({});
+  const [temperamentTags, setTemperamentTags] = useState<TemperamentTag[]>([]);
+  const [petTagIdsByPet, setPetTagIdsByPet] = useState<Record<string, string[]>>({});
+  const [fitAlerts, setFitAlerts] = useState<FitAlert[]>([]);
 
   const [newAvailability, setNewAvailability] = useState({ weekday: 1, start: "09:00", end: "12:00", maxBookings: 1 });
   const [newServiceIds, setNewServiceIds] = useState<string[]>([]);
@@ -340,6 +366,8 @@ const SitterDashboard = () => {
       { data: approvalRows },
       { data: messageRows },
       { data: alertRows },
+      { data: tagRows },
+      { data: fitAlertRows },
     ] = await Promise.all([
       db.from("availability").select("*").eq("sitter_id", user.id).order("weekday").order("start_minute"),
       db.from("blocked_dates").select("*").eq("sitter_id", user.id).order("blocked_date"),
@@ -362,6 +390,8 @@ const SitterDashboard = () => {
       db.from("sitter_pet_approvals").select("id, pet_id, service_id, status, notes, pets(name), services(name)").eq("sitter_id", user.id).order("updated_at", { ascending: false }),
       db.from("client_messages").select("id, customer_id, booking_id, kind, subject, message, send_email, send_sms, delivered_email_at, delivered_sms_at, created_at").eq("sitter_id", user.id).order("created_at", { ascending: false }).limit(50),
       db.from("service_alerts").select("id, kind, title, message, starts_at, ends_at, is_active, pin_to_profile, created_at").eq("sitter_id", user.id).order("starts_at", { ascending: false }).limit(20),
+      db.from("pet_temperament_tags").select("id, slug, label, description, visibility, risk_services, risk_message").eq("is_active", true).order("sort_order"),
+      db.from("pet_fit_alerts").select("id, pet_id, service_id, booking_id, title, message, severity, is_resolved, conflicting_tag_ids, created_at").eq("is_resolved", false).order("created_at", { ascending: false }).limit(20),
     ]);
 
     const nextAvailability = (avail ?? []) as Availability[];
@@ -377,17 +407,29 @@ const SitterDashboard = () => {
     setPetApprovals((approvalRows ?? []) as PetApproval[]);
     setClientMessages((messageRows ?? []) as ClientMessage[]);
     setServiceAlerts((alertRows ?? []) as ServiceAlert[]);
+    setTemperamentTags((tagRows ?? []) as TemperamentTag[]);
+    setFitAlerts((fitAlertRows ?? []) as FitAlert[]);
 
     const customerIds = [...new Set(nextBookings.map((row) => row.customer_id))];
     const petIds = [...new Set(nextBookings.map((row) => row.pet_id))];
 
     if (petIds.length > 0) {
-      const { data: petRows } = await db.from("pets").select("*").in("id", petIds);
+      const [{ data: petRows }, { data: petTagRows }] = await Promise.all([
+        db.from("pets").select("*").in("id", petIds),
+        db.from("pet_tag_assignments").select("pet_id, tag_id").in("pet_id", petIds),
+      ]);
       setPetProfiles(
         Object.fromEntries(((petRows ?? []) as PetProfile[]).map((pet) => [pet.id, pet])),
       );
+      setPetTagIdsByPet(
+        ((petTagRows ?? []) as Array<{ pet_id: string; tag_id: string }>).reduce<Record<string, string[]>>((acc, row) => {
+          acc[row.pet_id] = [...(acc[row.pet_id] ?? []), row.tag_id];
+          return acc;
+        }, {}),
+      );
     } else {
       setPetProfiles({});
+      setPetTagIdsByPet({});
     }
 
     if (customerIds.length > 0) {
@@ -533,6 +575,12 @@ const SitterDashboard = () => {
   );
   const selectedDraftClientProfile = clientMessageDraft.customerId ? profileDetails[clientMessageDraft.customerId] : null;
   const activePetProfile = activePetProfileId ? petProfiles[activePetProfileId] ?? null : null;
+  const activePetTags = useMemo(
+    () => (activePetProfileId ? (petTagIdsByPet[activePetProfileId] ?? []).map((tagId) => temperamentTags.find((tag) => tag.id === tagId)).filter(Boolean) as TemperamentTag[] : []),
+    [activePetProfileId, petTagIdsByPet, temperamentTags],
+  );
+  const ownerVisibleTags = useMemo(() => temperamentTags.filter((tag) => tag.visibility === "owner"), [temperamentTags]);
+  const internalOnlyTags = useMemo(() => temperamentTags.filter((tag) => tag.visibility === "internal"), [temperamentTags]);
 
   const pendingPetApprovals = useMemo(() => {
     const seen = new Set<string>();
@@ -543,6 +591,11 @@ const SitterDashboard = () => {
       const key = `${booking.pet_id}-${booking.service_id}`;
       if (seen.has(key)) return [];
       seen.add(key);
+      const selectedTags = (petTagIdsByPet[booking.pet_id] ?? [])
+        .map((tagId) => temperamentTags.find((tag) => tag.id === tagId))
+        .filter(Boolean) as TemperamentTag[];
+      const riskyTags = selectedTags.filter((tag) => tag.risk_services.includes(service.slug));
+      const openAlert = fitAlerts.find((alert) => alert.pet_id === booking.pet_id && alert.service_id === booking.service_id && !alert.is_resolved);
       return [{
         key,
         petId: booking.pet_id,
@@ -551,9 +604,11 @@ const SitterDashboard = () => {
         serviceName: booking.services?.name ?? "Service",
         status: approval?.status ?? "pending",
         notes: approval?.notes ?? null,
+        riskyTags,
+        openAlert,
       }];
     });
-  }, [petApprovals, requestBookings, serviceMap]);
+  }, [fitAlerts, petApprovals, petTagIdsByPet, requestBookings, serviceMap, temperamentTags]);
 
   const weeklySchedule = useMemo(
     () => DAYS.map((day, weekday) => ({
@@ -869,6 +924,56 @@ const SitterDashboard = () => {
     }));
   };
 
+  const savePetTags = async (petId: string, nextTagIds: string[]) => {
+    if (!user) return;
+
+    const { error: deleteError } = await db.from("pet_tag_assignments").delete().eq("pet_id", petId);
+    if (deleteError) {
+      toast({ title: "Couldn't update tags", description: deleteError.message, variant: "destructive" });
+      return;
+    }
+
+    if (nextTagIds.length > 0) {
+      const { error: insertError } = await db.from("pet_tag_assignments").insert(
+        nextTagIds.map((tagId) => ({ pet_id: petId, tag_id: tagId, created_by: user.id })),
+      );
+      if (insertError) {
+        toast({ title: "Couldn't update tags", description: insertError.message, variant: "destructive" });
+        return;
+      }
+    }
+
+    toast({ title: "Pet tags updated" });
+    load();
+  };
+
+  const createFitAlert = async (booking: Booking, riskyTags: TemperamentTag[]) => {
+    if (!user || riskyTags.length === 0) return;
+    const service = serviceMap.get(booking.service_id);
+    if (!service) return;
+
+    const title = `${booking.pets?.name ?? "Pet"} flagged for ${service.name}`;
+    const message = riskyTags.map((tag) => tag.risk_message || `${tag.label} requires extra review for ${service.name}.`).join(" ");
+
+    const existingAlert = fitAlerts.find((alert) => alert.pet_id === booking.pet_id && alert.service_id === booking.service_id && alert.booking_id === booking.id && !alert.is_resolved);
+    if (existingAlert) return;
+
+    const { error } = await db.from("pet_fit_alerts").insert({
+      pet_id: booking.pet_id,
+      service_id: booking.service_id,
+      booking_id: booking.id,
+      triggered_by: user.id,
+      severity: riskyTags.some((tag) => tag.slug === "aggression-history" || tag.slug === "bite-incident") ? "critical" : "warning",
+      title,
+      message,
+      conflicting_tag_ids: riskyTags.map((tag) => tag.id),
+    });
+
+    if (error) {
+      toast({ title: "Alert could not be saved", description: error.message, variant: "destructive" });
+    }
+  };
+
   const setPetApproval = async (petId: string, serviceId: string, status: PetApproval["status"], notes?: string) => {
     if (!user) return;
     const { error } = await db.from("sitter_pet_approvals").upsert(
@@ -882,7 +987,26 @@ const SitterDashboard = () => {
       { onConflict: "sitter_id,pet_id,service_id" },
     );
     if (error) toast({ title: "Approval failed", description: error.message, variant: "destructive" });
-    else load();
+    else {
+      const service = serviceMap.get(serviceId);
+      const riskyTags = service
+        ? ((petTagIdsByPet[petId] ?? []).map((tagId) => temperamentTags.find((tag) => tag.id === tagId)).filter(Boolean) as TemperamentTag[])
+            .filter((tag) => tag.risk_services.includes(service.slug))
+        : [];
+      if (status === "approved" && riskyTags.length > 0) {
+        await createFitAlert(
+          requestBookings.find((booking) => booking.pet_id === petId && booking.service_id === serviceId) ?? {
+            id: null,
+            pet_id: petId,
+            service_id: serviceId,
+            pets: { name: activePetProfile?.name ?? "Pet" },
+          } as Booking,
+          riskyTags,
+        );
+        toast({ title: "Approved with risk alert", description: "This fit was approved, but it has been flagged for follow-up." });
+      }
+      load();
+    }
   };
 
   const approveRequest = async (booking: Booking) => {
@@ -1275,6 +1399,19 @@ const SitterDashboard = () => {
                             {approval.status}
                           </span>
                         </div>
+                        {approval.riskyTags.length > 0 && (
+                          <div className="mt-3 rounded-md border border-destructive/30 bg-destructive/10 px-3 py-2 text-sm text-foreground">
+                            <div className="font-display text-sm uppercase text-destructive">Risk flags</div>
+                            <div className="mt-2 flex flex-wrap gap-2">
+                              {approval.riskyTags.map((tag: TemperamentTag) => (
+                                <span key={tag.id} className="rounded-md bg-background px-2 py-1 text-[11px] font-tag text-destructive ring-1 ring-destructive/30">
+                                  {tag.label}
+                                </span>
+                              ))}
+                            </div>
+                            {approval.openAlert && <p className="mt-2 text-xs text-muted-foreground">Existing alert: {approval.openAlert.message}</p>}
+                          </div>
+                        )}
                         <div className="mt-4 flex flex-wrap gap-2">
                           <Button size="sm" variant="secondary" onClick={() => setActivePetProfileId(approval.petId)} className="font-display uppercase">
                             <UserRound className="h-4 w-4" /> Open profile
@@ -2250,6 +2387,57 @@ const SitterDashboard = () => {
               </div>
 
               <div className="grid gap-4">
+                <div className="rounded-md border border-border bg-card p-4">
+                  <h3 className="font-display text-base uppercase text-primary">Temperament tags</h3>
+                  <div className="mt-3 space-y-4">
+                    <div>
+                      <p className="text-xs font-tag text-muted-foreground">Visible to owners</p>
+                      <div className="mt-2 flex flex-wrap gap-2">
+                        {ownerVisibleTags.map((tag) => {
+                          const checked = activePetTags.some((activeTag) => activeTag.id === tag.id);
+                          return (
+                            <label key={tag.id} className="flex items-center gap-2 rounded-md border border-border bg-muted/40 px-3 py-2 text-sm">
+                              <Checkbox
+                                checked={checked}
+                                onCheckedChange={(next) => {
+                                  if (!activePetProfile) return;
+                                  const current = petTagIdsByPet[activePetProfile.id] ?? [];
+                                  const nextIds = next === true ? [...new Set([...current, tag.id])] : current.filter((id) => id !== tag.id);
+                                  savePetTags(activePetProfile.id, nextIds);
+                                }}
+                              />
+                              <span>{tag.label}</span>
+                            </label>
+                          );
+                        })}
+                      </div>
+                    </div>
+                    {canManageDashboard && (
+                      <div>
+                        <p className="text-xs font-tag text-muted-foreground">Internal only</p>
+                        <div className="mt-2 flex flex-wrap gap-2">
+                          {internalOnlyTags.map((tag) => {
+                            const checked = activePetTags.some((activeTag) => activeTag.id === tag.id);
+                            return (
+                              <label key={tag.id} className="flex items-center gap-2 rounded-md border border-border bg-muted/40 px-3 py-2 text-sm">
+                                <Checkbox
+                                  checked={checked}
+                                  onCheckedChange={(next) => {
+                                    if (!activePetProfile) return;
+                                    const current = petTagIdsByPet[activePetProfile.id] ?? [];
+                                    const nextIds = next === true ? [...new Set([...current, tag.id])] : current.filter((id) => id !== tag.id);
+                                    savePetTags(activePetProfile.id, nextIds);
+                                  }}
+                                />
+                                <span>{tag.label}</span>
+                              </label>
+                            );
+                          })}
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                </div>
                 {[
                   ["Care notes", [activePetProfile.medications, activePetProfile.allergies, activePetProfile.dietary_notes, activePetProfile.behavioral_notes, activePetProfile.notes].filter(Boolean)],
                   ["Vet & emergency", [activePetProfile.vet_name, activePetProfile.vet_phone, activePetProfile.vet_address, activePetProfile.vet_info, activePetProfile.emergency_contact].filter(Boolean)],

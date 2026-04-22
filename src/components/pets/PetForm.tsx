@@ -9,9 +9,16 @@ import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/
 import { Upload } from "lucide-react";
 import { PetFormValues } from "@/lib/petSchema";
 
+type TemperamentTag = {
+  id: string;
+  label: string;
+  description: string | null;
+};
+
 type Props = {
   form: PetFormValues;
   setForm: (v: PetFormValues) => void;
+  availableTemperamentTags?: TemperamentTag[];
   photoFile: File | null;
   setPhotoFile: (f: File | null) => void;
   saving: boolean;
@@ -34,7 +41,7 @@ const Field = ({ label, children }: { label: string; children: React.ReactNode }
   </div>
 );
 
-const PetForm = ({ form, setForm, photoFile, setPhotoFile, saving, isEdit, onCancel, onSubmit }: Props) => {
+const PetForm = ({ form, setForm, availableTemperamentTags = [], photoFile, setPhotoFile, saving, isEdit, onCancel, onSubmit }: Props) => {
   const set = <K extends keyof PetFormValues>(key: K, value: PetFormValues[K]) =>
     setForm({ ...form, [key]: value });
 
@@ -96,6 +103,40 @@ const PetForm = ({ form, setForm, photoFile, setPhotoFile, saving, isEdit, onCan
             </label>
           </Field>
         </div>
+      </Section>
+
+      <Section title="Temperament tags">
+        <p className="text-sm text-muted-foreground">
+          Choose tags that describe how your dog typically behaves so care can be matched safely.
+        </p>
+        {availableTemperamentTags.length === 0 ? (
+          <p className="text-sm text-muted-foreground">No temperament tags are available right now.</p>
+        ) : (
+          <div className="grid gap-2 sm:grid-cols-2">
+            {availableTemperamentTags.map((tag) => {
+              const checked = form.temperament_tag_ids.includes(tag.id);
+              return (
+                <label key={tag.id} className="flex items-start gap-3 rounded-md border border-border bg-muted/40 px-3 py-3 text-sm">
+                  <Checkbox
+                    checked={checked}
+                    onCheckedChange={(next) =>
+                      set(
+                        "temperament_tag_ids",
+                        next === true
+                          ? [...new Set([...form.temperament_tag_ids, tag.id])]
+                          : form.temperament_tag_ids.filter((id) => id !== tag.id),
+                      )
+                    }
+                  />
+                  <span>
+                    <span className="block font-display text-sm uppercase text-primary">{tag.label}</span>
+                    {tag.description ? <span className="mt-1 block text-xs text-muted-foreground">{tag.description}</span> : null}
+                  </span>
+                </label>
+              );
+            })}
+          </div>
+        )}
       </Section>
 
       <Accordion type="multiple" defaultValue={["health"]} className="space-y-2">

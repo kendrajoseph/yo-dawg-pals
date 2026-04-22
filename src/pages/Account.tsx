@@ -95,7 +95,7 @@ const formatUpdateTime = (iso: string) =>
 
 const Account = () => {
   const db = supabase as any;
-  const { user, isSitter, isAnneke } = useAuth();
+  const { user, canManageDashboard } = useAuth();
   const [bookings, setBookings] = useState<BookingRow[]>([]);
   const [bookingUpdates, setBookingUpdates] = useState<Record<string, BookingUpdateRow[]>>({});
   const [profileSettings, setProfileSettings] = useState<ProfileSettings>({ mobile_phone: null, sms_opt_in: false });
@@ -183,7 +183,7 @@ const Account = () => {
             <Button asChild variant="outline" className="border-2 border-primary font-display uppercase"><Link to="/account/profile"><User className="h-4 w-4" /> My profile</Link></Button>
             <Button asChild variant="outline" className="border-2 border-primary font-display uppercase"><Link to="/account/pets"><PawPrint className="h-4 w-4" /> My pets</Link></Button>
             <Button asChild className="bg-primary font-display uppercase shadow-pop-accent"><Link to="/book"><CalendarPlus className="h-4 w-4" /> Book a service</Link></Button>
-            {isSitter && isAnneke && <Button asChild variant="secondary" className="font-display uppercase"><Link to="/sitter">Sitter dashboard</Link></Button>}
+            {canManageDashboard && <Button asChild variant="secondary" className="font-display uppercase"><Link to="/sitter">Sitter dashboard</Link></Button>}
           </div>
         </div>
 
