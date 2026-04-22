@@ -451,6 +451,170 @@ export type Database = {
         }
         Relationships: []
       }
+      pet_fit_alerts: {
+        Row: {
+          approval_id: string | null
+          booking_id: string | null
+          conflicting_tag_ids: string[]
+          created_at: string
+          id: string
+          is_resolved: boolean
+          message: string
+          pet_id: string
+          resolved_at: string | null
+          resolved_by: string | null
+          service_id: string
+          severity: string
+          title: string
+          triggered_by: string
+          updated_at: string
+        }
+        Insert: {
+          approval_id?: string | null
+          booking_id?: string | null
+          conflicting_tag_ids?: string[]
+          created_at?: string
+          id?: string
+          is_resolved?: boolean
+          message: string
+          pet_id: string
+          resolved_at?: string | null
+          resolved_by?: string | null
+          service_id: string
+          severity?: string
+          title: string
+          triggered_by: string
+          updated_at?: string
+        }
+        Update: {
+          approval_id?: string | null
+          booking_id?: string | null
+          conflicting_tag_ids?: string[]
+          created_at?: string
+          id?: string
+          is_resolved?: boolean
+          message?: string
+          pet_id?: string
+          resolved_at?: string | null
+          resolved_by?: string | null
+          service_id?: string
+          severity?: string
+          title?: string
+          triggered_by?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "pet_fit_alerts_approval_id_fkey"
+            columns: ["approval_id"]
+            isOneToOne: false
+            referencedRelation: "sitter_pet_approvals"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "pet_fit_alerts_booking_id_fkey"
+            columns: ["booking_id"]
+            isOneToOne: false
+            referencedRelation: "bookings"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "pet_fit_alerts_pet_id_fkey"
+            columns: ["pet_id"]
+            isOneToOne: false
+            referencedRelation: "pets"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "pet_fit_alerts_service_id_fkey"
+            columns: ["service_id"]
+            isOneToOne: false
+            referencedRelation: "services"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      pet_tag_assignments: {
+        Row: {
+          created_at: string
+          created_by: string
+          id: string
+          pet_id: string
+          tag_id: string
+        }
+        Insert: {
+          created_at?: string
+          created_by: string
+          id?: string
+          pet_id: string
+          tag_id: string
+        }
+        Update: {
+          created_at?: string
+          created_by?: string
+          id?: string
+          pet_id?: string
+          tag_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "pet_tag_assignments_pet_id_fkey"
+            columns: ["pet_id"]
+            isOneToOne: false
+            referencedRelation: "pets"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "pet_tag_assignments_tag_id_fkey"
+            columns: ["tag_id"]
+            isOneToOne: false
+            referencedRelation: "pet_temperament_tags"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      pet_temperament_tags: {
+        Row: {
+          created_at: string
+          description: string | null
+          id: string
+          is_active: boolean
+          label: string
+          risk_message: string | null
+          risk_services: string[]
+          slug: string
+          sort_order: number
+          updated_at: string
+          visibility: string
+        }
+        Insert: {
+          created_at?: string
+          description?: string | null
+          id?: string
+          is_active?: boolean
+          label: string
+          risk_message?: string | null
+          risk_services?: string[]
+          slug: string
+          sort_order?: number
+          updated_at?: string
+          visibility?: string
+        }
+        Update: {
+          created_at?: string
+          description?: string | null
+          id?: string
+          is_active?: boolean
+          label?: string
+          risk_message?: string | null
+          risk_services?: string[]
+          slug?: string
+          sort_order?: number
+          updated_at?: string
+          visibility?: string
+        }
+        Relationships: []
+      }
       pets: {
         Row: {
           age_years: number | null
