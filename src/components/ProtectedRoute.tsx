@@ -3,7 +3,7 @@ import { Navigate, useLocation } from "react-router-dom";
 import { useAuth } from "@/hooks/useAuth";
 
 const ProtectedRoute = ({ children, requireSitter = false }: { children: ReactNode; requireSitter?: boolean }) => {
-  const { user, loading, isSitter } = useAuth();
+  const { user, loading, isSitter, isAnneke } = useAuth();
   const location = useLocation();
 
   if (loading) {
@@ -14,7 +14,7 @@ const ProtectedRoute = ({ children, requireSitter = false }: { children: ReactNo
     );
   }
   if (!user) return <Navigate to="/auth" state={{ from: location.pathname }} replace />;
-  if (requireSitter && !isSitter) return <Navigate to="/account" replace />;
+  if (requireSitter && (!isSitter || !isAnneke)) return <Navigate to="/account" replace />;
   return <>{children}</>;
 };
 
