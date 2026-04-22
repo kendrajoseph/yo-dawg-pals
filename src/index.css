@@ -41,7 +41,7 @@
     --highlight: 24 72% 85%;
     --highlight-foreground: 264 5% 19%;
 
-    --clay: 345 42% 72%;
+    --clay: 18 40% 76%;
     --clay-foreground: 264 5% 19%;
 
     --tag: 24 70% 42%;
@@ -61,7 +61,7 @@
 
     --gradient-canopy: linear-gradient(180deg, hsl(48 67% 89%) 0%, hsl(48 48% 84%) 100%);
     --gradient-night: linear-gradient(160deg, hsl(264 5% 16%) 0%, hsl(264 5% 19%) 60%, hsl(264 6% 28%) 100%);
-    --gradient-sunrise: linear-gradient(120deg, hsl(24 95% 58%) 0%, hsl(345 42% 72%) 100%);
+    --gradient-sunrise: linear-gradient(120deg, hsl(24 95% 58%) 0%, hsl(18 40% 76%) 100%);
 
     --shadow-soft: 0 8px 24px -10px hsl(264 5% 19% / 0.14);
     --shadow-card: 0 14px 36px -16px hsl(264 5% 19% / 0.24);
@@ -100,7 +100,7 @@
     --accent-foreground: 147 16% 10%;
     --highlight: 147 12% 22%;
     --highlight-foreground: 48 40% 91%;
-    --clay: 345 34% 68%;
+    --clay: 18 34% 66%;
     --clay-foreground: 147 16% 10%;
     --tag: 24 62% 46%;
     --tag-foreground: 48 40% 91%;
