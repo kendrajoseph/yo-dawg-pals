@@ -6,7 +6,7 @@ import SiteNav from "@/components/SiteNav";
 import SiteFooter from "@/components/SiteFooter";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
-import { CalendarPlus, ChevronRight, CreditCard, PawPrint, User, X } from "lucide-react";
+import { CalendarPlus, ChevronRight, CreditCard, PawPrint, Smartphone, User, X } from "lucide-react";
 import { formatBookingSchedule, formatPriceWithDecimals, STATUS_LABELS, STATUS_STYLES } from "@/lib/booking";
 import { toast } from "@/hooks/use-toast";
 import {
@@ -39,21 +39,78 @@ type BookingRow = {
   pets: { name: string } | null;
 };
 
+type BookingUpdateRow = {
+  id: string;
+  booking_id: string;
+  kind: "pickup" | "dropoff" | "note";
+  message: string | null;
+  sent_via_sms: boolean;
+  created_at: string;
+};
+
+type ProfileSettings = {
+  mobile_phone: string | null;
+  sms_opt_in: boolean;
+};
+
+const kindLabel: Record<BookingUpdateRow["kind"], string> = {
+  pickup: "Picked up",
+  dropoff: "Dropped off",
+  note: "Anneke note",
+};
+
+const formatUpdateTime = (iso: string) =>
+  new Date(iso).toLocaleString(undefined, {
+    month: "short",
+    day: "numeric",
+    hour: "numeric",
+    minute: "2-digit",
+  });
+
 const Account = () => {
   const db = supabase as any;
   const { user, isSitter } = useAuth();
   const [bookings, setBookings] = useState<BookingRow[]>([]);
+  const [bookingUpdates, setBookingUpdates] = useState<Record<string, BookingUpdateRow[]>>({});
+  const [profileSettings, setProfileSettings] = useState<ProfileSettings>({ mobile_phone: null, sms_opt_in: false });
   const [loading, setLoading] = useState(true);
   const [cancellingId, setCancellingId] = useState<string | null>(null);
 
   const load = async () => {
     if (!user) return;
-    const { data } = await db
-      .from("bookings")
-      .select("id, start_at, end_at, status, total_cents, deposit_cents, payment_amount_cents, notes, booking_kind, requested_date, requested_window_label, scheduled_start_at, services(name, slug), pets(name)")
-      .eq("customer_id", user.id)
-      .order("created_at", { ascending: false });
-    setBookings((data ?? []) as BookingRow[]);
+
+    const [{ data: bookingData }, { data: profileData }] = await Promise.all([
+      db
+        .from("bookings")
+        .select("id, start_at, end_at, status, total_cents, deposit_cents, payment_amount_cents, notes, booking_kind, requested_date, requested_window_label, scheduled_start_at, services(name, slug), pets(name)")
+        .eq("customer_id", user.id)
+        .order("created_at", { ascending: false }),
+      db.from("profiles").select("mobile_phone, sms_opt_in").eq("id", user.id).maybeSingle(),
+    ]);
+
+    const nextBookings = (bookingData ?? []) as BookingRow[];
+    setBookings(nextBookings);
+    setProfileSettings({
+      mobile_phone: (profileData as { mobile_phone?: string | null } | null)?.mobile_phone ?? null,
+      sms_opt_in: Boolean((profileData as { sms_opt_in?: boolean | null } | null)?.sms_opt_in),
+    });
+
+    if (nextBookings.length > 0) {
+      const { data: updatesData } = await db
+        .from("booking_updates")
+        .select("id, booking_id, kind, message, sent_via_sms, created_at")
+        .in("booking_id", nextBookings.map((booking) => booking.id))
+        .order("created_at", { ascending: false });
+
+      const grouped = ((updatesData ?? []) as BookingUpdateRow[]).reduce<Record<string, BookingUpdateRow[]>>((acc, update) => {
+        acc[update.booking_id] = [...(acc[update.booking_id] ?? []), update];
+        return acc;
+      }, {});
+      setBookingUpdates(grouped);
+    } else {
+      setBookingUpdates({});
+    }
+
     setLoading(false);
   };
 
@@ -108,6 +165,27 @@ const Account = () => {
           </div>
         </div>
 
+        <Card className="mt-8 border-4 border-primary p-5 shadow-pop sm:p-6">
+          <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+            <div className="flex items-start gap-3">
+              <div className="grid h-11 w-11 shrink-0 place-items-center rounded-full bg-secondary text-secondary-foreground">
+                <Smartphone className="h-5 w-5" />
+              </div>
+              <div>
+                <h2 className="font-display text-xl uppercase text-primary">Text updates</h2>
+                <p className="mt-1 text-sm text-muted-foreground">
+                  {profileSettings.sms_opt_in && profileSettings.mobile_phone
+                    ? `Anneke will text ${profileSettings.mobile_phone} for pickup, drop-off, and quick care notes.`
+                    : "Turn on text updates so Anneke can keep you posted in a simple, personal way while your dog is with her."}
+                </p>
+              </div>
+            </div>
+            <Button asChild variant={profileSettings.sms_opt_in && profileSettings.mobile_phone ? "outline" : "default"} className={profileSettings.sms_opt_in && profileSettings.mobile_phone ? "border-2 border-primary font-display uppercase" : "bg-primary font-display uppercase shadow-pop-accent"}>
+              <Link to="/account/profile">{profileSettings.sms_opt_in && profileSettings.mobile_phone ? "Edit text settings" : "Add mobile number"}</Link>
+            </Button>
+          </div>
+        </Card>
+
         <h2 className="mt-10 font-display text-2xl uppercase text-primary">Bookings</h2>
         {loading ? (
           <p className="mt-4 text-sm text-muted-foreground">Loading…</p>
@@ -135,63 +213,94 @@ const Account = () => {
                 : booking.status === "awaiting_payment"
                 ? "Anneke has set the exact walk time — payment is ready when you are."
                 : null;
+              const updates = bookingUpdates[booking.id] ?? [];
 
               return (
-                <article key={booking.id} className="flex flex-col gap-3 border-4 border-primary bg-card p-4 shadow-pop sm:flex-row sm:items-center sm:justify-between">
-                  <div>
-                    <div className="flex flex-wrap items-center gap-2">
-                      <span className="font-display text-xl uppercase">{booking.services?.name ?? "Service"}</span>
-                      <span className={`px-2 py-0.5 text-xs font-display uppercase ${STATUS_STYLES[booking.status] ?? ""}`}>
-                        {STATUS_LABELS[booking.status] ?? booking.status}
+                <article key={booking.id} className="border-4 border-primary bg-card p-4 shadow-pop">
+                  <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+                    <div>
+                      <div className="flex flex-wrap items-center gap-2">
+                        <span className="font-display text-xl uppercase">{booking.services?.name ?? "Service"}</span>
+                        <span className={`px-2 py-0.5 text-xs font-display uppercase ${STATUS_STYLES[booking.status] ?? ""}`}>
+                          {STATUS_LABELS[booking.status] ?? booking.status}
+                        </span>
+                      </div>
+                      <p className="mt-1 text-sm text-foreground/80">
+                        {formatBookingSchedule(booking)} · for <span className="font-tag text-lg text-clay">{booking.pets?.name}</span>
+                      </p>
+                      {helperText && <p className="mt-1 text-xs text-muted-foreground">{helperText}</p>}
+                    </div>
+                    <div className="flex items-center gap-3">
+                      <div className="text-right">
+                        <div className="font-display text-2xl">{formatPriceWithDecimals(booking.total_cents)}</div>
+                        {canPay && (
+                          <div className="text-xs text-clay">
+                            {formatPriceWithDecimals(booking.payment_amount_cents ?? booking.deposit_cents)} due
+                          </div>
+                        )}
+                      </div>
+                      {canPay && (
+                        <Button asChild size="sm" className="bg-tag font-display uppercase text-tag-foreground shadow-pop-accent">
+                          <Link to={`/booking/${booking.id}/checkout`}><CreditCard className="h-4 w-4" /> Pay</Link>
+                        </Button>
+                      )}
+                      {canCancel && (
+                        <AlertDialog>
+                          <AlertDialogTrigger asChild>
+                            <Button size="sm" variant="outline" className="border-2 border-primary font-display uppercase">
+                              <X className="h-4 w-4" /> Cancel
+                            </Button>
+                          </AlertDialogTrigger>
+                          <AlertDialogContent>
+                            <AlertDialogHeader>
+                              <AlertDialogTitle>Cancel this booking?</AlertDialogTitle>
+                              <AlertDialogDescription>
+                                {refundEligible
+                                  ? "You'll receive a full refund since this is more than 24 hours away."
+                                  : booking.status === "requested" || booking.status === "awaiting_payment" || booking.status === "pending_payment"
+                                  ? "This booking isn't fully confirmed yet, so cancelling will simply release the request."
+                                  : "Less than 24 hours until your service — per policy, no refund will be issued."}
+                              </AlertDialogDescription>
+                            </AlertDialogHeader>
+                            <AlertDialogFooter>
+                              <AlertDialogCancel>Keep booking</AlertDialogCancel>
+                              <AlertDialogAction disabled={cancellingId === booking.id} onClick={() => handleCancel(booking)}>
+                                {cancellingId === booking.id ? "Cancelling…" : "Cancel booking"}
+                              </AlertDialogAction>
+                            </AlertDialogFooter>
+                          </AlertDialogContent>
+                        </AlertDialog>
+                      )}
+                      <ChevronRight className="hidden h-5 w-5 opacity-40 sm:block" />
+                    </div>
+                  </div>
+
+                  <div className="mt-4 border-t border-border pt-4">
+                    <div className="flex flex-wrap items-center justify-between gap-2">
+                      <h3 className="font-display text-sm uppercase text-primary">Care updates</h3>
+                      <span className="text-xs text-muted-foreground">
+                        {profileSettings.sms_opt_in && profileSettings.mobile_phone
+                          ? "Text updates enabled"
+                          : "Profile mobile number needed for texts"}
                       </span>
                     </div>
-                    <p className="mt-1 text-sm text-foreground/80">
-                      {formatBookingSchedule(booking)} · for <span className="font-tag text-lg text-clay">{booking.pets?.name}</span>
-                    </p>
-                    {helperText && <p className="mt-1 text-xs text-muted-foreground">{helperText}</p>}
-                  </div>
-                  <div className="flex items-center gap-3">
-                    <div className="text-right">
-                      <div className="font-display text-2xl">{formatPriceWithDecimals(booking.total_cents)}</div>
-                      {canPay && (
-                        <div className="text-xs text-clay">
-                          {formatPriceWithDecimals(booking.payment_amount_cents ?? booking.deposit_cents)} due
-                        </div>
-                      )}
-                    </div>
-                    {canPay && (
-                      <Button asChild size="sm" className="bg-tag font-display uppercase text-tag-foreground shadow-pop-accent">
-                        <Link to={`/booking/${booking.id}/checkout`}><CreditCard className="h-4 w-4" /> Pay</Link>
-                      </Button>
+                    {updates.length > 0 ? (
+                      <ul className="mt-3 space-y-2">
+                        {updates.slice(0, 4).map((update) => (
+                          <li key={update.id} className="border border-border bg-muted/50 px-3 py-2 text-sm">
+                            <div className="flex flex-wrap items-center justify-between gap-2">
+                              <span className="font-display text-xs uppercase text-primary">{kindLabel[update.kind]}</span>
+                              <span className="text-[11px] text-muted-foreground">
+                                {formatUpdateTime(update.created_at)}{update.sent_via_sms ? " · texted" : ""}
+                              </span>
+                            </div>
+                            {update.message && <p className="mt-1 text-foreground/80">{update.message}</p>}
+                          </li>
+                        ))}
+                      </ul>
+                    ) : (
+                      <p className="mt-3 text-sm text-muted-foreground">No updates yet — Anneke will add them here as the visit happens.</p>
                     )}
-                    {canCancel && (
-                      <AlertDialog>
-                        <AlertDialogTrigger asChild>
-                          <Button size="sm" variant="outline" className="border-2 border-primary font-display uppercase">
-                            <X className="h-4 w-4" /> Cancel
-                          </Button>
-                        </AlertDialogTrigger>
-                        <AlertDialogContent>
-                          <AlertDialogHeader>
-                            <AlertDialogTitle>Cancel this booking?</AlertDialogTitle>
-                            <AlertDialogDescription>
-                              {refundEligible
-                                ? "You'll receive a full refund since this is more than 24 hours away."
-                                : booking.status === "requested" || booking.status === "awaiting_payment" || booking.status === "pending_payment"
-                                ? "This booking isn't fully confirmed yet, so cancelling will simply release the request."
-                                : "Less than 24 hours until your service — per policy, no refund will be issued."}
-                            </AlertDialogDescription>
-                          </AlertDialogHeader>
-                          <AlertDialogFooter>
-                            <AlertDialogCancel>Keep booking</AlertDialogCancel>
-                            <AlertDialogAction disabled={cancellingId === booking.id} onClick={() => handleCancel(booking)}>
-                              {cancellingId === booking.id ? "Cancelling…" : "Cancel booking"}
-                            </AlertDialogAction>
-                          </AlertDialogFooter>
-                        </AlertDialogContent>
-                      </AlertDialog>
-                    )}
-                    <ChevronRight className="hidden h-5 w-5 opacity-40 sm:block" />
                   </div>
                 </article>
               );
