@@ -907,10 +907,11 @@ const SitterDashboard = () => {
     const boardingStart = service?.boarding_checkin_minute ?? 12 * 60;
     const boardingEnd = service?.boarding_checkout_minute ?? 12 * 60;
     const basePriceCents = variant?.price_cents ?? service?.price_cents ?? booking.base_price_cents ?? booking.total_cents;
+    const requestedPackLabel = booking.group_assignment_label ?? booking.requested_window_label ?? "";
     const matchingPackOuting = walkWindows.find(
       (window) =>
         window.service_id === booking.service_id &&
-        window.window_label === booking.group_assignment_label &&
+        window.window_label === requestedPackLabel &&
         booking.requested_window_start_minute === window.start_minute &&
         booking.requested_window_end_minute === window.end_minute,
     );
@@ -930,7 +931,7 @@ const SitterDashboard = () => {
           ? formatMinuteTime(booking.requested_window_end_minute)
           : formatMinuteTime(service?.slug === "boarding" ? boardingEnd : (variant?.duration_minutes ?? service?.duration_minutes ?? 60) + timeToMinutes("09:00")),
       packOutingId: matchingPackOuting?.id ?? "",
-      groupLabel: booking.group_assignment_label ?? "",
+      groupLabel: requestedPackLabel,
       internalNotes: booking.internal_notes ?? "",
       approvedBasePrice: formatCurrencyInput(basePriceCents),
       extraTimeMinutes: booking.extra_time_minutes ?? 0,
