@@ -46,6 +46,7 @@ const profileSchema = z
   });
 
 const Profile = () => {
+  const db = supabase as any;
   const { user, signOut } = useAuth();
   const navigate = useNavigate();
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -67,7 +68,7 @@ const Profile = () => {
   useEffect(() => {
     if (!user) return;
     (async () => {
-      const { data, error } = await supabase
+      const { data, error } = await db
         .from("profiles")
         .select("full_name, phone, bio, avatar_url, created_at, mobile_phone, sms_opt_in")
         .eq("id", user.id)
@@ -120,7 +121,7 @@ const Profile = () => {
     const { data: pub } = supabase.storage.from("avatars").getPublicUrl(path);
     const publicUrl = pub.publicUrl;
 
-    const { error: updErr } = await supabase
+    const { error: updErr } = await db
       .from("profiles")
       .update({ avatar_url: publicUrl })
       .eq("id", user.id);
@@ -150,7 +151,7 @@ const Profile = () => {
     setErrors({});
     setSaving(true);
 
-    const { error } = await supabase
+    const { error } = await db
       .from("profiles")
       .update({
         full_name: result.data.full_name,
