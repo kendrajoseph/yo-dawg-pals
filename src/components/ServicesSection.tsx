@@ -52,18 +52,18 @@ const services = [
 const walkSteps = [
   {
     icon: CalendarClock,
-    title: "Choose the right block",
-    text: "Solo walks come in 30 or 60 minute formats, group walks are fixed 60 minute blocks, and pet sitting uses a full 60 minute slot.",
+    title: "Care that fits real life",
+    text: "From focused solo walks to social group outings and dependable drop-in visits, every service is built to make your week feel lighter.",
   },
   {
     icon: Users,
-    title: "Anneke reviews the fit",
-    text: "Pets can be approved by service, and group dogs are matched by pace, temperament, and compatibility before the schedule is locked.",
+    title: "Personal, trusted attention",
+    text: "Your dog gets thoughtful care, familiar handling, and the kind of consistency that helps them feel safe, settled, and genuinely looked after.",
   },
   {
     icon: Footprints,
-    title: "Final timing comes second",
-    text: "Requests are reviewed first. Anneke confirms the exact timing and any approved extra fees before payment opens or the booking is confirmed.",
+    title: "Peace of mind for you",
+    text: "Clear communication, reliable scheduling, and a calm professional approach mean you can head into the day knowing your dog is in good hands.",
   },
 ];
 
