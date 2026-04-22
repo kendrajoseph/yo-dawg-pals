@@ -428,7 +428,7 @@ const SitterDashboard = () => {
     });
 
     return () => window.cancelAnimationFrame(frame);
-  }, [activeTab, selectedRequestId, requestBookings.length]);
+  }, [activeTab, selectedRequestId, bookings.length]);
 
   const serviceMap = useMemo(() => new Map(services.map((service) => [service.id, service])), [services]);
   const variantMap = useMemo(() => new Map(serviceVariants.map((variant) => [variant.id, variant])), [serviceVariants]);
