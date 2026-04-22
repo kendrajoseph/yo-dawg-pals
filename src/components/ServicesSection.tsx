@@ -6,10 +6,10 @@ const services = [
   {
     icon: Footprints,
     title: "Solo Walk",
-    desc: "Premium one-on-one walks built around your dog's pace, energy, and training needs.",
-    detail: "Choose your preferred window and Anneke confirms the exact walk time.",
-    price: "$28",
-    unit: "/ 30 min",
+    desc: "One-on-one walks with 30 or 60 minute options, approved around Anneke's real schedule instead of forced calendar gaps.",
+    detail: "Requested first, then Anneke confirms the final time. Add-on time is $50 per 30 minutes after a 15-minute buffer.",
+    price: "from $28",
+    unit: "/ walk",
     slug: "solo-walk",
     accent: "bg-accent text-accent-foreground",
     dog: dog1,
@@ -17,10 +17,10 @@ const services = [
   {
     icon: Users,
     title: "Group Walk",
-    desc: "Small, compatibility-based walks matched thoughtfully for pace, temperament, and social fit.",
-    detail: "Pick a preferred window and Anneke builds the final group and timing.",
+    desc: "Compatibility-based 60 minute group walks with tighter capacity and a real approval pass before any dog is added in.",
+    detail: "Pick a preferred block and Anneke confirms fit, group mix, and the exact hour before payment opens.",
     price: "$18",
-    unit: "/ walk",
+    unit: "/ 60 min",
     slug: "group-walk",
     accent: "bg-secondary text-secondary-foreground",
     dog: dog2,
@@ -28,8 +28,8 @@ const services = [
   {
     icon: Home,
     title: "Pet Sitting",
-    desc: "Drop-in visits for feeding, playtime, cuddles, meds, and a real potty break.",
-    detail: "Exact visit times are booked directly on the calendar.",
+    desc: "Drop-in visits that Anneke reviews manually so the timing, care notes, and travel flow are right before anything is confirmed.",
+    detail: "Requested first, then approved. Extra time can be added in 30 minute blocks with a built-in 15 minute buffer.",
     price: "$25",
     unit: "/ visit",
     slug: "sitting",
@@ -39,8 +39,8 @@ const services = [
   {
     icon: Bed,
     title: "Boarding",
-    desc: "Overnight stays in a calm, dog-friendly home with consistent routines and lots of check-ins.",
-    detail: "Best for dogs who do well in a home setting and like familiar people.",
+    desc: "Overnight stays run noon-to-noon by default so pickups and drop-offs stay clear, calm, and easier to manage.",
+    detail: "Late pickup or extra time is billed at $50 per 30 minutes after a 15 minute buffer, only when Anneke approves it.",
     price: "$70",
     unit: "/ night",
     slug: "boarding",
@@ -52,18 +52,18 @@ const services = [
 const walkSteps = [
   {
     icon: CalendarClock,
-    title: "Choose your window",
-    text: "Solo walks use specific request windows. Group walks use softer windows like morning, afternoon, or evening.",
+    title: "Choose the right block",
+    text: "Solo walks come in 30 or 60 minute formats. Group walks are full 60 minute blocks with tighter capacity controls.",
   },
   {
     icon: Users,
-    title: "Anneke confirms the fit",
-    text: "Group dogs are matched by pace, temperament, and compatibility so the calendar never forces the wrong mix.",
+    title: "Anneke reviews the fit",
+    text: "Pets can be approved by service, and group dogs are matched by pace, temperament, and compatibility before the schedule is locked.",
   },
   {
     icon: Footprints,
-    title: "Exact timing comes after",
-    text: "Solo walks are paid when requested. Group walks are only paid once Anneke approves the match and confirms the final time.",
+    title: "Final timing comes second",
+    text: "Requests are reviewed first. Anneke confirms the exact timing and any approved fees before payment opens or the booking is confirmed.",
   },
 ];
 
@@ -83,7 +83,7 @@ const ServicesSection = () => {
             </h2>
           </div>
           <p className="max-w-sm text-base leading-relaxed text-foreground/75">
-            Straightforward services, transparent pricing, and a booking process designed around thoughtful, well-timed care.
+            Service-specific timing, approval steps, and clearer fee rules make the booking flow much easier for both sides.
           </p>
         </div>
 
@@ -124,10 +124,7 @@ const ServicesSection = () => {
                 <span className="font-display text-3xl text-primary">{price}</span>
                 <span className="text-xs text-muted-foreground">{unit}</span>
               </div>
-              <Link
-                to={`/book?service=${slug}`}
-                className="mt-4 inline-flex items-center gap-1.5 text-xs font-tag text-clay transition-colors hover:text-clay/80"
-              >
+              <Link to={`/book?service=${slug}`} className="mt-4 inline-flex items-center gap-1.5 text-xs font-tag text-clay transition-colors hover:text-clay/80">
                 Book {title.toLowerCase()}
                 <ArrowRight className="h-3.5 w-3.5 transition-transform group-hover:translate-x-1" />
               </Link>

@@ -15,6 +15,8 @@ type Booking = {
   total_cents: number;
   deposit_cents: number;
   payment_amount_cents: number | null;
+  extra_time_fee_cents: number;
+  late_pickup_fee_cents: number;
   notes: string | null;
   booking_kind?: string | null;
   requested_date?: string | null;
@@ -22,6 +24,7 @@ type Booking = {
   scheduled_start_at?: string | null;
   start_at: string;
   services: { name: string; slug: string } | null;
+  service_variants: { name: string } | null;
   pets: { name: string } | null;
 };
 
@@ -43,7 +46,7 @@ const BookingSuccess = () => {
     const fetchOnce = async () => {
       const { data } = await db
         .from("bookings")
-        .select("id, status, total_cents, deposit_cents, payment_amount_cents, notes, booking_kind, requested_date, requested_window_label, scheduled_start_at, start_at, services(name, slug), pets(name)")
+        .select("id, status, total_cents, deposit_cents, payment_amount_cents, extra_time_fee_cents, late_pickup_fee_cents, notes, booking_kind, requested_date, requested_window_label, scheduled_start_at, start_at, services(name, slug), service_variants(name), pets(name)")
         .eq("id", id)
         .single();
       if (cancelled) return null;
@@ -78,21 +81,15 @@ const BookingSuccess = () => {
     if (waitingForWebhook) return "Confirming…";
     if (booking.status === "requested") return "Request received!";
     if (booking.status === "awaiting_payment") return "Schedule ready.";
-    if (booking.status === "confirmed") return booking.booking_kind === "requested" ? "Walk confirmed!" : "Booking confirmed!";
+    if (booking.status === "confirmed") return booking.booking_kind === "requested" ? "Request confirmed!" : "Booking confirmed!";
     return STATUS_LABELS[booking.status] ?? booking.status;
   };
 
   const getBodyCopy = () => {
     if (!booking) return "";
     if (waitingForWebhook) return "Hang tight while payment finalises.";
-    if (booking.status === "requested") {
-      return booking.services?.slug === "group-walk"
-        ? "Anneke will review compatibility, set the exact timing, and send payment once the group is ready."
-        : "Your request is paid and queued. Anneke will confirm the exact solo walk time shortly.";
-    }
-    if (booking.status === "awaiting_payment") {
-      return "Anneke has set the exact time. As soon as payment comes through, you're fully confirmed.";
-    }
+    if (booking.status === "requested") return "Anneke will review fit, set the exact timing, and open payment once everything is approved.";
+    if (booking.status === "awaiting_payment") return "Anneke has approved the request. Payment is the last step before it is fully locked in.";
     if (booking.status === "confirmed") return "Everything is locked in and ready to go.";
     return `Status: ${STATUS_LABELS[booking.status] ?? booking.status}.`;
   };
@@ -116,7 +113,7 @@ const BookingSuccess = () => {
             <span className="mt-4 inline-block rotate-2 font-tag text-2xl text-clay">good boy.</span>
             <h1 className="mt-1 font-display text-4xl uppercase text-primary sm:text-5xl">{getHeadline()}</h1>
             <p className="mt-3 text-foreground/80">
-              <span className="font-display uppercase">{booking.services?.name}</span> for <span className="font-tag text-xl text-clay">{booking.pets?.name}</span>
+              <span className="font-display uppercase">{booking.service_variants?.name ?? booking.services?.name}</span> for <span className="font-tag text-xl text-clay">{booking.pets?.name}</span>
             </p>
             <p className="text-sm text-muted-foreground">{formatBookingSchedule(booking)}</p>
 
@@ -126,19 +123,25 @@ const BookingSuccess = () => {
                 <div className="font-display text-2xl">{formatPriceWithDecimals(booking.total_cents)}</div>
               </div>
               <div className="border-2 border-primary bg-highlight p-3">
-                <div className="font-display text-xs uppercase">
-                  {booking.payment_amount_cents ? "Paid / due now" : booking.status === "requested" ? "Payment" : "Status"}
-                </div>
+                <div className="font-display text-xs uppercase">{booking.payment_amount_cents ? "Paid / due now" : booking.status === "requested" ? "Payment" : "Status"}</div>
                 <div className="font-display text-2xl text-clay">
                   {booking.payment_amount_cents
                     ? formatPriceWithDecimals(booking.payment_amount_cents ?? booking.deposit_cents)
                     : booking.status === "requested"
-                    ? booking.services?.slug === "group-walk"
-                      ? "No payment yet"
-                      : "Paid"
+                    ? "Not open yet"
                     : STATUS_LABELS[booking.status] ?? booking.status}
                 </div>
               </div>
+              {(booking.extra_time_fee_cents > 0 || booking.late_pickup_fee_cents > 0) && (
+                <div className="border-2 border-primary bg-card p-3 sm:col-span-2">
+                  <div className="font-display text-xs uppercase text-muted-foreground">Approved fee adjustments</div>
+                  <div className="mt-1 text-sm text-foreground/80">
+                    {booking.extra_time_fee_cents > 0 ? `${formatPriceWithDecimals(booking.extra_time_fee_cents)} extra time` : ""}
+                    {booking.extra_time_fee_cents > 0 && booking.late_pickup_fee_cents > 0 ? " · " : ""}
+                    {booking.late_pickup_fee_cents > 0 ? `${formatPriceWithDecimals(booking.late_pickup_fee_cents)} late pickup` : ""}
+                  </div>
+                </div>
+              )}
             </div>
 
             <div className="mt-6 border-2 border-dashed border-primary/40 bg-muted p-3 text-left text-xs text-muted-foreground">
@@ -146,12 +149,8 @@ const BookingSuccess = () => {
             </div>
 
             <div className="mt-6 flex flex-wrap justify-center gap-2">
-              <Button asChild className="bg-primary font-display uppercase shadow-pop-accent">
-                <Link to="/account">View my bookings</Link>
-              </Button>
-              <Button asChild variant="outline" className="border-2 border-primary font-display uppercase">
-                <Link to="/account/pets"><PawPrint className="h-4 w-4" /> My pets</Link>
-              </Button>
+              <Button asChild className="bg-primary font-display uppercase shadow-pop-accent"><Link to="/account">View my bookings</Link></Button>
+              <Button asChild variant="outline" className="border-2 border-primary font-display uppercase"><Link to="/account/pets"><PawPrint className="h-4 w-4" /> My pets</Link></Button>
             </div>
           </Card>
         )}

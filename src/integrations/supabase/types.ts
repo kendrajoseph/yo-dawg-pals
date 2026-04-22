@@ -19,6 +19,7 @@ export type Database = {
           created_at: string
           end_minute: number
           id: string
+          max_bookings: number
           sitter_id: string
           start_minute: number
           weekday: number
@@ -27,6 +28,7 @@ export type Database = {
           created_at?: string
           end_minute: number
           id?: string
+          max_bookings?: number
           sitter_id: string
           start_minute: number
           weekday: number
@@ -35,6 +37,7 @@ export type Database = {
           created_at?: string
           end_minute?: number
           id?: string
+          max_bookings?: number
           sitter_id?: string
           start_minute?: number
           weekday?: number
@@ -135,15 +138,19 @@ export type Database = {
         Row: {
           approved_at: string | null
           approved_by: string | null
+          base_price_cents: number | null
           booking_kind: string
           cancelled_at: string | null
           created_at: string
           customer_id: string
           deposit_cents: number
           end_at: string
+          extra_time_fee_cents: number
+          extra_time_minutes: number
           group_assignment_label: string | null
           id: string
           internal_notes: string | null
+          late_pickup_fee_cents: number
           notes: string | null
           paid_at: string | null
           payment_amount_cents: number | null
@@ -156,6 +163,7 @@ export type Database = {
           scheduled_end_at: string | null
           scheduled_start_at: string | null
           service_id: string
+          service_variant_id: string | null
           sitter_id: string
           start_at: string
           status: Database["public"]["Enums"]["booking_status"]
@@ -168,15 +176,19 @@ export type Database = {
         Insert: {
           approved_at?: string | null
           approved_by?: string | null
+          base_price_cents?: number | null
           booking_kind?: string
           cancelled_at?: string | null
           created_at?: string
           customer_id: string
           deposit_cents: number
           end_at: string
+          extra_time_fee_cents?: number
+          extra_time_minutes?: number
           group_assignment_label?: string | null
           id?: string
           internal_notes?: string | null
+          late_pickup_fee_cents?: number
           notes?: string | null
           paid_at?: string | null
           payment_amount_cents?: number | null
@@ -189,6 +201,7 @@ export type Database = {
           scheduled_end_at?: string | null
           scheduled_start_at?: string | null
           service_id: string
+          service_variant_id?: string | null
           sitter_id: string
           start_at: string
           status?: Database["public"]["Enums"]["booking_status"]
@@ -201,15 +214,19 @@ export type Database = {
         Update: {
           approved_at?: string | null
           approved_by?: string | null
+          base_price_cents?: number | null
           booking_kind?: string
           cancelled_at?: string | null
           created_at?: string
           customer_id?: string
           deposit_cents?: number
           end_at?: string
+          extra_time_fee_cents?: number
+          extra_time_minutes?: number
           group_assignment_label?: string | null
           id?: string
           internal_notes?: string | null
+          late_pickup_fee_cents?: number
           notes?: string | null
           paid_at?: string | null
           payment_amount_cents?: number | null
@@ -222,6 +239,7 @@ export type Database = {
           scheduled_end_at?: string | null
           scheduled_start_at?: string | null
           service_id?: string
+          service_variant_id?: string | null
           sitter_id?: string
           start_at?: string
           status?: Database["public"]["Enums"]["booking_status"]
@@ -244,6 +262,13 @@ export type Database = {
             columns: ["service_id"]
             isOneToOne: false
             referencedRelation: "services"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "bookings_service_variant_id_fkey"
+            columns: ["service_variant_id"]
+            isOneToOne: false
+            referencedRelation: "service_variants"
             referencedColumns: ["id"]
           },
         ]
@@ -479,50 +504,184 @@ export type Database = {
         }
         Relationships: []
       }
-      services: {
+      service_variants: {
         Row: {
           created_at: string
-          description: string | null
           duration_minutes: number
           id: string
           is_active: boolean
           name: string
           payment_mode: string
           price_cents: number
+          service_id: string
           slug: string
           sort_order: number
-          stripe_price_id: string | null
           unit_label: string | null
+          updated_at: string
         }
         Insert: {
           created_at?: string
-          description?: string | null
           duration_minutes: number
           id?: string
           is_active?: boolean
           name: string
           payment_mode?: string
           price_cents: number
+          service_id: string
           slug: string
           sort_order?: number
-          stripe_price_id?: string | null
           unit_label?: string | null
+          updated_at?: string
         }
         Update: {
           created_at?: string
-          description?: string | null
           duration_minutes?: number
           id?: string
           is_active?: boolean
           name?: string
           payment_mode?: string
           price_cents?: number
+          service_id?: string
+          slug?: string
+          sort_order?: number
+          unit_label?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "service_variants_service_id_fkey"
+            columns: ["service_id"]
+            isOneToOne: false
+            referencedRelation: "services"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      services: {
+        Row: {
+          approval_required: boolean
+          boarding_checkin_minute: number | null
+          boarding_checkout_minute: number | null
+          capacity_mode: Database["public"]["Enums"]["service_capacity_mode"]
+          created_at: string
+          description: string | null
+          duration_minutes: number
+          extra_time_fee_cents: number | null
+          extra_time_increment_minutes: number | null
+          id: string
+          is_active: boolean
+          late_pickup_fee_cents: number | null
+          max_capacity: number
+          name: string
+          payment_mode: string
+          price_cents: number
+          requires_pet_approval: boolean
+          scheduling_mode: Database["public"]["Enums"]["service_scheduling_mode"]
+          slug: string
+          sort_order: number
+          stripe_price_id: string | null
+          turnaround_buffer_minutes: number
+          unit_label: string | null
+        }
+        Insert: {
+          approval_required?: boolean
+          boarding_checkin_minute?: number | null
+          boarding_checkout_minute?: number | null
+          capacity_mode?: Database["public"]["Enums"]["service_capacity_mode"]
+          created_at?: string
+          description?: string | null
+          duration_minutes: number
+          extra_time_fee_cents?: number | null
+          extra_time_increment_minutes?: number | null
+          id?: string
+          is_active?: boolean
+          late_pickup_fee_cents?: number | null
+          max_capacity?: number
+          name: string
+          payment_mode?: string
+          price_cents: number
+          requires_pet_approval?: boolean
+          scheduling_mode?: Database["public"]["Enums"]["service_scheduling_mode"]
+          slug: string
+          sort_order?: number
+          stripe_price_id?: string | null
+          turnaround_buffer_minutes?: number
+          unit_label?: string | null
+        }
+        Update: {
+          approval_required?: boolean
+          boarding_checkin_minute?: number | null
+          boarding_checkout_minute?: number | null
+          capacity_mode?: Database["public"]["Enums"]["service_capacity_mode"]
+          created_at?: string
+          description?: string | null
+          duration_minutes?: number
+          extra_time_fee_cents?: number | null
+          extra_time_increment_minutes?: number | null
+          id?: string
+          is_active?: boolean
+          late_pickup_fee_cents?: number | null
+          max_capacity?: number
+          name?: string
+          payment_mode?: string
+          price_cents?: number
+          requires_pet_approval?: boolean
+          scheduling_mode?: Database["public"]["Enums"]["service_scheduling_mode"]
           slug?: string
           sort_order?: number
           stripe_price_id?: string | null
+          turnaround_buffer_minutes?: number
           unit_label?: string | null
         }
         Relationships: []
+      }
+      sitter_pet_approvals: {
+        Row: {
+          created_at: string
+          id: string
+          notes: string | null
+          pet_id: string
+          service_id: string
+          sitter_id: string
+          status: Database["public"]["Enums"]["pet_approval_status"]
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          notes?: string | null
+          pet_id: string
+          service_id: string
+          sitter_id: string
+          status?: Database["public"]["Enums"]["pet_approval_status"]
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          notes?: string | null
+          pet_id?: string
+          service_id?: string
+          sitter_id?: string
+          status?: Database["public"]["Enums"]["pet_approval_status"]
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "sitter_pet_approvals_pet_id_fkey"
+            columns: ["pet_id"]
+            isOneToOne: false
+            referencedRelation: "pets"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "sitter_pet_approvals_service_id_fkey"
+            columns: ["service_id"]
+            isOneToOne: false
+            referencedRelation: "services"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       suppressed_emails: {
         Row: {
@@ -574,6 +733,7 @@ export type Database = {
           created_at: string
           end_minute: number
           id: string
+          max_bookings: number
           service_id: string
           sitter_id: string
           sort_order: number
@@ -585,6 +745,7 @@ export type Database = {
           created_at?: string
           end_minute: number
           id?: string
+          max_bookings?: number
           service_id: string
           sitter_id: string
           sort_order?: number
@@ -596,6 +757,7 @@ export type Database = {
           created_at?: string
           end_minute?: number
           id?: string
+          max_bookings?: number
           service_id?: string
           sitter_id?: string
           sort_order?: number
@@ -662,6 +824,9 @@ export type Database = {
         | "requested"
         | "awaiting_payment"
       booking_update_kind: "pickup" | "dropoff" | "note"
+      pet_approval_status: "pending" | "approved" | "declined"
+      service_capacity_mode: "single" | "shared"
+      service_scheduling_mode: "instant" | "request" | "boarding"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -800,6 +965,9 @@ export const Constants = {
         "awaiting_payment",
       ],
       booking_update_kind: ["pickup", "dropoff", "note"],
+      pet_approval_status: ["pending", "approved", "declined"],
+      service_capacity_mode: ["single", "shared"],
+      service_scheduling_mode: ["instant", "request", "boarding"],
     },
   },
 } as const
