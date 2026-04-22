@@ -18,6 +18,8 @@ import Checkout from "./pages/Checkout.tsx";
 import BookingSuccess from "./pages/BookingSuccess.tsx";
 import SitterDashboard from "./pages/SitterDashboard.tsx";
 import Unsubscribe from "./pages/Unsubscribe.tsx";
+import FAQ from "./pages/FAQ.tsx";
+import Terms from "./pages/Terms.tsx";
 
 const queryClient = new QueryClient();
 
@@ -41,6 +43,8 @@ const App = () => (
             <Route path="/account/profile" element={<ProtectedRoute><Profile /></ProtectedRoute>} />
             <Route path="/sitter" element={<ProtectedRoute requireSitter><SitterDashboard /></ProtectedRoute>} />
             <Route path="/unsubscribe" element={<Unsubscribe />} />
+            <Route path="/faq" element={<FAQ />} />
+            <Route path="/terms" element={<Terms />} />
             {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
             <Route path="*" element={<NotFound />} />
           </Routes>
