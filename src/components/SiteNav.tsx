@@ -26,9 +26,9 @@ const SiteNav = ({ variant = "light" }: SiteNavProps) => {
   const isHome = location.pathname === "/";
 
   const linkBase = onDark
-    ? "text-sm font-semibold text-foreground/75 transition-colors hover:text-foreground"
+    ? "text-sm font-semibold text-primary/75 transition-colors hover:text-primary"
     : "text-sm font-semibold text-foreground/70 transition-colors hover:text-foreground";
-  const linkActive = onDark ? "text-foreground" : "text-foreground";
+  const linkActive = onDark ? "text-primary" : "text-foreground";
 
   return (
     <nav
@@ -68,7 +68,7 @@ const SiteNav = ({ variant = "light" }: SiteNavProps) => {
           size="icon"
           className={cn(
             "md:hidden",
-             onDark && "text-foreground hover:bg-foreground/10 hover:text-foreground",
+             onDark && "text-primary hover:bg-primary/10 hover:text-primary",
           )}
           aria-label="Open menu"
           onClick={() => setOpen((o) => !o)}
@@ -81,7 +81,7 @@ const SiteNav = ({ variant = "light" }: SiteNavProps) => {
             variant="ghost"
             className={cn(
               "hidden h-10 text-sm sm:inline-flex",
-               onDark && "text-foreground hover:bg-foreground/10 hover:text-foreground",
+               onDark && "text-primary hover:bg-primary/10 hover:text-primary",
             )}
           >
             <LogOut className="h-4 w-4" /> Sign out
