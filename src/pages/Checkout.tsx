@@ -21,7 +21,10 @@ type Booking = {
   start_at: string;
   payment_amount_cents: number | null;
   total_cents: number;
+  extra_time_fee_cents: number;
+  late_pickup_fee_cents: number;
   services: { name: string; slug: string; payment_mode: "full" | "deposit" | "free" } | null;
+  service_variants: { name: string; payment_mode: "full" | "deposit" | "free" } | null;
   pets: { name: string } | null;
 };
 
@@ -40,7 +43,7 @@ const Checkout = () => {
     (async () => {
       const { data } = await db
         .from("bookings")
-        .select("id, status, booking_kind, requested_date, requested_window_label, scheduled_start_at, start_at, payment_amount_cents, total_cents, services(name, slug, payment_mode), pets(name)")
+        .select("id, status, booking_kind, requested_date, requested_window_label, scheduled_start_at, start_at, payment_amount_cents, total_cents, extra_time_fee_cents, late_pickup_fee_cents, services(name, slug, payment_mode), service_variants(name, payment_mode), pets(name)")
         .eq("id", id)
         .single();
       setBooking((data as Booking) ?? null);
@@ -50,7 +53,7 @@ const Checkout = () => {
 
   useEffect(() => {
     if (!booking || confirming) return;
-    if (booking.services?.payment_mode === "free" && booking.status === "pending_payment") {
+    if (booking.service_variants?.payment_mode === "free" && booking.status === "pending_payment") {
       setConfirming(true);
       (async () => {
         await supabase.functions.invoke("create-checkout", {
@@ -98,7 +101,7 @@ const Checkout = () => {
             </p>
             <p className="mt-3 text-sm text-muted-foreground">
               {booking.status === "requested"
-                ? "Anneke is still locking in the exact timing. You'll get a payment prompt once everything is set."
+                ? "Anneke is still reviewing fit and final timing. Payment opens once she approves it."
                 : "You can see the latest details in your account."}
             </p>
             <Button asChild className="mt-4 font-display uppercase">
@@ -112,7 +115,7 @@ const Checkout = () => {
   }
 
   const due = booking.payment_amount_cents ?? 0;
-  const isApprovedGroupWalk = booking.status === "awaiting_payment";
+  const displayName = booking.service_variants?.name ?? booking.services?.name;
 
   return (
     <main className="min-h-screen bg-background texture-grain">
@@ -123,24 +126,38 @@ const Checkout = () => {
           Pay & <span className="text-gradient-sunrise">confirm.</span>
         </h1>
         <p className="mt-3 max-w-2xl text-sm text-foreground/75">
-          {isApprovedGroupWalk
-            ? "Anneke has set the exact walk time and matched the group — this payment locks it in."
-            : "Secure payment keeps your booking moving and lands the final confirmation in your account."}
+          Anneke has reviewed the request and set the details below — payment locks this slot in.
         </p>
 
         <Card className="mt-6 border-4 border-primary p-5 shadow-pop sm:p-6">
           <dl className="divide-y-2 divide-primary/15 border-2 border-primary bg-card text-sm">
             <div className="flex items-center justify-between p-3">
               <dt className="font-display text-xs uppercase tracking-wide text-muted-foreground">Service</dt>
-              <dd className="font-display text-base uppercase">{booking.services?.name}</dd>
+              <dd className="font-display text-base uppercase">{displayName}</dd>
             </div>
             <div className="flex items-center justify-between p-3">
               <dt className="font-display text-xs uppercase tracking-wide text-muted-foreground">When</dt>
-              <dd className="font-display text-base uppercase">{formatBookingSchedule(booking)}</dd>
+              <dd className="font-display text-right text-base uppercase">{formatBookingSchedule(booking)}</dd>
             </div>
             <div className="flex items-center justify-between p-3">
               <dt className="font-display text-xs uppercase tracking-wide text-muted-foreground">For</dt>
               <dd className="font-display text-base uppercase">{booking.pets?.name}</dd>
+            </div>
+            {booking.extra_time_fee_cents > 0 && (
+              <div className="flex items-center justify-between p-3">
+                <dt className="font-display text-xs uppercase tracking-wide text-muted-foreground">Extra time</dt>
+                <dd className="font-display text-base uppercase">{formatPriceWithDecimals(booking.extra_time_fee_cents)}</dd>
+              </div>
+            )}
+            {booking.late_pickup_fee_cents > 0 && (
+              <div className="flex items-center justify-between p-3">
+                <dt className="font-display text-xs uppercase tracking-wide text-muted-foreground">Late pickup</dt>
+                <dd className="font-display text-base uppercase">{formatPriceWithDecimals(booking.late_pickup_fee_cents)}</dd>
+              </div>
+            )}
+            <div className="flex items-center justify-between p-3">
+              <dt className="font-display text-xs uppercase tracking-wide text-muted-foreground">Total</dt>
+              <dd className="font-display text-base uppercase">{formatPriceWithDecimals(booking.total_cents)}</dd>
             </div>
             <div className="flex items-center justify-between bg-highlight p-3">
               <dt className="font-display text-xs uppercase tracking-wide text-muted-foreground">Due now</dt>
@@ -150,15 +167,10 @@ const Checkout = () => {
         </Card>
 
         <div className="mt-6">
-          <BookingCheckout
-            bookingId={booking.id}
-            returnUrl={`${window.location.origin}/booking/${booking.id}/success?session_id={CHECKOUT_SESSION_ID}`}
-          />
+          <BookingCheckout bookingId={booking.id} returnUrl={`${window.location.origin}/booking/${booking.id}/success?session_id={CHECKOUT_SESSION_ID}`} />
         </div>
 
-        <p className="mt-4 text-xs text-muted-foreground">
-          Payments are processed securely. Free cancellation up to 24h before your service unless otherwise noted.
-        </p>
+        <p className="mt-4 text-xs text-muted-foreground">Payments are processed securely. If Anneke added approved extra time or a late pickup fee, it is already included above.</p>
       </section>
       <SiteFooter />
     </main>

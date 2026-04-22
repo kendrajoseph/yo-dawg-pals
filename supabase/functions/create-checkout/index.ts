@@ -10,7 +10,9 @@ serve(async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
   try {
     const { bookingId, environment, returnUrl } = await req.json();
-    if (!bookingId || typeof bookingId !== "string") return new Response(JSON.stringify({ error: "Invalid bookingId" }), { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } });
+    if (!bookingId || typeof bookingId !== "string") {
+      return new Response(JSON.stringify({ error: "Invalid bookingId" }), { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } });
+    }
 
     const authHeader = req.headers.get("authorization")?.replace("Bearer ", "");
     if (!authHeader) return new Response(JSON.stringify({ error: "Unauthorized" }), { status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" } });
@@ -19,7 +21,7 @@ serve(async (req) => {
 
     const { data: booking, error: bErr } = await supabase
       .from("bookings")
-      .select("id, customer_id, status, payment_amount_cents, services(name, stripe_price_id, payment_mode)")
+      .select("id, customer_id, status, payment_amount_cents, total_cents, extra_time_fee_cents, late_pickup_fee_cents, services(name, payment_mode), service_variants(name, payment_mode)")
       .eq("id", bookingId)
       .single();
     if (bErr || !booking) return new Response(JSON.stringify({ error: "Booking not found" }), { status: 404, headers: { ...corsHeaders, "Content-Type": "application/json" } });
@@ -27,24 +29,38 @@ serve(async (req) => {
     if (!["pending_payment", "awaiting_payment"].includes(booking.status)) return new Response(JSON.stringify({ error: "Booking is not payable" }), { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } });
 
     const service = (booking as any).services;
-    if (service.payment_mode === "free") {
+    const variant = (booking as any).service_variants;
+    const paymentMode = variant?.payment_mode ?? service?.payment_mode;
+    const amountCents = booking.payment_amount_cents ?? booking.total_cents ?? 0;
+    const itemName = variant?.name ?? service?.name ?? "Booking";
+
+    if (paymentMode === "free" || amountCents === 0) {
       await supabase.from("bookings").update({ status: "confirmed", paid_at: new Date().toISOString() }).eq("id", bookingId);
       await notifyAnnekeOfPaidBooking(bookingId);
       return new Response(JSON.stringify({ free: true }), { headers: { ...corsHeaders, "Content-Type": "application/json" } });
     }
-    if (!service?.stripe_price_id) return new Response(JSON.stringify({ error: "Service has no Stripe price configured" }), { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } });
 
     const stripe = createStripeClient((environment || "sandbox") as StripeEnv);
-    const prices = await stripe.prices.list({ lookup_keys: [service.stripe_price_id] });
-    if (!prices.data.length) return new Response(JSON.stringify({ error: `Price ${service.stripe_price_id} not found in Stripe` }), { status: 404, headers: { ...corsHeaders, "Content-Type": "application/json" } });
-
     const session = await stripe.checkout.sessions.create({
-      line_items: [{ price: prices.data[0].id, quantity: 1 }],
+      line_items: [{
+        price_data: {
+          currency: "cad",
+          product_data: {
+            name: itemName,
+            description: [
+              booking.extra_time_fee_cents ? `Includes ${Math.round(booking.extra_time_fee_cents / 100)} CAD approved extra-time fees` : null,
+              booking.late_pickup_fee_cents ? `Includes ${Math.round(booking.late_pickup_fee_cents / 100)} CAD late-pickup fee` : null,
+            ].filter(Boolean).join(" · ") || undefined,
+          },
+          unit_amount: amountCents,
+        },
+        quantity: 1,
+      }],
       mode: "payment",
       ui_mode: "embedded",
       return_url: returnUrl || `${req.headers.get("origin")}/booking/${bookingId}/success?session_id={CHECKOUT_SESSION_ID}`,
       customer_email: user.email,
-      metadata: { bookingId, userId: user.id, serviceName: service.name ?? "" },
+      metadata: { bookingId, userId: user.id, serviceName: itemName },
       payment_intent_data: { metadata: { bookingId, userId: user.id } },
     });
 

@@ -30,12 +30,15 @@ type BookingRow = {
   total_cents: number;
   deposit_cents: number;
   payment_amount_cents: number | null;
+  extra_time_fee_cents: number;
+  late_pickup_fee_cents: number;
   notes: string | null;
   booking_kind?: string | null;
   requested_date?: string | null;
   requested_window_label?: string | null;
   scheduled_start_at?: string | null;
   services: { name: string; slug: string } | null;
+  service_variants: { name: string } | null;
   pets: { name: string } | null;
 };
 
@@ -82,7 +85,7 @@ const Account = () => {
     const [{ data: bookingData }, { data: profileData }] = await Promise.all([
       db
         .from("bookings")
-        .select("id, start_at, end_at, status, total_cents, deposit_cents, payment_amount_cents, notes, booking_kind, requested_date, requested_window_label, scheduled_start_at, services(name, slug), pets(name)")
+        .select("id, start_at, end_at, status, total_cents, deposit_cents, payment_amount_cents, extra_time_fee_cents, late_pickup_fee_cents, notes, booking_kind, requested_date, requested_window_label, scheduled_start_at, services(name, slug), service_variants(name), pets(name)")
         .eq("customer_id", user.id)
         .order("created_at", { ascending: false }),
       db.from("profiles").select("mobile_phone, sms_opt_in").eq("id", user.id).maybeSingle(),
@@ -148,29 +151,17 @@ const Account = () => {
             <h1 className="font-display text-5xl text-primary sm:text-6xl">My account.</h1>
           </div>
           <div className="flex flex-wrap gap-2">
-            <Button asChild variant="outline" className="border-2 border-primary font-display uppercase">
-              <Link to="/account/profile"><User className="h-4 w-4" /> My profile</Link>
-            </Button>
-            <Button asChild variant="outline" className="border-2 border-primary font-display uppercase">
-              <Link to="/account/pets"><PawPrint className="h-4 w-4" /> My pets</Link>
-            </Button>
-            <Button asChild className="bg-primary font-display uppercase shadow-pop-accent">
-              <Link to="/book"><CalendarPlus className="h-4 w-4" /> Book a service</Link>
-            </Button>
-            {isSitter && (
-              <Button asChild variant="secondary" className="font-display uppercase">
-                <Link to="/sitter">Sitter dashboard</Link>
-              </Button>
-            )}
+            <Button asChild variant="outline" className="border-2 border-primary font-display uppercase"><Link to="/account/profile"><User className="h-4 w-4" /> My profile</Link></Button>
+            <Button asChild variant="outline" className="border-2 border-primary font-display uppercase"><Link to="/account/pets"><PawPrint className="h-4 w-4" /> My pets</Link></Button>
+            <Button asChild className="bg-primary font-display uppercase shadow-pop-accent"><Link to="/book"><CalendarPlus className="h-4 w-4" /> Book a service</Link></Button>
+            {isSitter && <Button asChild variant="secondary" className="font-display uppercase"><Link to="/sitter">Sitter dashboard</Link></Button>}
           </div>
         </div>
 
         <Card className="mt-8 border-4 border-primary p-5 shadow-pop sm:p-6">
           <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
             <div className="flex items-start gap-3">
-              <div className="grid h-11 w-11 shrink-0 place-items-center rounded-full bg-secondary text-secondary-foreground">
-                <Smartphone className="h-5 w-5" />
-              </div>
+              <div className="grid h-11 w-11 shrink-0 place-items-center rounded-full bg-secondary text-secondary-foreground"><Smartphone className="h-5 w-5" /></div>
               <div>
                 <h2 className="font-display text-xl uppercase text-primary">Text updates</h2>
                 <p className="mt-1 text-sm text-muted-foreground">
@@ -193,9 +184,7 @@ const Account = () => {
           <Card className="mt-4 -rotate-1 border-4 border-primary p-8 text-center shadow-pop">
             <p className="font-tag text-2xl text-clay">no bookings yet</p>
             <p className="mt-2 text-sm text-muted-foreground">Lock in a walk, sit, board, or meet & greet.</p>
-            <Button asChild className="mt-6 font-display uppercase shadow-pop-accent">
-              <Link to="/book">Book your first service</Link>
-            </Button>
+            <Button asChild className="mt-6 font-display uppercase shadow-pop-accent"><Link to="/book">Book your first service</Link></Button>
           </Card>
         ) : (
           <div className="mt-4 grid gap-3">
@@ -207,49 +196,41 @@ const Account = () => {
               const canCancel = isUpcoming && ["requested", "pending_payment", "awaiting_payment", "confirmed"].includes(booking.status);
               const refundEligible = hoursUntil >= 24 && booking.status === "confirmed";
               const helperText = booking.status === "requested"
-                ? booking.services?.slug === "group-walk"
-                  ? "Anneke is reviewing fit and timing before payment."
-                  : "Paid and waiting for Anneke to lock in the exact time."
+                ? "Anneke is reviewing fit, timing, and any service-specific fees before payment opens."
                 : booking.status === "awaiting_payment"
-                ? "Anneke has set the exact walk time — payment is ready when you are."
+                ? "Anneke has approved the request — payment is ready when you are."
                 : null;
               const updates = bookingUpdates[booking.id] ?? [];
+              const displayName = booking.service_variants?.name ?? booking.services?.name ?? "Service";
 
               return (
                 <article key={booking.id} className="border-4 border-primary bg-card p-4 shadow-pop">
                   <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
                     <div>
                       <div className="flex flex-wrap items-center gap-2">
-                        <span className="font-display text-xl uppercase">{booking.services?.name ?? "Service"}</span>
-                        <span className={`px-2 py-0.5 text-xs font-display uppercase ${STATUS_STYLES[booking.status] ?? ""}`}>
-                          {STATUS_LABELS[booking.status] ?? booking.status}
-                        </span>
+                        <span className="font-display text-xl uppercase">{displayName}</span>
+                        <span className={`px-2 py-0.5 text-xs font-display uppercase ${STATUS_STYLES[booking.status] ?? ""}`}>{STATUS_LABELS[booking.status] ?? booking.status}</span>
                       </div>
-                      <p className="mt-1 text-sm text-foreground/80">
-                        {formatBookingSchedule(booking)} · for <span className="font-tag text-lg text-clay">{booking.pets?.name}</span>
-                      </p>
+                      <p className="mt-1 text-sm text-foreground/80">{formatBookingSchedule(booking)} · for <span className="font-tag text-lg text-clay">{booking.pets?.name}</span></p>
                       {helperText && <p className="mt-1 text-xs text-muted-foreground">{helperText}</p>}
+                      {(booking.extra_time_fee_cents > 0 || booking.late_pickup_fee_cents > 0) && (
+                        <p className="mt-1 text-xs text-muted-foreground">
+                          {booking.extra_time_fee_cents > 0 ? `${formatPriceWithDecimals(booking.extra_time_fee_cents)} extra time` : ""}
+                          {booking.extra_time_fee_cents > 0 && booking.late_pickup_fee_cents > 0 ? " · " : ""}
+                          {booking.late_pickup_fee_cents > 0 ? `${formatPriceWithDecimals(booking.late_pickup_fee_cents)} late pickup` : ""}
+                        </p>
+                      )}
                     </div>
                     <div className="flex items-center gap-3">
                       <div className="text-right">
                         <div className="font-display text-2xl">{formatPriceWithDecimals(booking.total_cents)}</div>
-                        {canPay && (
-                          <div className="text-xs text-clay">
-                            {formatPriceWithDecimals(booking.payment_amount_cents ?? booking.deposit_cents)} due
-                          </div>
-                        )}
+                        {canPay && <div className="text-xs text-clay">{formatPriceWithDecimals(booking.payment_amount_cents ?? booking.deposit_cents)} due</div>}
                       </div>
-                      {canPay && (
-                        <Button asChild size="sm" className="bg-tag font-display uppercase text-tag-foreground shadow-pop-accent">
-                          <Link to={`/booking/${booking.id}/checkout`}><CreditCard className="h-4 w-4" /> Pay</Link>
-                        </Button>
-                      )}
+                      {canPay && <Button asChild size="sm" className="bg-tag font-display uppercase text-tag-foreground shadow-pop-accent"><Link to={`/booking/${booking.id}/checkout`}><CreditCard className="h-4 w-4" /> Pay</Link></Button>}
                       {canCancel && (
                         <AlertDialog>
                           <AlertDialogTrigger asChild>
-                            <Button size="sm" variant="outline" className="border-2 border-primary font-display uppercase">
-                              <X className="h-4 w-4" /> Cancel
-                            </Button>
+                            <Button size="sm" variant="outline" className="border-2 border-primary font-display uppercase"><X className="h-4 w-4" /> Cancel</Button>
                           </AlertDialogTrigger>
                           <AlertDialogContent>
                             <AlertDialogHeader>
@@ -258,7 +239,7 @@ const Account = () => {
                                 {refundEligible
                                   ? "You'll receive a full refund since this is more than 24 hours away."
                                   : booking.status === "requested" || booking.status === "awaiting_payment" || booking.status === "pending_payment"
-                                  ? "This booking isn't fully confirmed yet, so cancelling will simply release the request."
+                                  ? "This booking is still in a pre-confirmed state, so cancelling will simply release the request."
                                   : "Less than 24 hours until your service — per policy, no refund will be issued."}
                               </AlertDialogDescription>
                             </AlertDialogHeader>
@@ -278,11 +259,7 @@ const Account = () => {
                   <div className="mt-4 border-t border-border pt-4">
                     <div className="flex flex-wrap items-center justify-between gap-2">
                       <h3 className="font-display text-sm uppercase text-primary">Care updates</h3>
-                      <span className="text-xs text-muted-foreground">
-                        {profileSettings.sms_opt_in && profileSettings.mobile_phone
-                          ? "Text updates enabled"
-                          : "Profile mobile number needed for texts"}
-                      </span>
+                      <span className="text-xs text-muted-foreground">{profileSettings.sms_opt_in && profileSettings.mobile_phone ? "Text updates enabled" : "Profile mobile number needed for texts"}</span>
                     </div>
                     {updates.length > 0 ? (
                       <ul className="mt-3 space-y-2">
@@ -290,9 +267,7 @@ const Account = () => {
                           <li key={update.id} className="border border-border bg-muted/50 px-3 py-2 text-sm">
                             <div className="flex flex-wrap items-center justify-between gap-2">
                               <span className="font-display text-xs uppercase text-primary">{kindLabel[update.kind]}</span>
-                              <span className="text-[11px] text-muted-foreground">
-                                {formatUpdateTime(update.created_at)}{update.sent_via_sms ? " · texted" : ""}
-                              </span>
+                              <span className="text-[11px] text-muted-foreground">{formatUpdateTime(update.created_at)}{update.sent_via_sms ? " · texted" : ""}</span>
                             </div>
                             {update.message && <p className="mt-1 text-foreground/80">{update.message}</p>}
                           </li>
