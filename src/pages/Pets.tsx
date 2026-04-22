@@ -31,21 +31,22 @@ const Pets = () => {
 
   const load = async () => {
     if (!user) return;
-    const [{ data }, { data: tagRows }, { data: assignmentRows }] = await Promise.all([
+    const [{ data }, { data: tagRows }] = await Promise.all([
       supabase.from("pets").select("*").eq("owner_id", user.id).order("created_at", { ascending: true }),
       supabase.from("pet_temperament_tags").select("id, label, description").eq("visibility", "owner").eq("is_active", true).order("sort_order"),
-      supabase
-        .from("pet_tag_assignments")
-        .select("pet_id, tag_id")
-        .in("pet_id", ((data ?? []) as Pet[]).map((pet) => pet.id)),
     ]);
+
+    const petRows = (data ?? []) as Pet[];
+    const { data: assignmentRows } = petRows.length
+      ? await supabase.from("pet_tag_assignments").select("pet_id, tag_id").in("pet_id", petRows.map((pet) => pet.id))
+      : { data: [] };
 
     const assignmentsByPet = ((assignmentRows ?? []) as Array<{ pet_id: string; tag_id: string }>).reduce<Record<string, string[]>>((acc, row) => {
       acc[row.pet_id] = [...(acc[row.pet_id] ?? []), row.tag_id];
       return acc;
     }, {});
 
-    setPets(((data ?? []) as Pet[]).map((pet) => ({ ...pet, temperament_tag_ids: assignmentsByPet[pet.id] ?? [] })));
+    setPets(petRows.map((pet) => ({ ...pet, temperament_tag_ids: assignmentsByPet[pet.id] ?? [] })));
     setTemperamentTags((tagRows ?? []) as TemperamentTag[]);
     setLoading(false);
   };
