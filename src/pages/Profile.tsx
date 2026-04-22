@@ -15,6 +15,7 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import PetProfilesManager from "@/components/pets/PetProfilesManager";
 import { Camera, LogOut, Save, ArrowLeft, Smartphone } from "lucide-react";
 import { toast } from "sonner";
+import { validateProfileImageFile } from "@/lib/fileValidation";
 
 const phoneField = z
   .string()
@@ -96,12 +97,10 @@ const Profile = () => {
     const file = e.target.files?.[0];
     if (!file || !user) return;
 
-    if (file.size > 5 * 1024 * 1024) {
-      toast.error("Image must be under 5MB");
-      return;
-    }
-    if (!file.type.startsWith("image/")) {
-      toast.error("Please select an image file");
+    const fileError = validateProfileImageFile(file);
+    if (fileError) {
+      toast.error(fileError);
+      e.target.value = "";
       return;
     }
 
