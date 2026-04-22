@@ -59,6 +59,8 @@ type Service = {
   id: string;
   name: string;
   slug: string;
+  price_cents: number;
+  duration_minutes: number;
   payment_mode: "full" | "deposit" | "free";
   scheduling_mode: "instant" | "request" | "boarding";
   approval_required: boolean;
@@ -395,7 +397,7 @@ const SitterDashboard = () => {
         .order("created_at", { ascending: false }),
       db
         .from("services")
-        .select("id, name, slug, payment_mode, scheduling_mode, approval_required, requires_pet_approval, turnaround_buffer_minutes, extra_time_fee_cents, extra_time_increment_minutes, late_pickup_fee_cents, boarding_checkin_minute, boarding_checkout_minute, max_capacity")
+        .select("id, name, slug, price_cents, duration_minutes, payment_mode, scheduling_mode, approval_required, requires_pet_approval, turnaround_buffer_minutes, extra_time_fee_cents, extra_time_increment_minutes, late_pickup_fee_cents, boarding_checkin_minute, boarding_checkout_minute, max_capacity")
         .eq("is_active", true)
         .order("sort_order"),
       db
@@ -904,6 +906,7 @@ const SitterDashboard = () => {
     const variant = booking.service_variant_id ? variantMap.get(booking.service_variant_id) : null;
     const boardingStart = service?.boarding_checkin_minute ?? 12 * 60;
     const boardingEnd = service?.boarding_checkout_minute ?? 12 * 60;
+    const basePriceCents = variant?.price_cents ?? service?.price_cents ?? booking.base_price_cents ?? booking.total_cents;
     const matchingPackOuting = walkWindows.find(
       (window) =>
         window.service_id === booking.service_id &&
@@ -925,11 +928,11 @@ const SitterDashboard = () => {
       end:
         booking.requested_window_end_minute != null
           ? formatMinuteTime(booking.requested_window_end_minute)
-          : formatMinuteTime(service?.slug === "boarding" ? boardingEnd : (variant?.duration_minutes ?? 60) + timeToMinutes("09:00")),
+          : formatMinuteTime(service?.slug === "boarding" ? boardingEnd : (variant?.duration_minutes ?? service?.duration_minutes ?? 60) + timeToMinutes("09:00")),
       packOutingId: matchingPackOuting?.id ?? "",
       groupLabel: booking.group_assignment_label ?? "",
       internalNotes: booking.internal_notes ?? "",
-      approvedBasePrice: formatCurrencyInput(variant?.price_cents ?? booking.base_price_cents ?? booking.total_cents),
+      approvedBasePrice: formatCurrencyInput(basePriceCents),
       extraTimeMinutes: booking.extra_time_minutes ?? 0,
       latePickup: Boolean(booking.late_pickup_fee_cents),
     };
@@ -1058,7 +1061,7 @@ const SitterDashboard = () => {
     const draft = getDraft(booking);
     const service = serviceMap.get(booking.service_id);
     const variant = booking.service_variant_id ? variantMap.get(booking.service_variant_id) : null;
-    if (!service || !variant) return toast({ title: "Missing service details", variant: "destructive" });
+    if (!service) return toast({ title: "Missing service details", variant: "destructive" });
 
     const petApproval = petApprovals.find((item) => item.pet_id === booking.pet_id && item.service_id === booking.service_id);
     if (service.requires_pet_approval && petApproval?.status !== "approved") {
@@ -1074,7 +1077,7 @@ const SitterDashboard = () => {
       return toast({ title: "Choose a pack outing", description: "Pick one of the backend outing blocks for this approval.", variant: "destructive" });
     }
 
-    const minimumDuration = variant.duration_minutes ?? 0;
+    const minimumDuration = variant?.duration_minutes ?? service.duration_minutes ?? 0;
     const startMinute = service.slug === "boarding" ? (service.boarding_checkin_minute ?? 12 * 60) : timeToMinutes(draft.start);
     const endMinute = service.slug === "boarding" ? (service.boarding_checkout_minute ?? 12 * 60) : timeToMinutes(draft.end);
     if (endMinute <= startMinute && service.slug !== "boarding") return toast({ title: "End must be after start", variant: "destructive" });
@@ -1100,8 +1103,9 @@ const SitterDashboard = () => {
       : 0;
     const latePickupFeeCents = draft.latePickup ? service.late_pickup_fee_cents ?? 0 : 0;
     const totalCents = approvedBasePrice + extraTimeFeeCents + latePickupFeeCents;
-    const paymentAmount = variant.payment_mode === "free" ? 0 : variant.payment_mode === "deposit" ? Math.round(totalCents * 0.25) : totalCents;
-    const nextStatus = variant.payment_mode === "free" ? "confirmed" : "awaiting_payment";
+    const paymentMode = variant?.payment_mode ?? service.payment_mode;
+    const paymentAmount = paymentMode === "free" ? 0 : paymentMode === "deposit" ? Math.round(totalCents * 0.25) : totalCents;
+    const nextStatus = paymentMode === "free" ? "confirmed" : "awaiting_payment";
 
     const { error } = await db.from("bookings").update({
       scheduled_start_at: startAt.toISOString(),
@@ -1551,7 +1555,7 @@ const SitterDashboard = () => {
                     const approval = petApprovals.find((item) => item.pet_id === booking.pet_id && item.service_id === booking.service_id);
                     const isBoarding = service?.slug === "boarding";
                     const packOutingOptions = walkWindows.filter((window) => window.service_id === booking.service_id);
-                    const approvedBasePriceCents = parseCurrencyInput(draft.approvedBasePrice) ?? (variant?.price_cents ?? booking.base_price_cents ?? booking.total_cents);
+                    const approvedBasePriceCents = parseCurrencyInput(draft.approvedBasePrice) ?? (variant?.price_cents ?? service?.price_cents ?? booking.base_price_cents ?? booking.total_cents);
                     const extraFee = service?.extra_time_fee_cents && service.extra_time_increment_minutes
                       ? Math.ceil(Math.max(0, draft.extraTimeMinutes) / service.extra_time_increment_minutes) * service.extra_time_fee_cents
                       : 0;
