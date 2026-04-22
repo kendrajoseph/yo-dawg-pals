@@ -106,8 +106,7 @@ const HeroSection = () => {
             </div>
           </div>
 
-          <div className="absolute -bottom-4 left-1 z-10 flex max-w-[260px] items-start gap-2 -rotate-2 rounded-2xl border-2 border-primary-foreground/90 bg-card p-2.5 pl-2 text-foreground shadow-pop-sm sm:-bottom-2 sm:left-4 sm:max-w-[280px] sm:p-3">
-            <img src={dog3} alt="" aria-hidden className="h-10 w-auto shrink-0 sm:h-12" />
+          <div className="absolute -bottom-4 left-1 z-10 max-w-[260px] -rotate-2 rounded-2xl border-2 border-primary-foreground/90 bg-card p-2.5 text-foreground shadow-pop-sm sm:-bottom-2 sm:left-4 sm:max-w-[280px] sm:p-3">
             <div>
               <p className="font-serif text-xs italic leading-snug sm:text-sm">
                 "The walks feel personal, structured, and exactly right for our dog."
