@@ -6,8 +6,8 @@ const services = [
   {
     icon: Footprints,
     title: "Solo Walk",
-    desc: "One-on-one walks with 30 or 60 minute options, approved around Anneke's real schedule instead of forced calendar gaps.",
-    detail: "Requested first, then Anneke confirms the final time. Extended time is $50 per 30 minutes and only added with prior approval.",
+    desc: "One-on-one walks with 30 or 60 minute options.",
+    detail: "Request your preferred time and we’ll confirm the details.",
     price: "$30",
     unit: "/ 30 min",
     slug: "solo-walk",
@@ -17,8 +17,8 @@ const services = [
   {
     icon: Users,
     title: "Group Walk",
-    desc: "Compatibility-based 60 minute group walks with tighter capacity and a real approval pass before any dog is added in.",
-    detail: "Pick a preferred block and Anneke confirms fit, group mix, and the exact hour before payment opens.",
+    desc: "Social 60 minute walks for dogs who enjoy company.",
+    detail: "Choose a preferred outing and we’ll confirm the details.",
     price: "$30",
     unit: "/ 60 min",
     slug: "group-walk",
@@ -28,8 +28,8 @@ const services = [
   {
     icon: Home,
     title: "Pet Sitting",
-    desc: "Drop-in visits that Anneke reviews manually so the timing, care notes, and travel flow are right before anything is confirmed.",
-    detail: "Requested first, then approved. Pet sitting uses a full 60 minute calendar slot, with extra time added only by prior approval.",
+    desc: "Drop-in visits for feeding, check-ins, play, and care at home.",
+    detail: "Request a visit and we’ll confirm the details.",
     price: "$30",
     unit: "/ visit",
     slug: "sitting",
@@ -39,8 +39,8 @@ const services = [
   {
     icon: Bed,
     title: "Boarding",
-    desc: "Overnight stays run noon-to-noon by default so pickups and drop-offs stay clear, calm, and easier to manage.",
-    detail: "Boarding runs 12pm to 12pm. Extended hours need prior approval, and late pickup is billed at $50 per 30 minutes.",
+    desc: "Overnight stays in a calm, home-based setting.",
+    detail: "Request your dates and we’ll confirm the details.",
     price: "$70",
     unit: "/ night",
     slug: "boarding",
