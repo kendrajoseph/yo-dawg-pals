@@ -2308,8 +2308,21 @@ const SitterDashboard = () => {
                   </div>
                   <div>
                     <h2 className="font-display text-xl uppercase text-primary">Walk schedule builder</h2>
-                    <p className="text-sm text-muted-foreground">Define dedicated solo and group walk windows with capacity limits and a 30 minute gap between windows.</p>
+                    <p className="text-sm text-muted-foreground">Add new walk windows or tap any existing one to load it into the editor and save changes fast.</p>
                   </div>
+                </div>
+
+                <div className="mt-4 flex flex-wrap gap-2">
+                  {TIME_PRESETS.map((preset) => (
+                    <Button key={preset.label} type="button" variant="outline" className="border-border font-display uppercase" onClick={() => setNewWindow((current) => ({ ...current, start: preset.start, end: preset.end }))}>
+                      {preset.label}
+                    </Button>
+                  ))}
+                  {editingWalkWindowId && (
+                    <Button type="button" variant="ghost" className="font-display uppercase" onClick={resetWalkWindowForm}>
+                      Cancel edit
+                    </Button>
+                  )}
                 </div>
 
                 <div className="mt-4 grid gap-3 md:grid-cols-[1fr,1fr,auto,auto,auto,auto,auto] md:items-end">
@@ -2341,7 +2354,7 @@ const SitterDashboard = () => {
                     <Label>Capacity</Label>
                     <Input type="number" min={1} value={newWindow.maxBookings} onChange={(event) => setNewWindow({ ...newWindow, maxBookings: Math.max(1, Number(event.target.value) || 1) })} />
                   </div>
-                  <Button onClick={addWalkWindow} className="font-display uppercase"><Plus className="h-4 w-4" /> Add</Button>
+                  <Button onClick={addWalkWindow} className="font-display uppercase"><Plus className="h-4 w-4" /> {editingWalkWindowId ? "Save" : "Add"}</Button>
                 </div>
 
                 <div className="mt-5 grid gap-3 lg:grid-cols-2">
@@ -2360,13 +2373,18 @@ const SitterDashboard = () => {
                             {serviceWindows.map((window) => (
                               <li key={window.id} className="rounded-md border border-border bg-card px-3 py-3">
                                 <div className="flex items-center justify-between gap-3">
-                                  <div>
+                                  <button type="button" onClick={() => beginWalkWindowEdit(window)} className="min-w-0 text-left transition-opacity hover:opacity-80">
                                     <div className="font-display text-sm uppercase text-primary">{DAYS[window.weekday]} · {window.window_label}</div>
                                     <div className="text-xs text-muted-foreground">{formatMinuteTime(window.start_minute)}–{formatMinuteTime(window.end_minute)}</div>
-                                  </div>
-                                  <button type="button" onClick={() => removeWalkWindow(window.id)} aria-label="Remove walk window">
-                                    <Trash2 className="h-4 w-4 text-destructive" />
                                   </button>
+                                  <div className="flex items-center gap-2">
+                                    <button type="button" onClick={() => beginWalkWindowEdit(window)} aria-label="Edit walk window" className="text-muted-foreground transition-colors hover:text-primary">
+                                      <Pencil className="h-4 w-4" />
+                                    </button>
+                                    <button type="button" onClick={() => removeWalkWindow(window.id)} aria-label="Remove walk window">
+                                      <Trash2 className="h-4 w-4 text-destructive" />
+                                    </button>
+                                  </div>
                                 </div>
                                 <div className="mt-3 flex items-center justify-between rounded-md border border-border bg-muted px-2 py-1.5 text-sm">
                                   <span>Capacity</span>
