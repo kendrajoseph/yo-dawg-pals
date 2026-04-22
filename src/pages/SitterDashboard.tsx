@@ -1493,7 +1493,7 @@ const SitterDashboard = () => {
 
                         <div>
                           <div className="flex flex-wrap items-center gap-2">
-                            <span className="font-display text-lg uppercase text-primary">{booking.pets?.name ?? "Pet"}</span>
+                            <PetNameLabel name={booking.pets?.name ?? "Pet"} species={booking.pets?.species} className="font-display text-lg uppercase text-primary" />
                             <span className={cn("px-2 py-0.5 text-[11px] font-tag", STATUS_STYLES[booking.status] ?? "bg-muted text-muted-foreground")}>
                               {STATUS_LABELS[booking.status] ?? booking.status}
                             </span>
@@ -1566,7 +1566,7 @@ const SitterDashboard = () => {
                                   </span>
                                 )}
                               </div>
-                              <p className="mt-1 text-sm text-foreground/80">{owner?.full_name ?? "Customer"} · {booking.pets?.name ?? "Pet"}</p>
+                            <p className="mt-1 flex flex-wrap items-center gap-2 text-sm text-foreground/80"><span>{owner?.full_name ?? "Customer"}</span><span className="text-muted-foreground">·</span><PetNameLabel name={booking.pets?.name ?? "Pet"} species={booking.pets?.species} /></p>
                               <p className="mt-1 text-sm text-muted-foreground">{formatBookingSchedule(booking)}</p>
                             </div>
                             <Button
@@ -1633,7 +1633,7 @@ const SitterDashboard = () => {
                       <div key={approval.key} className="rounded-md border border-border bg-muted/40 p-4">
                         <div className="flex items-start justify-between gap-3">
                           <div>
-                            <p className="font-display text-lg uppercase text-primary">{approval.petName}</p>
+                            <PetNameLabel name={approval.petName} species={petProfiles[approval.petId]?.species} className="font-display text-lg uppercase text-primary" />
                             <p className="text-sm text-muted-foreground">{approval.serviceName}</p>
                           </div>
                           <span className={cn("px-2 py-0.5 text-[11px] font-tag", approval.status === "approved" ? "bg-secondary text-secondary-foreground" : approval.status === "declined" ? "bg-muted text-muted-foreground" : "bg-accent text-accent-foreground")}>
@@ -1772,10 +1772,7 @@ const SitterDashboard = () => {
                             <p className="mt-1 flex flex-wrap items-center gap-2 text-sm text-foreground/80">
                               <span>{owner?.full_name ?? "Customer"}</span>
                               <span className="text-muted-foreground">·</span>
-                              <span className="inline-flex items-center gap-1.5">
-                                {booking.pets?.species === "cat" ? <Cat className="h-4 w-4 text-primary" aria-hidden="true" /> : booking.pets?.species === "dog" ? <Dog className="h-4 w-4 text-primary" aria-hidden="true" /> : null}
-                                <span>{booking.pets?.name ?? "Pet"}</span>
-                              </span>
+                              <PetNameLabel name={booking.pets?.name ?? "Pet"} species={booking.pets?.species} />
                             </p>
                             <p className="mt-1 text-sm text-muted-foreground">Requested: {formatBookingSchedule(booking)}</p>
                             {booking.notes && <p className="mt-2 text-xs text-muted-foreground">Client note: “{booking.notes}”</p>}
@@ -2002,7 +1999,7 @@ const SitterDashboard = () => {
                                     {STATUS_LABELS[booking.status] ?? booking.status}
                                   </span>
                                 </div>
-                                <div className="mt-1 text-xs text-muted-foreground">{booking.pets?.name ?? "Pet"} · {formatBookingSchedule(booking)}</div>
+                                <div className="mt-1 flex flex-wrap items-center gap-2 text-xs text-muted-foreground"><PetNameLabel name={booking.pets?.name ?? "Pet"} species={booking.pets?.species} /><span>·</span><span>{formatBookingSchedule(booking)}</span></div>
                               </div>
                             ))
                           )}
@@ -2411,7 +2408,7 @@ const SitterDashboard = () => {
                         <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
                           <div>
                             <div className="flex flex-wrap items-center gap-2">
-                              <span className="font-display text-xl uppercase text-primary">{booking.pets?.name}</span>
+                              <PetNameLabel name={booking.pets?.name ?? "Pet"} species={booking.pets?.species} className="font-display text-xl uppercase text-primary" />
                               <span className={cn("px-2 py-0.5 text-[11px] font-tag", STATUS_STYLES[booking.status] ?? "bg-muted text-muted-foreground")}>
                                 {STATUS_LABELS[booking.status] ?? booking.status}
                               </span>
@@ -2489,7 +2486,7 @@ const SitterDashboard = () => {
                               {STATUS_LABELS[booking.status] ?? booking.status}
                             </span>
                           </div>
-                          <p className="mt-1 text-sm">{formatBookingSchedule(booking)} · {profileDetails[booking.customer_id]?.full_name ?? "Customer"} · {booking.pets?.name}</p>
+                          <p className="mt-1 flex flex-wrap items-center gap-2 text-sm"><span>{formatBookingSchedule(booking)}</span><span className="text-muted-foreground">·</span><span>{profileDetails[booking.customer_id]?.full_name ?? "Customer"}</span><span className="text-muted-foreground">·</span><PetNameLabel name={booking.pets?.name ?? "Pet"} species={booking.pets?.species} /></p>
                           {(booking.extra_time_fee_cents > 0 || booking.late_pickup_fee_cents > 0) && (
                             <p className="mt-1 text-xs text-muted-foreground">
                               Fees: {booking.extra_time_fee_cents > 0 ? `${formatPriceWithDecimals(booking.extra_time_fee_cents)} add-on` : ""}{booking.extra_time_fee_cents > 0 && booking.late_pickup_fee_cents > 0 ? " · " : ""}{booking.late_pickup_fee_cents > 0 ? `${formatPriceWithDecimals(booking.late_pickup_fee_cents)} late pickup` : ""}
@@ -2520,7 +2517,7 @@ const SitterDashboard = () => {
                 <ul className="mt-4 space-y-2">
                   {pastBookings.slice(0, 12).map((booking) => (
                     <li key={booking.id} className="flex flex-wrap items-center justify-between gap-2 rounded-md border border-border bg-muted/40 px-3 py-2 text-sm">
-                      <span>{formatBookingSchedule(booking)} · {booking.service_variants?.name ?? booking.services?.name} · {booking.pets?.name}</span>
+                      <span className="flex flex-wrap items-center gap-2"><span>{formatBookingSchedule(booking)}</span><span className="text-muted-foreground">·</span><span>{booking.service_variants?.name ?? booking.services?.name}</span><span className="text-muted-foreground">·</span><PetNameLabel name={booking.pets?.name ?? "Pet"} species={booking.pets?.species} /></span>
                       <span className={cn("px-2 py-0.5 text-[11px] font-tag", STATUS_STYLES[booking.status] ?? "bg-muted text-muted-foreground")}>
                         {STATUS_LABELS[booking.status] ?? booking.status}
                       </span>
@@ -2628,7 +2625,7 @@ const SitterDashboard = () => {
         <DialogContent className="max-h-[88vh] overflow-y-auto border border-border bg-background shadow-soft sm:max-w-3xl">
           <DialogHeader>
             <DialogTitle className="font-display text-2xl uppercase text-primary">
-              {activePetProfile?.name ?? "Pet profile"}
+              <PetNameLabel name={activePetProfile?.name ?? "Pet profile"} species={activePetProfile?.species} className="font-display text-2xl uppercase text-primary" />
             </DialogTitle>
           </DialogHeader>
 
