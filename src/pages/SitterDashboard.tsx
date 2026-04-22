@@ -216,6 +216,16 @@ type ServiceAlert = {
   created_at: string;
 };
 
+type SitterNotification = {
+  id: string;
+  kind: string;
+  title: string;
+  message: string;
+  booking_id: string | null;
+  read_at: string | null;
+  created_at: string;
+};
+
 type ClientMessageDraft = {
   customerId: string;
   bookingId: string;
@@ -356,6 +366,7 @@ const SitterDashboard = () => {
   const [petApprovals, setPetApprovals] = useState<PetApproval[]>([]);
   const [clientMessages, setClientMessages] = useState<ClientMessage[]>([]);
   const [serviceAlerts, setServiceAlerts] = useState<ServiceAlert[]>([]);
+  const [sitterNotifications, setSitterNotifications] = useState<SitterNotification[]>([]);
   const [profileDetails, setProfileDetails] = useState<Record<string, ProfileDetails>>({});
   const [bookingUpdates, setBookingUpdates] = useState<Record<string, BookingUpdate[]>>({});
   const [petProfiles, setPetProfiles] = useState<Record<string, PetProfile>>({});
@@ -407,6 +418,7 @@ const SitterDashboard = () => {
       { data: approvalRows },
       { data: messageRows },
       { data: alertRows },
+      { data: notificationRows },
       { data: tagRows },
       { data: fitAlertRows },
     ] = await Promise.all([
@@ -431,6 +443,7 @@ const SitterDashboard = () => {
       db.from("sitter_pet_approvals").select("id, pet_id, service_id, status, notes, pets(name), services(name)").eq("sitter_id", user.id).order("updated_at", { ascending: false }),
       db.from("client_messages").select("id, customer_id, booking_id, kind, subject, message, send_email, send_sms, delivered_email_at, delivered_sms_at, created_at").eq("sitter_id", user.id).order("created_at", { ascending: false }).limit(50),
       db.from("service_alerts").select("id, kind, title, message, starts_at, ends_at, is_active, pin_to_profile, created_at").eq("sitter_id", user.id).order("starts_at", { ascending: false }).limit(20),
+      db.from("sitter_notifications").select("id, kind, title, message, booking_id, read_at, created_at").eq("user_id", user.id).order("created_at", { ascending: false }).limit(12),
       db.from("pet_temperament_tags").select("id, slug, label, description, visibility, risk_services, risk_message").eq("is_active", true).order("sort_order"),
       db.from("pet_fit_alerts").select("id, pet_id, service_id, booking_id, title, message, severity, is_resolved, conflicting_tag_ids, created_at").eq("is_resolved", false).order("created_at", { ascending: false }).limit(20),
     ]);
@@ -448,6 +461,7 @@ const SitterDashboard = () => {
     setPetApprovals((approvalRows ?? []) as PetApproval[]);
     setClientMessages((messageRows ?? []) as ClientMessage[]);
     setServiceAlerts((alertRows ?? []) as ServiceAlert[]);
+    setSitterNotifications((notificationRows ?? []) as SitterNotification[]);
     setTemperamentTags((tagRows ?? []) as TemperamentTag[]);
     setFitAlerts((fitAlertRows ?? []) as FitAlert[]);
 
@@ -728,6 +742,21 @@ const SitterDashboard = () => {
     approvals: pendingPetApprovals.filter((item) => item.status === "pending").length,
     blockedDays: blocked.length,
     clients: clientOptions.length,
+  };
+
+  const unreadRequestNotifications = useMemo(
+    () => sitterNotifications.filter((notification) => notification.kind === "booking_request" && !notification.read_at),
+    [sitterNotifications],
+  );
+
+  const markNotificationRead = async (notificationId: string) => {
+    const { error } = await db.from("sitter_notifications").update({ read_at: new Date().toISOString() }).eq("id", notificationId).is("read_at", null);
+    if (error) {
+      toast({ title: "Couldn't clear alert", description: error.message, variant: "destructive" });
+      return;
+    }
+
+    setSitterNotifications((current) => current.map((notification) => notification.id === notificationId ? { ...notification, read_at: new Date().toISOString() } : notification));
   };
 
   const hasBufferedMinuteConflict = (ranges: Array<{ start: number; end: number }>, start: number, end: number) =>
@@ -1398,7 +1427,7 @@ const SitterDashboard = () => {
                 ["Requests", String(summary.requests)],
                 ["Payments", String(summary.awaitingPayment)],
                 ["Approvals", String(summary.approvals)],
-                ["Clients", String(summary.clients)],
+                ["Alerts", String(unreadRequestNotifications.length)],
               ].map(([label, value]) => (
                 <Card key={label} className="border border-border bg-card px-4 py-3 shadow-soft">
                   <div className="text-[11px] font-tag text-muted-foreground">{label}</div>
@@ -1532,6 +1561,53 @@ const SitterDashboard = () => {
           </TabsContent>
 
           <TabsContent value="overview" className="mt-6 space-y-6">
+            {unreadRequestNotifications.length > 0 && (
+              <Card className="border border-border p-5 shadow-soft">
+                <div className="flex items-start gap-3">
+                  <div className="grid h-11 w-11 place-items-center rounded-md bg-secondary text-secondary-foreground">
+                    <BellRing className="h-5 w-5" />
+                  </div>
+                  <div>
+                    <h2 className="font-display text-xl uppercase text-primary">New booking alerts</h2>
+                    <p className="text-sm text-muted-foreground">Fresh booking requests that just came in for Anneke.</p>
+                  </div>
+                </div>
+
+                <div className="mt-4 grid gap-3">
+                  {unreadRequestNotifications.map((notification) => (
+                    <div key={notification.id} className="rounded-md border border-border bg-muted/40 p-4">
+                      <div className="flex flex-col gap-3 md:flex-row md:items-start md:justify-between">
+                        <div>
+                          <p className="font-display text-lg uppercase text-primary">{notification.title}</p>
+                          <p className="mt-1 text-sm text-foreground/80">{notification.message}</p>
+                          <p className="mt-2 text-xs font-tag text-muted-foreground">{format(new Date(notification.created_at), "MMM d · h:mm a")}</p>
+                        </div>
+                        <div className="flex flex-wrap gap-2 md:justify-end">
+                          {notification.booking_id && (
+                            <Button
+                              size="sm"
+                              variant="outline"
+                              onClick={() => {
+                                setSelectedRequestId(notification.booking_id);
+                                setActiveTab("overview");
+                                void markNotificationRead(notification.id);
+                              }}
+                              className="border-border font-display uppercase"
+                            >
+                              Open request <ChevronRight className="h-4 w-4" />
+                            </Button>
+                          )}
+                          <Button size="sm" variant="ghost" onClick={() => void markNotificationRead(notification.id)} className="font-display uppercase">
+                            Dismiss
+                          </Button>
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </Card>
+            )}
+
             <div className="grid gap-4 xl:grid-cols-[1.1fr,0.9fr]">
               <Card className="border border-border p-5 shadow-soft">
                 <div className="flex items-center gap-3">

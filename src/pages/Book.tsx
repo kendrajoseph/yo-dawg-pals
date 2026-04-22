@@ -431,6 +431,14 @@ const Book = () => {
       return;
     }
 
+    const { error: notifyError } = await supabase.functions.invoke("notify-new-booking-request", {
+      body: { bookingId: data.id },
+    });
+
+    if (notifyError) {
+      console.warn("notify-new-booking-request failed", notifyError);
+    }
+
     navigate(`/booking/${data.id}/success`);
   };
 
