@@ -1427,7 +1427,7 @@ const SitterDashboard = () => {
                 ["Requests", String(summary.requests)],
                 ["Payments", String(summary.awaitingPayment)],
                 ["Approvals", String(summary.approvals)],
-                ["Clients", String(summary.clients)],
+                ["Alerts", String(unreadRequestNotifications.length)],
               ].map(([label, value]) => (
                 <Card key={label} className="border border-border bg-card px-4 py-3 shadow-soft">
                   <div className="text-[11px] font-tag text-muted-foreground">{label}</div>
@@ -1561,6 +1561,53 @@ const SitterDashboard = () => {
           </TabsContent>
 
           <TabsContent value="overview" className="mt-6 space-y-6">
+            {unreadRequestNotifications.length > 0 && (
+              <Card className="border border-border p-5 shadow-soft">
+                <div className="flex items-start gap-3">
+                  <div className="grid h-11 w-11 place-items-center rounded-md bg-secondary text-secondary-foreground">
+                    <BellRing className="h-5 w-5" />
+                  </div>
+                  <div>
+                    <h2 className="font-display text-xl uppercase text-primary">New booking alerts</h2>
+                    <p className="text-sm text-muted-foreground">Fresh booking requests that just came in for Anneke.</p>
+                  </div>
+                </div>
+
+                <div className="mt-4 grid gap-3">
+                  {unreadRequestNotifications.map((notification) => (
+                    <div key={notification.id} className="rounded-md border border-border bg-muted/40 p-4">
+                      <div className="flex flex-col gap-3 md:flex-row md:items-start md:justify-between">
+                        <div>
+                          <p className="font-display text-lg uppercase text-primary">{notification.title}</p>
+                          <p className="mt-1 text-sm text-foreground/80">{notification.message}</p>
+                          <p className="mt-2 text-xs font-tag text-muted-foreground">{format(new Date(notification.created_at), "MMM d · h:mm a")}</p>
+                        </div>
+                        <div className="flex flex-wrap gap-2 md:justify-end">
+                          {notification.booking_id && (
+                            <Button
+                              size="sm"
+                              variant="outline"
+                              onClick={() => {
+                                setSelectedRequestId(notification.booking_id);
+                                setActiveTab("overview");
+                                void markNotificationRead(notification.id);
+                              }}
+                              className="border-border font-display uppercase"
+                            >
+                              Open request <ChevronRight className="h-4 w-4" />
+                            </Button>
+                          )}
+                          <Button size="sm" variant="ghost" onClick={() => void markNotificationRead(notification.id)} className="font-display uppercase">
+                            Dismiss
+                          </Button>
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </Card>
+            )}
+
             <div className="grid gap-4 xl:grid-cols-[1.1fr,0.9fr]">
               <Card className="border border-border p-5 shadow-soft">
                 <div className="flex items-center gap-3">
