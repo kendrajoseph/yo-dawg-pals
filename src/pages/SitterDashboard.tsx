@@ -1550,11 +1550,13 @@ const SitterDashboard = () => {
                     const owner = profileDetails[booking.customer_id];
                     const approval = petApprovals.find((item) => item.pet_id === booking.pet_id && item.service_id === booking.service_id);
                     const isBoarding = service?.slug === "boarding";
+                    const packOutingOptions = walkWindows.filter((window) => window.service_id === booking.service_id);
+                    const approvedBasePriceCents = parseCurrencyInput(draft.approvedBasePrice) ?? (variant?.price_cents ?? booking.base_price_cents ?? booking.total_cents);
                     const extraFee = service?.extra_time_fee_cents && service.extra_time_increment_minutes
                       ? Math.ceil(Math.max(0, draft.extraTimeMinutes) / service.extra_time_increment_minutes) * service.extra_time_fee_cents
                       : 0;
                     const lateFee = draft.latePickup ? service?.late_pickup_fee_cents ?? 0 : 0;
-                    const projectedTotal = (variant?.price_cents ?? booking.base_price_cents ?? booking.total_cents) + extraFee + lateFee;
+                    const projectedTotal = approvedBasePriceCents + extraFee + lateFee;
 
                     return (
                       <div
@@ -1598,6 +1600,23 @@ const SitterDashboard = () => {
                         </div>
 
                         <div className="mt-4 grid gap-3 md:grid-cols-2 xl:grid-cols-6 xl:items-end">
+                          {booking.services?.slug === "group-walk" && (
+                            <div>
+                              <Label>Pack outing</Label>
+                              <Select value={draft.packOutingId} onValueChange={(value) => applyPackOutingToDraft(booking, value)}>
+                                <SelectTrigger>
+                                  <SelectValue placeholder="Choose a backend outing" />
+                                </SelectTrigger>
+                                <SelectContent>
+                                  {packOutingOptions.map((outing) => (
+                                    <SelectItem key={outing.id} value={outing.id}>
+                                      {`${DAYS[outing.weekday]} · ${outing.window_label} · ${formatMinuteTime(outing.start_minute)}–${formatMinuteTime(outing.end_minute)}`}
+                                    </SelectItem>
+                                  ))}
+                                </SelectContent>
+                              </Select>
+                            </div>
+                          )}
                           <div>
                             <Label>{isBoarding ? "Check-in day" : "Date"}</Label>
                             <Input value={draft.date} type="date" onChange={(event) => patchDraft(booking, { date: event.target.value, ...(isBoarding ? { endDate: format(addDays(new Date(`${event.target.value}T00:00:00`), 1), "yyyy-MM-dd") } : {}) })} />
@@ -1617,11 +1636,21 @@ const SitterDashboard = () => {
                             <Input value={draft.end} type="time" onChange={(event) => patchDraft(booking, { end: event.target.value })} />
                           </div>
                           <div>
-                            <Label>{booking.services?.slug === "group-walk" ? "Group label" : "Internal note"}</Label>
+                            <Label>{booking.services?.slug === "group-walk" ? "Pack label" : "Internal note"}</Label>
                             <Input
                               value={booking.services?.slug === "group-walk" ? draft.groupLabel : draft.internalNotes}
-                              onChange={(event) => patchDraft(booking, booking.services?.slug === "group-walk" ? { groupLabel: event.target.value } : { internalNotes: event.target.value })}
-                              placeholder={booking.services?.slug === "group-walk" ? "Calm midday crew" : "Handled by back gate"}
+                              onChange={(event) => patchDraft(booking, booking.services?.slug === "group-walk" ? { groupLabel: event.target.value, packOutingId: "" } : { internalNotes: event.target.value })}
+                              placeholder={booking.services?.slug === "group-walk" ? "Afternoon adrenaline junkies" : "Handled by back gate"}
+                            />
+                          </div>
+                          <div>
+                            <Label>Approved price</Label>
+                            <Input
+                              type="number"
+                              min={0}
+                              step="0.01"
+                              value={draft.approvedBasePrice}
+                              onChange={(event) => patchDraft(booking, { approvedBasePrice: event.target.value })}
                             />
                           </div>
                           <div>
