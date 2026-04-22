@@ -216,6 +216,16 @@ type ServiceAlert = {
   created_at: string;
 };
 
+type SitterNotification = {
+  id: string;
+  kind: string;
+  title: string;
+  message: string;
+  booking_id: string | null;
+  read_at: string | null;
+  created_at: string;
+};
+
 type ClientMessageDraft = {
   customerId: string;
   bookingId: string;
@@ -356,6 +366,7 @@ const SitterDashboard = () => {
   const [petApprovals, setPetApprovals] = useState<PetApproval[]>([]);
   const [clientMessages, setClientMessages] = useState<ClientMessage[]>([]);
   const [serviceAlerts, setServiceAlerts] = useState<ServiceAlert[]>([]);
+  const [sitterNotifications, setSitterNotifications] = useState<SitterNotification[]>([]);
   const [profileDetails, setProfileDetails] = useState<Record<string, ProfileDetails>>({});
   const [bookingUpdates, setBookingUpdates] = useState<Record<string, BookingUpdate[]>>({});
   const [petProfiles, setPetProfiles] = useState<Record<string, PetProfile>>({});
@@ -407,6 +418,7 @@ const SitterDashboard = () => {
       { data: approvalRows },
       { data: messageRows },
       { data: alertRows },
+      { data: notificationRows },
       { data: tagRows },
       { data: fitAlertRows },
     ] = await Promise.all([
@@ -431,6 +443,7 @@ const SitterDashboard = () => {
       db.from("sitter_pet_approvals").select("id, pet_id, service_id, status, notes, pets(name), services(name)").eq("sitter_id", user.id).order("updated_at", { ascending: false }),
       db.from("client_messages").select("id, customer_id, booking_id, kind, subject, message, send_email, send_sms, delivered_email_at, delivered_sms_at, created_at").eq("sitter_id", user.id).order("created_at", { ascending: false }).limit(50),
       db.from("service_alerts").select("id, kind, title, message, starts_at, ends_at, is_active, pin_to_profile, created_at").eq("sitter_id", user.id).order("starts_at", { ascending: false }).limit(20),
+      db.from("sitter_notifications").select("id, kind, title, message, booking_id, read_at, created_at").eq("user_id", user.id).order("created_at", { ascending: false }).limit(12),
       db.from("pet_temperament_tags").select("id, slug, label, description, visibility, risk_services, risk_message").eq("is_active", true).order("sort_order"),
       db.from("pet_fit_alerts").select("id, pet_id, service_id, booking_id, title, message, severity, is_resolved, conflicting_tag_ids, created_at").eq("is_resolved", false).order("created_at", { ascending: false }).limit(20),
     ]);
@@ -448,6 +461,7 @@ const SitterDashboard = () => {
     setPetApprovals((approvalRows ?? []) as PetApproval[]);
     setClientMessages((messageRows ?? []) as ClientMessage[]);
     setServiceAlerts((alertRows ?? []) as ServiceAlert[]);
+    setSitterNotifications((notificationRows ?? []) as SitterNotification[]);
     setTemperamentTags((tagRows ?? []) as TemperamentTag[]);
     setFitAlerts((fitAlertRows ?? []) as FitAlert[]);
 
@@ -728,6 +742,21 @@ const SitterDashboard = () => {
     approvals: pendingPetApprovals.filter((item) => item.status === "pending").length,
     blockedDays: blocked.length,
     clients: clientOptions.length,
+  };
+
+  const unreadRequestNotifications = useMemo(
+    () => sitterNotifications.filter((notification) => notification.kind === "booking_request" && !notification.read_at),
+    [sitterNotifications],
+  );
+
+  const markNotificationRead = async (notificationId: string) => {
+    const { error } = await db.from("sitter_notifications").update({ read_at: new Date().toISOString() }).eq("id", notificationId).is("read_at", null);
+    if (error) {
+      toast({ title: "Couldn't clear alert", description: error.message, variant: "destructive" });
+      return;
+    }
+
+    setSitterNotifications((current) => current.map((notification) => notification.id === notificationId ? { ...notification, read_at: new Date().toISOString() } : notification));
   };
 
   const hasBufferedMinuteConflict = (ranges: Array<{ start: number; end: number }>, start: number, end: number) =>
