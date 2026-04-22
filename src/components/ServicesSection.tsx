@@ -83,7 +83,7 @@ const ServicesSection = () => {
             </h2>
           </div>
           <p className="max-w-sm text-base leading-relaxed text-foreground/75">
-            Clear options, clear pricing, and a booking flow that reflects real life — especially for walks that need judgment, not random slots.
+            Straightforward services, transparent pricing, and a booking process designed around thoughtful, well-timed care.
           </p>
         </div>
 
