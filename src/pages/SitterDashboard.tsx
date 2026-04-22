@@ -671,7 +671,7 @@ const SitterDashboard = () => {
     });
     setSendingUpdateId(null);
 
-    if (error) {
+    if (error || data?.ok === false) {
       toast({ title: "Couldn't send update", description: error.message, variant: "destructive" });
       return;
     }
@@ -679,7 +679,7 @@ const SitterDashboard = () => {
     patchUpdateDraft(booking.id, { note: "" });
     toast({
       title: data?.smsSent ? "Update sent" : "Update saved",
-      description: data?.message || (data?.smsSent ? "The owner received a text update." : "The update was logged without sending a text."),
+      description: data?.smsError ?? data?.message ?? (data?.smsSent ? "The owner received a text update." : "The update was logged without sending a text."),
     });
     load();
   };
@@ -704,12 +704,12 @@ const SitterDashboard = () => {
     });
     setSendingClientMessage(false);
 
-    if (error) {
-      toast({ title: "Couldn't send client message", description: error.message, variant: "destructive" });
+    if (error || data?.ok === false) {
+      toast({ title: "Couldn't send client message", description: error?.message ?? data?.error ?? "Unknown error", variant: "destructive" });
       return;
     }
 
-    toast({ title: "Client message saved", description: data?.message ?? "The update is now in the client hub." });
+    toast({ title: "Client message saved", description: data?.smsError ?? data?.message ?? "The update is now in the client hub." });
     setClientMessageDraft((current) => ({ ...current, subject: "", message: "" }));
     load();
   };
