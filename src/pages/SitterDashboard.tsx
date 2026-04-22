@@ -499,7 +499,9 @@ const SitterDashboard = () => {
     }
 
     if (customerIds.length > 0) {
-      const { data: profileRows } = await db.from("profiles").select("id, full_name, mobile_phone, sms_opt_in").in("id", customerIds);
+      const profileQuery = db.from("profiles").select("id, full_name, mobile_phone, sms_opt_in").in("id", customerIds);
+      const adminProfileQuery = db.from("client_admin_profiles").select("client_id, star_rating, internal_notes").in("client_id", customerIds);
+      const [{ data: profileRows }, { data: adminProfileRows }] = await Promise.all([profileQuery, adminProfileQuery]);
       setProfileDetails(
         Object.fromEntries(
           ((profileRows ?? []) as { id: string; full_name: string | null; mobile_phone?: string | null; sms_opt_in?: boolean | null }[]).map((row) => [
@@ -512,8 +514,14 @@ const SitterDashboard = () => {
           ]),
         ),
       );
+      setClientAdminProfiles(
+        Object.fromEntries(
+          ((adminProfileRows ?? []) as ClientAdminProfile[]).map((row) => [row.client_id, row]),
+        ),
+      );
     } else {
       setProfileDetails({});
+      setClientAdminProfiles({});
     }
 
     if (nextBookings.length > 0) {
@@ -560,6 +568,32 @@ const SitterDashboard = () => {
           "",
       };
     });
+  };
+
+  const saveClientAdminProfile = async (clientId: string, values: { star_rating: number; internal_notes: string }) => {
+    if (!user) return;
+
+    setSavingClientProfile(true);
+    const payload = {
+      client_id: clientId,
+      star_rating: Math.min(5, Math.max(1, values.star_rating)),
+      internal_notes: values.internal_notes.trim() || null,
+      last_updated_by: user.id,
+    };
+
+    const { error } = await db.from("client_admin_profiles").upsert(payload, { onConflict: "client_id" });
+    setSavingClientProfile(false);
+
+    if (error) {
+      toast({ title: "Couldn't save client notes", description: error.message, variant: "destructive" });
+      return;
+    }
+
+    setClientAdminProfiles((current) => ({
+      ...current,
+      [clientId]: payload,
+    }));
+    toast({ title: "Client profile updated" });
   };
 
   useEffect(() => {
