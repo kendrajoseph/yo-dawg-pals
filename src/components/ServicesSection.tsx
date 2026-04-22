@@ -1,6 +1,6 @@
 import { ArrowRight, Bed, CalendarClock, Footprints, Home, Users } from "lucide-react";
 import { Link } from "react-router-dom";
-import { dog1, dog3, dog4 } from "@/assets/dogs";
+import { dog1, dog2, dog3, dog4 } from "@/assets/dogs";
 
 const services = [
   {
@@ -23,7 +23,7 @@ const services = [
     unit: "/ walk",
     slug: "group-walk",
     accent: "bg-secondary text-secondary-foreground",
-    dog: dog1,
+    dog: dog2,
   },
   {
     icon: Home,
