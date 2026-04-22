@@ -2,12 +2,12 @@ import { ArrowRight, MapPin, Star } from "lucide-react";
 import { Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import SiteNav from "@/components/SiteNav";
-import wordmark from "@/assets/yodawg-hero-logo.svg";
+import wordmark from "@/assets/yodawg-logo.svg";
 import { dog3 } from "@/assets/dogs";
 
 const HeroSection = () => {
   return (
-    <header className="relative overflow-hidden bg-primary text-primary-foreground">
+    <header className="relative overflow-hidden bg-hero text-foreground">
       <div aria-hidden className="pointer-events-none absolute inset-0 texture-halftone opacity-60" />
 
       <div
@@ -40,7 +40,7 @@ const HeroSection = () => {
             <span className="font-serif italic font-normal text-secondary">and the people who love them.</span>
           </h1>
 
-          <p className="mt-5 max-w-lg text-base leading-relaxed text-primary-foreground/75 sm:mt-7 sm:text-lg">
+          <p className="mt-5 max-w-lg text-base leading-relaxed text-foreground/75 sm:mt-7 sm:text-lg">
             Premium solo walks, carefully matched group walks, dependable drop-in sits, and cozy home-style boarding — all handled personally by Anneke, with timing and care shaped around what actually works for your dog.
           </p>
 
@@ -59,13 +59,13 @@ const HeroSection = () => {
               asChild
               size="lg"
               variant="ghost"
-              className="h-12 w-full rounded-full px-5 text-base font-semibold text-primary-foreground hover:bg-primary-foreground/10 hover:text-primary-foreground sm:h-14 sm:w-auto"
+               className="h-12 w-full rounded-full px-5 text-base font-semibold text-foreground hover:bg-foreground/10 hover:text-foreground sm:h-14 sm:w-auto"
             >
                <Link to="/#services">How it works →</Link>
             </Button>
           </div>
 
-          <div className="mt-8 flex flex-wrap items-center gap-x-6 gap-y-3 border-t border-primary-foreground/15 pt-6 sm:mt-12 sm:gap-x-8 sm:gap-y-4 sm:pt-8">
+          <div className="mt-8 flex flex-wrap items-center gap-x-6 gap-y-3 border-t border-foreground/15 pt-6 sm:mt-12 sm:gap-x-8 sm:gap-y-4 sm:pt-8">
             <div className="flex items-center gap-2">
               <div className="flex gap-0.5 text-secondary">
                 {Array.from({ length: 5 }).map((_, i) => (
@@ -73,10 +73,10 @@ const HeroSection = () => {
                 ))}
               </div>
               <span className="text-sm font-semibold">5.0</span>
-              <span className="text-sm text-primary-foreground/65">· trusted by 80+ Hamilton pups</span>
+              <span className="text-sm text-foreground/65">· trusted by 80+ Hamilton pups</span>
             </div>
-            <div className="text-sm text-primary-foreground/65">
-              <span className="font-semibold text-primary-foreground">Insured</span> & pet first-aid certified
+            <div className="text-sm text-foreground/65">
+              <span className="font-semibold text-foreground">Insured</span> & pet first-aid certified
             </div>
           </div>
         </div>
@@ -85,7 +85,7 @@ const HeroSection = () => {
           <div
             aria-hidden
             className="pointer-events-none absolute inset-0 -z-10 m-auto h-[420px] w-[420px] rounded-full blur-2xl sm:h-[520px] sm:w-[520px]"
-            style={{ background: "radial-gradient(closest-side, hsl(var(--accent) / 0.22), transparent 70%)" }}
+             style={{ background: "radial-gradient(closest-side, hsl(var(--secondary) / 0.3), transparent 70%)" }}
           />
           <img
             src={dog3}
@@ -94,14 +94,14 @@ const HeroSection = () => {
             loading="eager"
           />
 
-          <div className="absolute -right-1 top-2 z-10 grid h-20 w-20 -rotate-12 place-items-center rounded-full border-2 border-primary-foreground bg-secondary text-center font-display text-secondary-foreground shadow-pop-sm sm:right-4 sm:top-4 sm:h-28 sm:w-28">
+           <div className="absolute -right-1 top-2 z-10 grid h-20 w-20 -rotate-12 place-items-center rounded-full border-2 border-foreground bg-secondary text-center font-display text-secondary-foreground shadow-pop-sm sm:right-4 sm:top-4 sm:h-28 sm:w-28">
             <div className="leading-tight">
               <div className="text-[10px] font-tag">since</div>
               <div className="text-2xl sm:text-3xl">2015</div>
             </div>
           </div>
 
-          <div className="absolute -bottom-4 left-1 z-10 max-w-[260px] -rotate-2 rounded-2xl border-2 border-primary-foreground/90 bg-card p-2.5 text-foreground shadow-pop-sm sm:-bottom-2 sm:left-4 sm:max-w-[280px] sm:p-3">
+           <div className="absolute -bottom-4 left-1 z-10 max-w-[260px] -rotate-2 rounded-2xl border-2 border-foreground/90 bg-card p-2.5 text-foreground shadow-pop-sm sm:-bottom-2 sm:left-4 sm:max-w-[280px] sm:p-3">
             <div>
               <p className="font-serif text-xs italic leading-snug sm:text-sm">
                 "The walks feel personal, structured, and exactly right for our dog."
@@ -112,7 +112,7 @@ const HeroSection = () => {
         </div>
       </div>
 
-      <div className="relative z-10 overflow-hidden border-y-2 border-primary-foreground/15 bg-accent py-2.5 text-accent-foreground sm:py-3">
+       <div className="relative z-10 overflow-hidden border-y-2 border-foreground/15 bg-accent py-2.5 text-accent-foreground sm:py-3">
         <div className="marquee flex gap-8 whitespace-nowrap font-display text-xl sm:gap-12 sm:text-2xl">
           {Array.from({ length: 2 }).map((_, g) => (
             <div key={g} className="flex shrink-0 items-center gap-8 sm:gap-12">

@@ -10,6 +10,7 @@
   :root {
     /* Warm cream — main page background */
     --background: 38 38% 95%;
+    --hero: 48 67% 89%;
     --foreground: 220 45% 12%;
 
     --card: 40 50% 98%;
@@ -81,6 +82,7 @@
 
   .dark {
     --background: 220 50% 8%;
+    --hero: 48 67% 89%;
     --foreground: 38 32% 92%;
     --card: 220 42% 12%;
     --card-foreground: 38 32% 92%;
@@ -160,7 +162,8 @@
     -webkit-text-fill-color: transparent; color: transparent;
   }
 
-  .bg-gradient-canopy { background: var(--gradient-canopy); }
+   .bg-gradient-canopy { background: var(--gradient-canopy); }
+   .bg-hero { background-color: hsl(var(--hero)); }
   .bg-gradient-night { background: var(--gradient-night); }
   .bg-gradient-sunrise { background: var(--gradient-sunrise); }
 
