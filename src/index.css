@@ -34,17 +34,17 @@
     --muted: 48 32% 83%;
     --muted-foreground: 264 7% 34%;
 
-    /* Blossom pink from logo */
-    --accent: 345 62% 78%;
+    /* Logo orange becomes the primary accent */
+    --accent: 24 95% 58%;
     --accent-foreground: 264 5% 19%;
 
-    --highlight: 147 20% 78%;
+    --highlight: 24 72% 85%;
     --highlight-foreground: 264 5% 19%;
 
-    --clay: 147 16% 58%;
+    --clay: 345 42% 72%;
     --clay-foreground: 264 5% 19%;
 
-    --tag: 147 18% 36%;
+    --tag: 24 70% 42%;
     --tag-foreground: 48 67% 89%;
 
     --electric: 147 24% 48%;
@@ -55,20 +55,20 @@
 
     --border: 147 14% 74%;
     --input: 48 28% 82%;
-    --ring: 147 24% 48%;
+    --ring: 24 95% 58%;
 
     --radius: 1rem;
 
     --gradient-canopy: linear-gradient(180deg, hsl(48 67% 89%) 0%, hsl(48 48% 84%) 100%);
     --gradient-night: linear-gradient(160deg, hsl(264 5% 16%) 0%, hsl(264 5% 19%) 60%, hsl(264 6% 28%) 100%);
-    --gradient-sunrise: linear-gradient(120deg, hsl(147 24% 48%) 0%, hsl(345 62% 78%) 100%);
+    --gradient-sunrise: linear-gradient(120deg, hsl(24 95% 58%) 0%, hsl(345 42% 72%) 100%);
 
     --shadow-soft: 0 8px 24px -10px hsl(264 5% 19% / 0.14);
     --shadow-card: 0 14px 36px -16px hsl(264 5% 19% / 0.24);
     --shadow-elevate: 0 24px 60px -22px hsl(264 5% 19% / 0.32);
     --shadow-pop: 6px 6px 0 0 hsl(264 5% 19%);
     --shadow-pop-sm: 3px 3px 0 0 hsl(264 5% 19%);
-    --shadow-glow: 0 0 80px -10px hsl(147 24% 48% / 0.28);
+    --shadow-glow: 0 0 80px -10px hsl(24 95% 58% / 0.28);
 
     --sidebar-background: 48 67% 89%;
     --sidebar-foreground: 264 5% 19%;
@@ -77,7 +77,7 @@
     --sidebar-accent: 48 32% 83%;
     --sidebar-accent-foreground: 264 5% 19%;
     --sidebar-border: 147 14% 74%;
-    --sidebar-ring: 147 24% 48%;
+    --sidebar-ring: 24 95% 58%;
   }
 
   .dark {
@@ -96,13 +96,13 @@
     --secondary-foreground: 48 40% 91%;
     --muted: 147 10% 17%;
     --muted-foreground: 48 20% 74%;
-    --accent: 345 38% 72%;
+    --accent: 24 88% 60%;
     --accent-foreground: 147 16% 10%;
     --highlight: 147 12% 22%;
     --highlight-foreground: 48 40% 91%;
-    --clay: 147 16% 58%;
+    --clay: 345 34% 68%;
     --clay-foreground: 147 16% 10%;
-    --tag: 147 20% 34%;
+    --tag: 24 62% 46%;
     --tag-foreground: 48 40% 91%;
     --electric: 147 24% 48%;
     --electric-foreground: 147 16% 10%;
@@ -110,7 +110,7 @@
     --destructive-foreground: 48 60% 92%;
     --border: 147 10% 24%;
     --input: 147 10% 20%;
-    --ring: 147 24% 48%;
+    --ring: 24 88% 60%;
   }
 }
 
