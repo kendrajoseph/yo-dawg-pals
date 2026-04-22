@@ -22,6 +22,7 @@ import {
   ShieldCheck,
   Smartphone,
   Sparkles,
+  Star,
   Trash2,
   UserRound,
   Users,
@@ -177,6 +178,12 @@ type ProfileDetails = {
   full_name: string;
   mobile_phone: string | null;
   sms_opt_in: boolean;
+};
+
+type ClientAdminProfile = {
+  client_id: string;
+  star_rating: number;
+  internal_notes: string | null;
 };
 
 type BookingUpdate = {
@@ -369,11 +376,13 @@ const SitterDashboard = () => {
   const [serviceAlerts, setServiceAlerts] = useState<ServiceAlert[]>([]);
   const [sitterNotifications, setSitterNotifications] = useState<SitterNotification[]>([]);
   const [profileDetails, setProfileDetails] = useState<Record<string, ProfileDetails>>({});
+  const [clientAdminProfiles, setClientAdminProfiles] = useState<Record<string, ClientAdminProfile>>({});
   const [bookingUpdates, setBookingUpdates] = useState<Record<string, BookingUpdate[]>>({});
   const [petProfiles, setPetProfiles] = useState<Record<string, PetProfile>>({});
   const [temperamentTags, setTemperamentTags] = useState<TemperamentTag[]>([]);
   const [petTagIdsByPet, setPetTagIdsByPet] = useState<Record<string, string[]>>({});
   const [fitAlerts, setFitAlerts] = useState<FitAlert[]>([]);
+  const [savingClientProfile, setSavingClientProfile] = useState(false);
 
   const [newAvailability, setNewAvailability] = useState({ weekday: 1, start: "09:00", end: "12:00", maxBookings: 1 });
   const [newServiceIds, setNewServiceIds] = useState<string[]>([]);
@@ -618,10 +627,24 @@ const SitterDashboard = () => {
   }, [bookings, clientOptions, clientSearch]);
 
   const selectedClientProfile = selectedClientId ? profileDetails[selectedClientId] : null;
+  const selectedClientAdminProfile = selectedClientId ? clientAdminProfiles[selectedClientId] : null;
   const selectedClientBookings = useMemo(
     () => bookings.filter((booking) => booking.customer_id === selectedClientId),
     [bookings, selectedClientId],
   );
+  const selectedClientServiceHistory = useMemo(() => {
+    const counts = selectedClientBookings.reduce<Record<string, { label: string; count: number }>>((acc, booking) => {
+      const key = booking.service_variant_id ?? booking.service_id;
+      const label = booking.service_variants?.name ?? booking.services?.name ?? "Service";
+      acc[key] = {
+        label,
+        count: (acc[key]?.count ?? 0) + 1,
+      };
+      return acc;
+    }, {});
+
+    return Object.values(counts).sort((a, b) => b.count - a.count || a.label.localeCompare(b.label));
+  }, [selectedClientBookings]);
   const selectedClientMessageLog = useMemo(
     () => clientMessages.filter((message) => message.customer_id === selectedClientId).slice(0, 8),
     [clientMessages, selectedClientId],
@@ -690,6 +713,13 @@ const SitterDashboard = () => {
   );
   const ownerVisibleTags = useMemo(() => temperamentTags.filter((tag) => tag.visibility === "owner"), [temperamentTags]);
   const internalOnlyTags = useMemo(() => temperamentTags.filter((tag) => tag.visibility === "internal"), [temperamentTags]);
+  const clientAdminDraft = useMemo(
+    () => ({
+      star_rating: selectedClientAdminProfile?.star_rating ?? 3,
+      internal_notes: selectedClientAdminProfile?.internal_notes ?? "",
+    }),
+    [selectedClientAdminProfile],
+  );
 
   const pendingPetApprovals = useMemo(() => {
     const seen = new Set<string>();
