@@ -672,7 +672,7 @@ const SitterDashboard = () => {
     setSendingUpdateId(null);
 
     if (error || data?.ok === false) {
-      toast({ title: "Couldn't send update", description: error.message, variant: "destructive" });
+      toast({ title: "Couldn't send update", description: error?.message ?? data?.error ?? "Unknown error", variant: "destructive" });
       return;
     }
 
