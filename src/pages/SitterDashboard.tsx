@@ -1415,15 +1415,18 @@ const SitterDashboard = () => {
                 </div>
                 <div className="flex flex-col gap-2 sm:flex-row sm:items-end">
                   <div>
-                    <Label>Date</Label>
+                    <Label>{snapshotRange === "week" ? "Week of" : "Date"}</Label>
                     <Input type="date" value={selectedDay} onChange={(event) => setSelectedDay(event.target.value)} className="min-w-[180px]" />
                   </div>
-                  <div className="flex gap-2">
-                    <Button type="button" variant="outline" className="border-border font-display uppercase" onClick={() => setSelectedDay(format(new Date(), "yyyy-MM-dd"))}>
+                  <div className="flex flex-wrap gap-2">
+                    <Button type="button" variant={snapshotRange === "day" ? "secondary" : "outline"} className="border-border font-display uppercase" onClick={() => { setSnapshotRange("day"); setSelectedDay(format(new Date(), "yyyy-MM-dd")); }}>
                       Today
                     </Button>
-                    <Button type="button" variant="outline" className="border-border font-display uppercase" onClick={() => setSelectedDay(format(addDays(new Date(), 1), "yyyy-MM-dd"))}>
+                    <Button type="button" variant="outline" className="border-border font-display uppercase" onClick={() => { setSnapshotRange("day"); setSelectedDay(format(addDays(new Date(`${selectedDay}T12:00:00`), 1), "yyyy-MM-dd")); }}>
                       Tomorrow
+                    </Button>
+                    <Button type="button" variant={snapshotRange === "week" ? "secondary" : "outline"} className="border-border font-display uppercase" onClick={() => setSnapshotRange("week")}>
+                      This week
                     </Button>
                   </div>
                 </div>
@@ -1445,12 +1448,18 @@ const SitterDashboard = () => {
 
               {dailySnapshotBookings.length === 0 ? (
                 <div className="mt-6 rounded-md border border-dashed border-border bg-muted/30 px-5 py-8 text-center">
-                  <div className="font-display text-lg uppercase text-primary">Nothing booked for this day</div>
-                  <p className="mt-2 text-sm text-muted-foreground">Pick another date to see the schedule.</p>
+                  <div className="font-display text-lg uppercase text-primary">Nothing booked for this {snapshotRange}</div>
+                  <p className="mt-2 text-sm text-muted-foreground">Pick another {snapshotRange === "week" ? "week" : "date"} to see the schedule.</p>
                 </div>
               ) : (
-                <div className="mt-6 space-y-3">
-                  {dailySnapshotBookings.map((booking) => {
+                <div className="mt-6 space-y-4">
+                  {(snapshotRange === "week"
+                    ? weeklySnapshotGroups.map((group) => ({ key: group.date, label: group.label, bookings: group.bookings }))
+                    : [{ key: selectedDay, label: format(new Date(`${selectedDay}T12:00:00`), "EEEE, MMM d"), bookings: dailySnapshotBookings }]
+                  ).map((group) => (
+                    <div key={group.key} className="space-y-3">
+                      {snapshotRange === "week" ? <div className="font-display text-sm uppercase text-muted-foreground">{group.label}</div> : null}
+                      {group.bookings.map((booking) => {
                     const owner = profileDetails[booking.customer_id];
                     const serviceName = booking.service_variants?.name ?? booking.services?.name ?? "Booking";
                     const scheduleText = formatBookingSchedule(booking);
@@ -1499,6 +1508,8 @@ const SitterDashboard = () => {
                       </div>
                     );
                   })}
+                    </div>
+                  ))}
                 </div>
               )}
             </Card>
