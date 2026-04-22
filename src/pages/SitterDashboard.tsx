@@ -1104,10 +1104,10 @@ const SitterDashboard = () => {
                   )}
 
                   <div className="mt-3 flex flex-wrap gap-2">
-                    {booking.status !== "confirmed" && booking.status !== "awaiting_payment" && (
+                    {booking.status !== "confirmed" && booking.status !== "awaiting_payment" && booking.status !== "pending_payment" && (
                       <Button onClick={() => approveRequest(booking)} disabled={savingBookingId === booking.id} className="bg-primary font-display uppercase shadow-pop-accent">
                         <Check className="h-4 w-4" />
-                        {savingBookingId === booking.id ? "Saving…" : variant?.payment_mode === "free" ? "Approve & confirm" : "Approve & request payment"}
+                        {savingBookingId === booking.id ? "Saving…" : variant?.payment_mode === "free" ? "Approve & confirm" : "Approve & open payment"}
                       </Button>
                     )}
                     {booking.status !== "cancelled" && booking.status !== "completed" && (
