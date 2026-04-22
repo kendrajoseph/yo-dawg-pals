@@ -31,6 +31,7 @@ import { Button } from "@/components/ui/button";
 import { Calendar } from "@/components/ui/calendar";
 import { Card } from "@/components/ui/card";
 import { Checkbox } from "@/components/ui/checkbox";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -38,6 +39,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { useAuth } from "@/hooks/useAuth";
 import { toast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
+import type { Pet as PetProfile } from "@/lib/petSchema";
 import {
   DAYS,
   formatBookingSchedule,
@@ -254,6 +256,7 @@ const SitterDashboard = () => {
   const [selectedClientId, setSelectedClientId] = useState("");
   const [messageAudience, setMessageAudience] = useState<MessageAudience>("single");
   const [selectedRecipientIds, setSelectedRecipientIds] = useState<string[]>([]);
+  const [activePetProfileId, setActivePetProfileId] = useState<string | null>(null);
   const requestCardRefs = useRef<Record<string, HTMLDivElement | null>>({});
 
   const [availability, setAvailability] = useState<Availability[]>([]);
@@ -268,6 +271,7 @@ const SitterDashboard = () => {
   const [serviceAlerts, setServiceAlerts] = useState<ServiceAlert[]>([]);
   const [profileDetails, setProfileDetails] = useState<Record<string, ProfileDetails>>({});
   const [bookingUpdates, setBookingUpdates] = useState<Record<string, BookingUpdate[]>>({});
+  const [petProfiles, setPetProfiles] = useState<Record<string, PetProfile>>({});
 
   const [newAvailability, setNewAvailability] = useState({ weekday: 1, start: "09:00", end: "12:00", maxBookings: 1 });
   const [newServiceIds, setNewServiceIds] = useState<string[]>([]);
@@ -352,6 +356,17 @@ const SitterDashboard = () => {
     setServiceAlerts((alertRows ?? []) as ServiceAlert[]);
 
     const customerIds = [...new Set(nextBookings.map((row) => row.customer_id))];
+    const petIds = [...new Set(nextBookings.map((row) => row.pet_id))];
+
+    if (petIds.length > 0) {
+      const { data: petRows } = await db.from("pets").select("*").in("id", petIds);
+      setPetProfiles(
+        Object.fromEntries(((petRows ?? []) as PetProfile[]).map((pet) => [pet.id, pet])),
+      );
+    } else {
+      setPetProfiles({});
+    }
+
     if (customerIds.length > 0) {
       const { data: profileRows } = await db.from("profiles").select("id, full_name, mobile_phone, sms_opt_in").in("id", customerIds);
       setProfileDetails(
@@ -494,6 +509,7 @@ const SitterDashboard = () => {
     [bookings, clientMessageDraft.customerId],
   );
   const selectedDraftClientProfile = clientMessageDraft.customerId ? profileDetails[clientMessageDraft.customerId] : null;
+  const activePetProfile = activePetProfileId ? petProfiles[activePetProfileId] ?? null : null;
 
   const pendingPetApprovals = useMemo(() => {
     const seen = new Set<string>();
@@ -1130,6 +1146,9 @@ const SitterDashboard = () => {
                           </span>
                         </div>
                         <div className="mt-4 flex flex-wrap gap-2">
+                          <Button size="sm" variant="secondary" onClick={() => setActivePetProfileId(approval.petId)} className="font-display uppercase">
+                            <UserRound className="h-4 w-4" /> Open profile
+                          </Button>
                           <Button size="sm" onClick={() => setPetApproval(approval.petId, approval.serviceId, "approved", "Good fit for this service.")} className="font-display uppercase">
                             <Check className="h-4 w-4" /> Approve
                           </Button>
@@ -2051,6 +2070,74 @@ const SitterDashboard = () => {
 
         <Link to="/account" className="mt-8 inline-block font-tag text-clay">← back to account</Link>
       </section>
+      <Dialog open={!!activePetProfileId} onOpenChange={(open) => !open && setActivePetProfileId(null)}>
+        <DialogContent className="max-h-[88vh] overflow-y-auto border border-border bg-background shadow-soft sm:max-w-3xl">
+          <DialogHeader>
+            <DialogTitle className="font-display text-2xl uppercase text-primary">
+              {activePetProfile?.name ?? "Pet profile"}
+            </DialogTitle>
+          </DialogHeader>
+
+          {activePetProfile ? (
+            <div className="grid gap-6 lg:grid-cols-[0.8fr,1.2fr]">
+              <div className="space-y-4">
+                <div className="overflow-hidden rounded-md border border-border bg-muted/40 aspect-square">
+                  {activePetProfile.photo_url ? (
+                    <img
+                      src={activePetProfile.photo_url}
+                      alt={activePetProfile.name}
+                      className="h-full w-full object-cover"
+                      loading="lazy"
+                    />
+                  ) : (
+                    <div className="flex h-full items-center justify-center text-sm text-muted-foreground">No photo on file</div>
+                  )}
+                </div>
+
+                <div className="rounded-md border border-border bg-muted/40 p-4 text-sm">
+                  <div className="font-display text-base uppercase text-primary">Quick facts</div>
+                  <div className="mt-3 grid gap-2 text-foreground/80">
+                    <p>{[activePetProfile.species, activePetProfile.breed, activePetProfile.sex].filter(Boolean).join(" · ") || "No basics on file"}</p>
+                    <p>
+                      {[activePetProfile.age_years ? `${activePetProfile.age_years} years` : null, activePetProfile.weight_lbs ? `${activePetProfile.weight_lbs} lbs` : null]
+                        .filter(Boolean)
+                        .join(" · ") || "Age and weight not listed"}
+                    </p>
+                    <p>{activePetProfile.spayed_neutered ? "Spayed / neutered" : "Spay / neuter not noted"}</p>
+                    <p>{activePetProfile.microchip_id ? `Microchip: ${activePetProfile.microchip_id}` : "No microchip listed"}</p>
+                  </div>
+                </div>
+              </div>
+
+              <div className="grid gap-4">
+                {[
+                  ["Care notes", [activePetProfile.medications, activePetProfile.allergies, activePetProfile.dietary_notes, activePetProfile.behavioral_notes, activePetProfile.notes].filter(Boolean)],
+                  ["Vet & emergency", [activePetProfile.vet_name, activePetProfile.vet_phone, activePetProfile.vet_address, activePetProfile.vet_info, activePetProfile.emergency_contact].filter(Boolean)],
+                  ["Pickup & home access", [activePetProfile.authorized_pickup_name, activePetProfile.authorized_pickup_phone, activePetProfile.entry_code ? "Entry code on file" : null, activePetProfile.entry_instructions].filter(Boolean)],
+                  ["Owner contacts", [activePetProfile.owner_phone, activePetProfile.secondary_contact_name, activePetProfile.secondary_contact_phone, activePetProfile.insurance_provider, activePetProfile.insurance_policy].filter(Boolean)],
+                ].map(([title, items]) => (
+                  <div key={title as string} className="rounded-md border border-border bg-card p-4">
+                    <h3 className="font-display text-base uppercase text-primary">{title as string}</h3>
+                    {Array.isArray(items) && items.length > 0 ? (
+                      <ul className="mt-3 space-y-2 text-sm text-foreground/80">
+                        {items.map((item) => (
+                          <li key={String(item)} className="rounded-md bg-muted/40 px-3 py-2">
+                            {String(item)}
+                          </li>
+                        ))}
+                      </ul>
+                    ) : (
+                      <p className="mt-3 text-sm text-muted-foreground">Nothing added here yet.</p>
+                    )}
+                  </div>
+                ))}
+              </div>
+            </div>
+          ) : (
+            <p className="text-sm text-muted-foreground">This pet profile is not available yet.</p>
+          )}
+        </DialogContent>
+      </Dialog>
       <SiteFooter />
     </main>
   );
