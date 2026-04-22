@@ -8,6 +8,7 @@ import SiteFooter from "@/components/SiteFooter";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Calendar } from "@/components/ui/calendar";
+import { Checkbox } from "@/components/ui/checkbox";
 import { Textarea } from "@/components/ui/textarea";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Label } from "@/components/ui/label";
@@ -75,6 +76,7 @@ type WalkWindow = {
 
 const STEPS = ["Service", "Schedule", "Pet", "Review"] as const;
 const WALK_REQUEST_SLUGS = new Set(["solo-walk", "group-walk"]);
+const TERMS_VERSION = "2026-04-22";
 
 const Book = () => {
   const db = supabase as any;
@@ -101,6 +103,7 @@ const Book = () => {
   const [windowId, setWindowId] = useState<string | null>(null);
   const [petId, setPetId] = useState<string | null>(null);
   const [notes, setNotes] = useState("");
+  const [acceptedTerms, setAcceptedTerms] = useState(false);
   const [submitting, setSubmitting] = useState(false);
 
   useEffect(() => {
@@ -308,6 +311,9 @@ const Book = () => {
     if (!user || !service || !selectedVariant || !date || !sitterId || !petId) return;
     if (isWalkWindowRequest && !selectedWindow) return;
     if (usesExactSlots && slot === null) return;
+    if (!acceptedTerms) {
+      return toast({ title: "Accept the Terms & Conditions to continue", variant: "destructive" });
+    }
 
     setSubmitting(true);
 
@@ -343,6 +349,8 @@ const Book = () => {
         deposit_cents: depositCents,
         payment_amount_cents: dueNow,
         notes: notes || null,
+        terms_accepted_at: new Date().toISOString(),
+        terms_version: TERMS_VERSION,
         status: "requested",
         booking_kind: "requested",
         requested_date: format(date, "yyyy-MM-dd"),
@@ -373,6 +381,8 @@ const Book = () => {
         deposit_cents: depositCents,
         payment_amount_cents: dueNow,
         notes: notes || null,
+        terms_accepted_at: new Date().toISOString(),
+        terms_version: TERMS_VERSION,
         status: "requested",
         booking_kind: "requested",
         requested_date: format(date, "yyyy-MM-dd"),
@@ -398,6 +408,8 @@ const Book = () => {
         deposit_cents: depositCents,
         payment_amount_cents: dueNow,
         notes: notes || null,
+        terms_accepted_at: new Date().toISOString(),
+        terms_version: TERMS_VERSION,
       };
 
       bookingPayload = {
@@ -467,7 +479,7 @@ const Book = () => {
           Book a <span className="text-gradient-sunrise">service.</span>
         </h1>
         <p className="mt-3 max-w-2xl text-sm leading-relaxed text-foreground/75 sm:text-base">
-          Each service now follows its own timing rules, approval flow, and pricing so Anneke can keep the calendar tight and the care quality high.
+          Each service follows its own timing rules, approval flow, and pricing so bookings stay clear, realistic, and easy to manage.
         </p>
 
         <ol className="mt-6 grid grid-cols-4 gap-2">
@@ -495,10 +507,10 @@ const Book = () => {
               <Sparkles className="mt-0.5 h-4 w-4 shrink-0" />
               <p>
                 {isBoarding
-                  ? "Boarding requests are reviewed manually. Anneke confirms fit, keeps boarding to noon-to-noon, and applies any approved add-on or late-pickup fees afterward."
+                  ? "Boarding requests are reviewed manually, confirmed for fit, and finalized before payment opens."
                   : isWalkWindowRequest
-                  ? "Request the window that fits best and Anneke will approve the dog, lock the final timing, and only then open payment."
-                  : "Pick the date and preferred slot you want — Anneke approves the request before it becomes payable."}
+                  ? "Request the window that fits best and the final timing will be confirmed before payment opens."
+                  : "Pick the date and preferred slot you want — the request is reviewed before it becomes payable."}
               </p>
             </div>
           </div>
@@ -528,7 +540,7 @@ const Book = () => {
                               <div className="mt-3 flex flex-wrap gap-2 text-xs text-muted-foreground">
                                 {svc.requires_pet_approval && <span className="inline-flex items-center gap-1"><ShieldCheck className="h-3.5 w-3.5" /> Pet approval</span>}
                                 {svc.scheduling_mode === "boarding" && <span className="inline-flex items-center gap-1"><MoonStar className="h-3.5 w-3.5" /> Noon to noon</span>}
-                                {svc.turnaround_buffer_minutes > 0 && <span>{svc.turnaround_buffer_minutes}-minute buffer</span>}
+                                 {svc.turnaround_buffer_minutes > 0 && <span>Protected scheduling window</span>}
                               </div>
                             </div>
                           </div>
@@ -557,7 +569,7 @@ const Book = () => {
                                 <span className="ml-1 text-xs opacity-70">{variant.unit_label}</span>
                               </div>
                               <div className={cn("mt-1 text-xs", activeVariant ? "text-tag-foreground/80" : "text-muted-foreground")}>
-                                 {variant.duration_minutes >= 1440 ? "Overnight block" : `${variant.duration_minutes} minutes`} · {variant.payment_mode === "free" ? "No payment" : "Payment opens after Anneke approves"}
+                                 {variant.duration_minutes >= 1440 ? "Overnight block" : `${variant.duration_minutes} minutes`} · {variant.payment_mode === "free" ? "No payment" : "Payment opens after approval"}
                               </div>
                             </button>
                           );
@@ -668,7 +680,7 @@ const Book = () => {
               <h2 className="font-display text-2xl uppercase">Who's coming?</h2>
               {service.requires_pet_approval && (
                 <div className="mt-3 border-2 border-primary bg-muted px-4 py-3 text-sm text-foreground/75">
-                  Anneke reviews pet fit for this service before the booking is confirmed.
+                  Pet fit is reviewed for this service before the booking is confirmed.
                 </div>
               )}
               {pets.length === 0 ? (
@@ -708,13 +720,13 @@ const Book = () => {
                 </RadioGroup>
               )}
               <div className="mt-5">
-                <Label>Notes for Anneke (optional)</Label>
+                <Label>Care notes (optional)</Label>
                 <Textarea
                   rows={3}
                   maxLength={500}
                   value={notes}
                   onChange={(event) => setNotes(event.target.value)}
-                  placeholder="Anything she should know — leash habits, meds, feeding rhythm, pickups, building access, social fit."
+                  placeholder="Anything important to know — leash habits, meds, feeding rhythm, pickups, building access, or social fit."
                 />
               </div>
             </div>
@@ -759,6 +771,14 @@ const Book = () => {
                 )}
               </dl>
               <p className="mt-4 text-xs text-muted-foreground">{reviewCopy}</p>
+              <div className="mt-5 rounded-md border border-border bg-muted/40 p-4">
+                <label className="flex items-start gap-3 text-sm text-foreground/85">
+                  <Checkbox checked={acceptedTerms} onCheckedChange={(checked) => setAcceptedTerms(checked === true)} className="mt-0.5" />
+                  <span>
+                    I have read and agree to the <Link to="/terms" target="_blank" rel="noreferrer" className="font-medium text-primary underline underline-offset-4">Terms &amp; Conditions</Link>, including the liability, veterinary authorization, cancellation, and release provisions.
+                  </span>
+                </label>
+              </div>
             </div>
           )}
 
@@ -771,7 +791,7 @@ const Book = () => {
                 Continue <ArrowRight className="h-4 w-4" />
               </Button>
             ) : (
-              <Button onClick={submit} disabled={submitting} className="bg-tag font-display uppercase text-tag-foreground shadow-pop-accent transition-transform hover:-translate-y-0.5">
+              <Button onClick={submit} disabled={submitting || !acceptedTerms} className="bg-tag font-display uppercase text-tag-foreground shadow-pop-accent transition-transform hover:-translate-y-0.5">
                 {submitting ? "Saving…" : <>{submitLabel} <Check className="h-4 w-4" /></>}
               </Button>
             )}
@@ -779,7 +799,7 @@ const Book = () => {
         </Card>
 
         <p className="mt-6 inline-flex -rotate-1 items-center gap-2 font-tag text-lg text-tag">
-          <CalendarDays className="h-4 w-4" /> showing the next 60 days · schedule controlled by Anneke
+          <CalendarDays className="h-4 w-4" /> showing the next 60 days · live booking calendar
         </p>
       </section>
       <SiteFooter />

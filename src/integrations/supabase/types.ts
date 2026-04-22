@@ -170,6 +170,8 @@ export type Database = {
           stripe_charge_id: string | null
           stripe_payment_intent: string | null
           stripe_session_id: string | null
+          terms_accepted_at: string | null
+          terms_version: string | null
           total_cents: number
           updated_at: string
         }
@@ -208,6 +210,8 @@ export type Database = {
           stripe_charge_id?: string | null
           stripe_payment_intent?: string | null
           stripe_session_id?: string | null
+          terms_accepted_at?: string | null
+          terms_version?: string | null
           total_cents: number
           updated_at?: string
         }
@@ -246,6 +250,8 @@ export type Database = {
           stripe_charge_id?: string | null
           stripe_payment_intent?: string | null
           stripe_session_id?: string | null
+          terms_accepted_at?: string | null
+          terms_version?: string | null
           total_cents?: number
           updated_at?: string
         }
