@@ -122,7 +122,7 @@ type Booking = {
   late_pickup_fee_cents: number;
   services: { name: string; slug: string; payment_mode: "full" | "deposit" | "free" } | null;
   service_variants: { name: string; duration_minutes: number; price_cents: number; payment_mode: "full" | "deposit" | "free" } | null;
-  pets: { id: string; name: string } | null;
+  pets: { id: string; name: string; species: string | null } | null;
 };
 
 type PetApproval = {
@@ -394,7 +394,7 @@ const SitterDashboard = () => {
       db.from("blocked_dates").select("*").eq("sitter_id", user.id).order("blocked_date"),
       db
         .from("bookings")
-        .select("id, customer_id, pet_id, service_id, service_variant_id, start_at, end_at, total_cents, payment_amount_cents, base_price_cents, extra_time_minutes, extra_time_fee_cents, late_pickup_fee_cents, status, notes, booking_kind, requested_date, requested_window_label, requested_window_start_minute, requested_window_end_minute, scheduled_start_at, scheduled_end_at, paid_at, group_assignment_label, internal_notes, services(name, slug, payment_mode), service_variants(name, duration_minutes, price_cents, payment_mode), pets(id, name)")
+        .select("id, customer_id, pet_id, service_id, service_variant_id, start_at, end_at, total_cents, payment_amount_cents, base_price_cents, extra_time_minutes, extra_time_fee_cents, late_pickup_fee_cents, status, notes, booking_kind, requested_date, requested_window_label, requested_window_start_minute, requested_window_end_minute, scheduled_start_at, scheduled_end_at, paid_at, group_assignment_label, internal_notes, services(name, slug, payment_mode), service_variants(name, duration_minutes, price_cents, payment_mode), pets(id, name, species)")
         .eq("sitter_id", user.id)
         .order("created_at", { ascending: false }),
       db
@@ -1705,6 +1705,11 @@ const SitterDashboard = () => {
                               <span className={cn("px-2 py-0.5 text-[11px] font-tag", STATUS_STYLES[booking.status] ?? "bg-muted text-muted-foreground")}>
                                 {STATUS_LABELS[booking.status] ?? booking.status}
                               </span>
+                              {booking.pets?.species ? (
+                                <span className="px-2 py-0.5 text-[11px] font-tag bg-secondary text-secondary-foreground">
+                                  {booking.pets.species === "dog" ? "Dog" : booking.pets.species === "cat" ? "Cat" : booking.pets.species}
+                                </span>
+                              ) : null}
                               {service?.requires_pet_approval && approval && (
                                 <span className={cn("px-2 py-0.5 text-[11px] font-tag", approval.status === "approved" ? "bg-secondary text-secondary-foreground" : approval.status === "declined" ? "bg-muted text-muted-foreground" : "bg-accent text-accent-foreground")}>
                                   Pet {approval.status}
