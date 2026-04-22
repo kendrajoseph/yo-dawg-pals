@@ -1530,32 +1530,32 @@ const SitterDashboard = () => {
                 )}
               </Card>
 
-              <Card className="border border-border p-5 shadow-soft">
+              <Card className="border border-border p-4 shadow-soft">
                 <h2 className="font-display text-xl uppercase text-primary">Service playbook</h2>
-                <div className="mt-4 grid gap-3">
+                <div className="mt-3 grid gap-2">
                   {services.map((service) => (
-                    <div key={service.id} className="rounded-md border border-border bg-muted/40 p-4">
+                    <div key={service.id} className="rounded-md border border-border bg-muted/40 px-3 py-2.5">
                       <div className="flex items-start justify-between gap-3">
                         <div>
-                          <p className="font-display text-lg uppercase text-primary">{service.name}</p>
+                          <p className="font-display text-base uppercase text-primary">{service.name}</p>
                           <p className="text-xs text-muted-foreground">
                             {service.scheduling_mode === "boarding" ? "Noon-to-noon boarding" : WALK_SLUGS.has(service.slug) ? "Walk-specific schedule lanes" : "Exact booking blocks"}
                           </p>
                         </div>
                         {service.requires_pet_approval && <ShieldCheck className="h-4 w-4 text-clay" />}
                       </div>
-                      <div className="mt-3 grid gap-2 text-sm text-foreground/80 sm:grid-cols-2">
-                        <span>Buffer: {Math.max(service.turnaround_buffer_minutes, MIN_BUFFER_MINUTES)} min</span>
-                        <span>Capacity: {service.max_capacity}</span>
+                      <div className="mt-2 flex flex-wrap gap-x-4 gap-y-1 text-xs text-foreground/80">
+                        <span>Buffer {Math.max(service.turnaround_buffer_minutes, MIN_BUFFER_MINUTES)} min</span>
+                        <span>Capacity {service.max_capacity}</span>
                         {service.extra_time_fee_cents && service.extra_time_increment_minutes ? (
-                          <span>Add-on: {formatPriceWithDecimals(service.extra_time_fee_cents)} / {service.extra_time_increment_minutes} min</span>
+                          <span>Add-on {formatPriceWithDecimals(service.extra_time_fee_cents)} / {service.extra_time_increment_minutes} min</span>
                         ) : (
                           <span>No extra-time fee preset</span>
                         )}
                         {service.slug === "boarding" ? (
-                          <span>Check-in/out: {minutesToTime(service.boarding_checkin_minute ?? 12 * 60)} → {minutesToTime(service.boarding_checkout_minute ?? 12 * 60)}</span>
+                          <span>Check-in/out {minutesToTime(service.boarding_checkin_minute ?? 12 * 60)} → {minutesToTime(service.boarding_checkout_minute ?? 12 * 60)}</span>
                         ) : (
-                          <span>{service.late_pickup_fee_cents ? `Late fee: ${formatPriceWithDecimals(service.late_pickup_fee_cents)}` : "Late fees handled manually"}</span>
+                          <span>{service.late_pickup_fee_cents ? `Late fee ${formatPriceWithDecimals(service.late_pickup_fee_cents)}` : "Late fees handled manually"}</span>
                         )}
                       </div>
                     </div>
