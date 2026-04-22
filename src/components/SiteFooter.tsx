@@ -10,7 +10,7 @@ const SiteFooter = () => (
           </span>
         </Link>
         <p className="mt-5 max-w-xs text-sm leading-relaxed text-primary-foreground/70">
-          Hamilton, Ontario. Since 2015. Solo walks, group walks, sits and boarding — all handled personally and thoughtfully.
+          Hamilton, Ontario. Since 2015. Personal dog care with premium solo walks, thoughtfully matched group walks, sitting, and boarding.
         </p>
       </div>
       <div>
