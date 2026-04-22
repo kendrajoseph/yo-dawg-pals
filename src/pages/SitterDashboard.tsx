@@ -255,7 +255,7 @@ type SnapshotEditor =
       maxBookings: number;
     };
 
-type TabKey = "overview" | "clients" | "schedule" | "care" | "alerts";
+type TabKey = "overview" | "day" | "clients" | "schedule" | "care" | "alerts";
 type MessageAudience = "single" | "group";
 
 const WALK_SLUGS = new Set(["solo-walk", "group-walk"]);
@@ -304,6 +304,7 @@ const kindCopy: Record<ClientMessage["kind"], string> = {
 
 const tabMeta: Array<{ value: TabKey; label: string; icon: typeof LayoutDashboard }> = [
   { value: "overview", label: "Overview", icon: LayoutDashboard },
+  { value: "day", label: "Day view", icon: Clock3 },
   { value: "clients", label: "Clients", icon: UserRound },
   { value: "schedule", label: "Schedule", icon: CalendarDays },
   { value: "care", label: "Care", icon: MessageSquare },
@@ -315,6 +316,7 @@ const SitterDashboard = () => {
   const { user, canManageDashboard } = useAuth();
 
   const [activeTab, setActiveTab] = useState<TabKey>("overview");
+  const [selectedDay, setSelectedDay] = useState(format(new Date(), "yyyy-MM-dd"));
   const [selectedRequestId, setSelectedRequestId] = useState<string | null>(null);
   const [clientSearch, setClientSearch] = useState("");
   const [selectedClientId, setSelectedClientId] = useState("");
@@ -588,6 +590,30 @@ const SitterDashboard = () => {
     () => clientMessages.filter((message) => message.customer_id === selectedClientId).slice(0, 8),
     [clientMessages, selectedClientId],
   );
+  const dailySnapshotBookings = useMemo(() => {
+    const targetDate = selectedDay;
+
+    return bookings
+      .filter((booking) => !["cancelled", "refunded"].includes(booking.status))
+      .filter((booking) => {
+        if (booking.booking_kind === "requested" && !booking.scheduled_start_at && booking.requested_date) {
+          return booking.requested_date === targetDate;
+        }
+
+        return format(new Date(booking.scheduled_start_at ?? booking.start_at), "yyyy-MM-dd") === targetDate;
+      })
+      .sort((a, b) => {
+        const aTime = new Date(a.scheduled_start_at ?? a.start_at).getTime();
+        const bTime = new Date(b.scheduled_start_at ?? b.start_at).getTime();
+        return aTime - bTime;
+      });
+  }, [bookings, selectedDay]);
+  const dailySnapshotSummary = useMemo(() => {
+    const confirmed = dailySnapshotBookings.filter((booking) => booking.status === "confirmed").length;
+    const pending = dailySnapshotBookings.filter((booking) => ["requested", "awaiting_payment", "pending_payment"].includes(booking.status)).length;
+    const walks = dailySnapshotBookings.filter((booking) => WALK_SLUGS.has(booking.services?.slug ?? "")).length;
+    return { total: dailySnapshotBookings.length, confirmed, pending, walks };
+  }, [dailySnapshotBookings]);
   const activeClientBookings = useMemo(
     () => bookings.filter((booking) => booking.customer_id === clientMessageDraft.customerId),
     [bookings, clientMessageDraft.customerId],
@@ -1336,7 +1362,7 @@ const SitterDashboard = () => {
         </div>
 
         <Tabs value={activeTab} onValueChange={(value) => setActiveTab(value as TabKey)} className="mt-6">
-          <TabsList className="grid h-auto w-full grid-cols-2 gap-2 bg-muted p-1 md:grid-cols-5">
+          <TabsList className="grid h-auto w-full grid-cols-2 gap-2 bg-muted p-1 md:grid-cols-6">
             {tabMeta.map((tab) => {
               const Icon = tab.icon;
               return (
@@ -1347,6 +1373,104 @@ const SitterDashboard = () => {
               );
             })}
           </TabsList>
+
+          <TabsContent value="day" className="mt-6 space-y-6">
+            <Card className="border border-border p-5 shadow-soft">
+              <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
+                <div>
+                  <h2 className="font-display text-xl uppercase text-primary">Daily snapshot</h2>
+                  <p className="mt-1 text-sm text-muted-foreground">A simple visual list of the day so Anneke can see who is out, when, and what still needs attention.</p>
+                </div>
+                <div className="flex flex-col gap-2 sm:flex-row sm:items-end">
+                  <div>
+                    <Label>Date</Label>
+                    <Input type="date" value={selectedDay} onChange={(event) => setSelectedDay(event.target.value)} className="min-w-[180px]" />
+                  </div>
+                  <div className="flex gap-2">
+                    <Button type="button" variant="outline" className="border-border font-display uppercase" onClick={() => setSelectedDay(format(new Date(), "yyyy-MM-dd"))}>
+                      Today
+                    </Button>
+                    <Button type="button" variant="outline" className="border-border font-display uppercase" onClick={() => setSelectedDay(format(addDays(new Date(), 1), "yyyy-MM-dd"))}>
+                      Tomorrow
+                    </Button>
+                  </div>
+                </div>
+              </div>
+
+              <div className="mt-4 grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
+                {[
+                  ["On the list", String(dailySnapshotSummary.total)],
+                  ["Confirmed", String(dailySnapshotSummary.confirmed)],
+                  ["Still pending", String(dailySnapshotSummary.pending)],
+                  ["Walks", String(dailySnapshotSummary.walks)],
+                ].map(([label, value]) => (
+                  <div key={label} className="rounded-md border border-border bg-muted/40 px-4 py-3">
+                    <div className="text-[11px] font-tag text-muted-foreground">{label}</div>
+                    <div className="mt-2 font-display text-3xl text-primary">{value}</div>
+                  </div>
+                ))}
+              </div>
+
+              {dailySnapshotBookings.length === 0 ? (
+                <div className="mt-6 rounded-md border border-dashed border-border bg-muted/30 px-5 py-8 text-center">
+                  <div className="font-display text-lg uppercase text-primary">Nothing booked for this day</div>
+                  <p className="mt-2 text-sm text-muted-foreground">Pick another date to see the schedule.</p>
+                </div>
+              ) : (
+                <div className="mt-6 space-y-3">
+                  {dailySnapshotBookings.map((booking) => {
+                    const owner = profileDetails[booking.customer_id];
+                    const serviceName = booking.service_variants?.name ?? booking.services?.name ?? "Booking";
+                    const scheduleText = formatBookingSchedule(booking);
+                    const exactTime = booking.scheduled_start_at
+                      ? `${format(new Date(booking.scheduled_start_at), "h:mm a")}–${format(new Date(booking.scheduled_end_at ?? booking.end_at), "h:mm a")}`
+                      : booking.booking_kind === "requested" && booking.requested_window_start_minute != null && booking.requested_window_end_minute != null
+                        ? `${formatMinuteTime(booking.requested_window_start_minute)}–${formatMinuteTime(booking.requested_window_end_minute)}`
+                        : format(new Date(booking.start_at), "h:mm a");
+
+                    return (
+                      <div key={booking.id} className="grid gap-3 rounded-md border border-border bg-card p-4 shadow-soft md:grid-cols-[140px,1fr,auto] md:items-center">
+                        <div className="rounded-md bg-muted px-3 py-3 text-center md:text-left">
+                          <div className="font-display text-2xl uppercase text-primary">{exactTime}</div>
+                          <div className="mt-1 text-xs font-tag text-muted-foreground">{booking.status === "confirmed" ? "Scheduled" : "Needs review"}</div>
+                        </div>
+
+                        <div>
+                          <div className="flex flex-wrap items-center gap-2">
+                            <span className="font-display text-lg uppercase text-primary">{booking.pets?.name ?? "Pet"}</span>
+                            <span className={cn("px-2 py-0.5 text-[11px] font-tag", STATUS_STYLES[booking.status] ?? "bg-muted text-muted-foreground")}>
+                              {STATUS_LABELS[booking.status] ?? booking.status}
+                            </span>
+                          </div>
+                          <p className="mt-1 text-sm text-foreground/80">{owner?.full_name ?? "Customer"} · {serviceName}</p>
+                          <p className="mt-1 text-sm text-muted-foreground">{scheduleText}</p>
+                          {booking.group_assignment_label && (
+                            <div className="mt-2 inline-flex rounded-md bg-muted px-2 py-1 text-[11px] font-tag text-primary ring-1 ring-border">
+                              {booking.group_assignment_label}
+                            </div>
+                          )}
+                        </div>
+
+                        <div className="flex flex-wrap gap-2 md:justify-end">
+                          {booking.status === "confirmed" && (
+                            <Button size="sm" variant="secondary" onClick={() => setActiveTab("care")} className="font-display uppercase">
+                              <MessageSquare className="h-4 w-4" /> Update owner
+                            </Button>
+                          )}
+                          <Button size="sm" variant="outline" onClick={() => {
+                            setSelectedRequestId(booking.id);
+                            setActiveTab("overview");
+                          }} className="border-border font-display uppercase">
+                            Open
+                          </Button>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
+            </Card>
+          </TabsContent>
 
           <TabsContent value="overview" className="mt-6 space-y-6">
             <div className="grid gap-4 xl:grid-cols-[1.1fr,0.9fr]">
