@@ -355,6 +355,7 @@ const SitterDashboard = () => {
   const [activePetProfileId, setActivePetProfileId] = useState<string | null>(null);
   const [snapshotEditor, setSnapshotEditor] = useState<SnapshotEditor | null>(null);
   const requestCardRefs = useRef<Record<string, HTMLDivElement | null>>({});
+  const walkWindowEditorRef = useRef<HTMLDivElement | null>(null);
 
   const [availability, setAvailability] = useState<Availability[]>([]);
   const [blocked, setBlocked] = useState<Blocked[]>([]);
@@ -868,6 +869,9 @@ const SitterDashboard = () => {
       start: formatMinuteTime(window.start_minute),
       end: formatMinuteTime(window.end_minute),
       maxBookings: window.max_bookings,
+    });
+    window.requestAnimationFrame(() => {
+      walkWindowEditorRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
     });
   };
 
