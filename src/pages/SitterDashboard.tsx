@@ -579,6 +579,8 @@ const SitterDashboard = () => {
     () => (activePetProfileId ? (petTagIdsByPet[activePetProfileId] ?? []).map((tagId) => temperamentTags.find((tag) => tag.id === tagId)).filter(Boolean) as TemperamentTag[] : []),
     [activePetProfileId, petTagIdsByPet, temperamentTags],
   );
+  const ownerVisibleTags = useMemo(() => temperamentTags.filter((tag) => tag.visibility === "owner"), [temperamentTags]);
+  const internalOnlyTags = useMemo(() => temperamentTags.filter((tag) => tag.visibility === "internal"), [temperamentTags]);
 
   const pendingPetApprovals = useMemo(() => {
     const seen = new Set<string>();
@@ -1397,6 +1399,19 @@ const SitterDashboard = () => {
                             {approval.status}
                           </span>
                         </div>
+                        {approval.riskyTags.length > 0 && (
+                          <div className="mt-3 rounded-md border border-destructive/30 bg-destructive/10 px-3 py-2 text-sm text-foreground">
+                            <div className="font-display text-sm uppercase text-destructive">Risk flags</div>
+                            <div className="mt-2 flex flex-wrap gap-2">
+                              {approval.riskyTags.map((tag: TemperamentTag) => (
+                                <span key={tag.id} className="rounded-md bg-background px-2 py-1 text-[11px] font-tag text-destructive ring-1 ring-destructive/30">
+                                  {tag.label}
+                                </span>
+                              ))}
+                            </div>
+                            {approval.openAlert && <p className="mt-2 text-xs text-muted-foreground">Existing alert: {approval.openAlert.message}</p>}
+                          </div>
+                        )}
                         <div className="mt-4 flex flex-wrap gap-2">
                           <Button size="sm" variant="secondary" onClick={() => setActivePetProfileId(approval.petId)} className="font-display uppercase">
                             <UserRound className="h-4 w-4" /> Open profile
@@ -2372,6 +2387,57 @@ const SitterDashboard = () => {
               </div>
 
               <div className="grid gap-4">
+                <div className="rounded-md border border-border bg-card p-4">
+                  <h3 className="font-display text-base uppercase text-primary">Temperament tags</h3>
+                  <div className="mt-3 space-y-4">
+                    <div>
+                      <p className="text-xs font-tag text-muted-foreground">Visible to owners</p>
+                      <div className="mt-2 flex flex-wrap gap-2">
+                        {ownerVisibleTags.map((tag) => {
+                          const checked = activePetTags.some((activeTag) => activeTag.id === tag.id);
+                          return (
+                            <label key={tag.id} className="flex items-center gap-2 rounded-md border border-border bg-muted/40 px-3 py-2 text-sm">
+                              <Checkbox
+                                checked={checked}
+                                onCheckedChange={(next) => {
+                                  if (!activePetProfile) return;
+                                  const current = petTagIdsByPet[activePetProfile.id] ?? [];
+                                  const nextIds = next === true ? [...new Set([...current, tag.id])] : current.filter((id) => id !== tag.id);
+                                  savePetTags(activePetProfile.id, nextIds);
+                                }}
+                              />
+                              <span>{tag.label}</span>
+                            </label>
+                          );
+                        })}
+                      </div>
+                    </div>
+                    {canManageDashboard && (
+                      <div>
+                        <p className="text-xs font-tag text-muted-foreground">Internal only</p>
+                        <div className="mt-2 flex flex-wrap gap-2">
+                          {internalOnlyTags.map((tag) => {
+                            const checked = activePetTags.some((activeTag) => activeTag.id === tag.id);
+                            return (
+                              <label key={tag.id} className="flex items-center gap-2 rounded-md border border-border bg-muted/40 px-3 py-2 text-sm">
+                                <Checkbox
+                                  checked={checked}
+                                  onCheckedChange={(next) => {
+                                    if (!activePetProfile) return;
+                                    const current = petTagIdsByPet[activePetProfile.id] ?? [];
+                                    const nextIds = next === true ? [...new Set([...current, tag.id])] : current.filter((id) => id !== tag.id);
+                                    savePetTags(activePetProfile.id, nextIds);
+                                  }}
+                                />
+                                <span>{tag.label}</span>
+                              </label>
+                            );
+                          })}
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                </div>
                 {[
                   ["Care notes", [activePetProfile.medications, activePetProfile.allergies, activePetProfile.dietary_notes, activePetProfile.behavioral_notes, activePetProfile.notes].filter(Boolean)],
                   ["Vet & emergency", [activePetProfile.vet_name, activePetProfile.vet_phone, activePetProfile.vet_address, activePetProfile.vet_info, activePetProfile.emergency_contact].filter(Boolean)],
