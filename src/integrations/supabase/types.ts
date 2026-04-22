@@ -100,17 +100,28 @@ export type Database = {
       }
       bookings: {
         Row: {
+          approved_at: string | null
+          approved_by: string | null
+          booking_kind: string
           cancelled_at: string | null
           created_at: string
           customer_id: string
           deposit_cents: number
           end_at: string
+          group_assignment_label: string | null
           id: string
+          internal_notes: string | null
           notes: string | null
           paid_at: string | null
           payment_amount_cents: number | null
           pet_id: string
           refund_id: string | null
+          requested_date: string | null
+          requested_window_end_minute: number | null
+          requested_window_label: string | null
+          requested_window_start_minute: number | null
+          scheduled_end_at: string | null
+          scheduled_start_at: string | null
           service_id: string
           sitter_id: string
           start_at: string
@@ -122,17 +133,28 @@ export type Database = {
           updated_at: string
         }
         Insert: {
+          approved_at?: string | null
+          approved_by?: string | null
+          booking_kind?: string
           cancelled_at?: string | null
           created_at?: string
           customer_id: string
           deposit_cents: number
           end_at: string
+          group_assignment_label?: string | null
           id?: string
+          internal_notes?: string | null
           notes?: string | null
           paid_at?: string | null
           payment_amount_cents?: number | null
           pet_id: string
           refund_id?: string | null
+          requested_date?: string | null
+          requested_window_end_minute?: number | null
+          requested_window_label?: string | null
+          requested_window_start_minute?: number | null
+          scheduled_end_at?: string | null
+          scheduled_start_at?: string | null
           service_id: string
           sitter_id: string
           start_at: string
@@ -144,17 +166,28 @@ export type Database = {
           updated_at?: string
         }
         Update: {
+          approved_at?: string | null
+          approved_by?: string | null
+          booking_kind?: string
           cancelled_at?: string | null
           created_at?: string
           customer_id?: string
           deposit_cents?: number
           end_at?: string
+          group_assignment_label?: string | null
           id?: string
+          internal_notes?: string | null
           notes?: string | null
           paid_at?: string | null
           payment_amount_cents?: number | null
           pet_id?: string
           refund_id?: string | null
+          requested_date?: string | null
+          requested_window_end_minute?: number | null
+          requested_window_label?: string | null
+          requested_window_start_minute?: number | null
+          scheduled_end_at?: string | null
+          scheduled_start_at?: string | null
           service_id?: string
           sitter_id?: string
           start_at?: string
@@ -497,6 +530,50 @@ export type Database = {
         }
         Relationships: []
       }
+      walk_windows: {
+        Row: {
+          created_at: string
+          end_minute: number
+          id: string
+          service_id: string
+          sitter_id: string
+          sort_order: number
+          start_minute: number
+          weekday: number
+          window_label: string
+        }
+        Insert: {
+          created_at?: string
+          end_minute: number
+          id?: string
+          service_id: string
+          sitter_id: string
+          sort_order?: number
+          start_minute: number
+          weekday: number
+          window_label: string
+        }
+        Update: {
+          created_at?: string
+          end_minute?: number
+          id?: string
+          service_id?: string
+          sitter_id?: string
+          sort_order?: number
+          start_minute?: number
+          weekday?: number
+          window_label?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "walk_windows_service_id_fkey"
+            columns: ["service_id"]
+            isOneToOne: false
+            referencedRelation: "services"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
     }
     Views: {
       [_ in never]: never
@@ -543,6 +620,8 @@ export type Database = {
         | "cancelled"
         | "completed"
         | "refunded"
+        | "requested"
+        | "awaiting_payment"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -677,6 +756,8 @@ export const Constants = {
         "cancelled",
         "completed",
         "refunded",
+        "requested",
+        "awaiting_payment",
       ],
     },
   },
