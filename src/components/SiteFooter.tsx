@@ -1,13 +1,17 @@
 import { Link } from "react-router-dom";
+import logo from "@/assets/yodawg-logo.svg";
 
 const SiteFooter = () => (
   <footer className="relative bg-primary text-primary-foreground">
     <div className="mx-auto grid max-w-6xl gap-10 px-5 py-16 sm:px-8 md:grid-cols-3">
       <div>
         <Link to="/" aria-label="Yo Dawg home" className="inline-block">
-          <span className="font-display text-3xl tracking-tight text-primary-foreground">
-            YO <span className="text-accent">DAWG</span>
-          </span>
+          <img
+            src={logo}
+            alt="Yo Dawg"
+            className="h-auto w-full max-w-[10rem]"
+            loading="lazy"
+          />
         </Link>
         <p className="mt-5 max-w-xs text-sm leading-relaxed text-primary-foreground/70">
           Hamilton, Ontario. Since 2015. Personal dog care with premium solo walks, thoughtfully matched group walks, sitting, and boarding.
