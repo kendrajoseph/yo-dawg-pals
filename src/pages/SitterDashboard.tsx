@@ -1408,24 +1408,24 @@ const SitterDashboard = () => {
 
           <TabsContent value="day" className="mt-6 space-y-6">
             <Card className="border border-border p-5 shadow-soft">
-              <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
+              <div className="flex flex-col gap-4 xl:flex-row xl:items-start xl:justify-between">
                 <div>
                   <h2 className="font-display text-xl uppercase text-primary">Daily snapshot</h2>
                   <p className="mt-1 text-sm text-muted-foreground">A simple visual list of the day so it’s easy to see who is out, when, and what still needs attention.</p>
                 </div>
-                <div className="flex flex-col gap-2 sm:flex-row sm:items-end">
+                <div className="w-full max-w-xl xl:w-auto">
                   <div>
                     <Label>{snapshotRange === "week" ? "Week of" : "Date"}</Label>
-                    <Input type="date" value={selectedDay} onChange={(event) => setSelectedDay(event.target.value)} className="min-w-[180px]" />
+                    <Input type="date" value={selectedDay} onChange={(event) => setSelectedDay(event.target.value)} className="mt-1 w-full xl:min-w-[220px]" />
                   </div>
-                  <div className="flex flex-wrap gap-2">
-                    <Button type="button" variant={snapshotRange === "day" ? "secondary" : "outline"} className="border-border font-display uppercase" onClick={() => { setSnapshotRange("day"); setSelectedDay(format(new Date(), "yyyy-MM-dd")); }}>
+                  <div className="mt-3 grid grid-cols-3 gap-2">
+                    <Button type="button" variant={snapshotRange === "day" ? "secondary" : "outline"} size="sm" className="w-full border-border px-2 font-display text-[11px] uppercase sm:text-xs" onClick={() => { setSnapshotRange("day"); setSelectedDay(format(new Date(), "yyyy-MM-dd")); }}>
                       Today
                     </Button>
-                    <Button type="button" variant="outline" className="border-border font-display uppercase" onClick={() => { setSnapshotRange("day"); setSelectedDay(format(addDays(new Date(`${selectedDay}T12:00:00`), 1), "yyyy-MM-dd")); }}>
+                    <Button type="button" variant="outline" size="sm" className="w-full border-border px-2 font-display text-[11px] uppercase sm:text-xs" onClick={() => { setSnapshotRange("day"); setSelectedDay(format(addDays(new Date(`${selectedDay}T12:00:00`), 1), "yyyy-MM-dd")); }}>
                       Tomorrow
                     </Button>
-                    <Button type="button" variant={snapshotRange === "week" ? "secondary" : "outline"} className="border-border font-display uppercase" onClick={() => setSnapshotRange("week")}>
+                    <Button type="button" variant={snapshotRange === "week" ? "secondary" : "outline"} size="sm" className="w-full border-border px-2 font-display text-[11px] uppercase sm:text-xs" onClick={() => setSnapshotRange("week")}>
                       This week
                     </Button>
                   </div>
