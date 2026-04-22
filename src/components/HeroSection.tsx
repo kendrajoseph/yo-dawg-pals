@@ -41,7 +41,7 @@ const HeroSection = () => {
           </h1>
 
           <p className="mt-4 max-w-[34rem] text-base leading-relaxed text-primary/75 sm:mt-6 sm:text-[1.05rem]">
-            Premium solo walks, carefully matched group walks, dependable drop-in sits, and cozy home-style boarding — all handled personally by Anneke, with timing and care shaped around what actually works for your dog.
+            Premium solo walks, carefully matched group walks, dependable drop-in sits, and cozy home-style boarding — with timing and care shaped around what actually works for your dog.
           </p>
 
           <div className="mt-6 flex flex-col items-stretch gap-3 sm:mt-8 sm:flex-row sm:items-center">

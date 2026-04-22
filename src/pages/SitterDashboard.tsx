@@ -1411,7 +1411,7 @@ const SitterDashboard = () => {
               <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
                 <div>
                   <h2 className="font-display text-xl uppercase text-primary">Daily snapshot</h2>
-                  <p className="mt-1 text-sm text-muted-foreground">A simple visual list of the day so Anneke can see who is out, when, and what still needs attention.</p>
+                  <p className="mt-1 text-sm text-muted-foreground">A simple visual list of the day so it’s easy to see who is out, when, and what still needs attention.</p>
                 </div>
                 <div className="flex flex-col gap-2 sm:flex-row sm:items-end">
                   <div>
