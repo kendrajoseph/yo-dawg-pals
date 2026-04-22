@@ -390,6 +390,19 @@ const SitterDashboard = () => {
     [bookings],
   );
   const pastBookings = useMemo(() => bookings.filter((booking) => new Date(booking.scheduled_start_at ?? booking.start_at) <= new Date()), [bookings]);
+  const clientOptions = useMemo(
+    () => Object.entries(profileDetails).map(([id, profile]) => ({ id, ...profile })).sort((a, b) => a.full_name.localeCompare(b.full_name)),
+    [profileDetails],
+  );
+  const activeClientBookings = useMemo(
+    () => bookings.filter((booking) => booking.customer_id === clientMessageDraft.customerId),
+    [bookings, clientMessageDraft.customerId],
+  );
+  const selectedClientProfile = clientMessageDraft.customerId ? profileDetails[clientMessageDraft.customerId] : null;
+  const selectedClientMessageLog = useMemo(
+    () => clientMessages.filter((message) => !clientMessageDraft.customerId || message.customer_id === clientMessageDraft.customerId).slice(0, 6),
+    [clientMessages, clientMessageDraft.customerId],
+  );
 
   const pendingPetApprovals = useMemo(() => {
     const seen = new Set<string>();
@@ -666,6 +679,81 @@ const SitterDashboard = () => {
     load();
   };
 
+  const sendClientMessage = async () => {
+    if (!clientMessageDraft.customerId || !clientMessageDraft.subject.trim() || !clientMessageDraft.message.trim()) {
+      toast({ title: "Add the client, subject, and message first", variant: "destructive" });
+      return;
+    }
+
+    setSendingClientMessage(true);
+    const { data, error } = await supabase.functions.invoke("send-client-message", {
+      body: {
+        customerId: clientMessageDraft.customerId,
+        bookingId: clientMessageDraft.bookingId || undefined,
+        kind: clientMessageDraft.kind,
+        subject: clientMessageDraft.subject,
+        message: clientMessageDraft.message,
+        sendEmail: clientMessageDraft.sendEmail,
+        sendSms: clientMessageDraft.sendSms,
+      },
+    });
+    setSendingClientMessage(false);
+
+    if (error) {
+      toast({ title: "Couldn't send client message", description: error.message, variant: "destructive" });
+      return;
+    }
+
+    toast({ title: "Client message saved", description: data?.message ?? "The update is now in the client hub." });
+    setClientMessageDraft((current) => ({ ...current, subject: "", message: "" }));
+    load();
+  };
+
+  const saveServiceAlert = async () => {
+    if (!user) return;
+    if (!alertDraft.title.trim() || !alertDraft.message.trim()) {
+      toast({ title: "Add a title and message first", variant: "destructive" });
+      return;
+    }
+
+    setSavingAlert(true);
+    const { error } = await db.from("service_alerts").insert({
+      sitter_id: user.id,
+      kind: alertDraft.kind,
+      title: alertDraft.title,
+      message: alertDraft.message,
+      starts_at: new Date(alertDraft.startsAt).toISOString(),
+      ends_at: alertDraft.endsAt ? new Date(alertDraft.endsAt).toISOString() : null,
+      is_active: alertDraft.isActive,
+      pin_to_profile: alertDraft.pinToProfile,
+      created_by: user.id,
+    });
+    setSavingAlert(false);
+
+    if (error) {
+      toast({ title: "Couldn't save alert", description: error.message, variant: "destructive" });
+      return;
+    }
+
+    toast({ title: "Alert published" });
+    setAlertDraft({
+      kind: "announcement",
+      title: "",
+      message: "",
+      startsAt: format(new Date(), "yyyy-MM-dd'T'HH:mm"),
+      endsAt: "",
+      isActive: true,
+      pinToProfile: true,
+    });
+    load();
+  };
+
+  const toggleServiceAlert = async (alert: ServiceAlert, next: boolean) => {
+    const { error } = await db.from("service_alerts").update({ is_active: next }).eq("id", alert.id);
+    if (error) toast({ title: "Couldn't update alert", description: error.message, variant: "destructive" });
+    else load();
+  };
+
   const summary = {
     requests: requestBookings.filter((booking) => booking.status === "requested").length,
     awaitingPayment: requestBookings.filter((booking) => booking.status === "awaiting_payment").length,
@@ -753,6 +841,178 @@ const SitterDashboard = () => {
             ))}
           </div>
         )}
+
+        <h2 className="mt-12 font-display text-2xl uppercase text-primary">Client communication hub</h2>
+        <div className="mt-3 grid gap-4 xl:grid-cols-[1.15fr,0.85fr]">
+          <Card className="border-4 border-primary p-4 shadow-pop sm:p-5">
+            <div className="flex items-start gap-3">
+              <div className="grid h-11 w-11 place-items-center rounded-full bg-accent text-accent-foreground shadow-pop-sm">
+                <Send className="h-5 w-5" />
+              </div>
+              <div>
+                <h3 className="font-display text-xl uppercase text-primary">Direct client message</h3>
+                <p className="mt-1 text-sm text-muted-foreground">Send one-to-one support notes, service updates, or client-specific offers with in-app delivery plus optional email and SMS.</p>
+              </div>
+            </div>
+
+            <div className="mt-4 grid gap-3 md:grid-cols-2">
+              <div>
+                <Label>Client</Label>
+                <select className="mt-1 h-10 w-full rounded-md border border-input bg-background px-3 text-sm" value={clientMessageDraft.customerId} onChange={(event) => setClientMessageDraft((current) => ({ ...current, customerId: event.target.value, bookingId: bookings.find((booking) => booking.customer_id === event.target.value)?.id ?? "" }))}>
+                  <option value="">Select client</option>
+                  {clientOptions.map((client) => <option key={client.id} value={client.id}>{client.full_name}</option>)}
+                </select>
+              </div>
+              <div>
+                <Label>Related booking</Label>
+                <select className="mt-1 h-10 w-full rounded-md border border-input bg-background px-3 text-sm" value={clientMessageDraft.bookingId} onChange={(event) => setClientMessageDraft((current) => ({ ...current, bookingId: event.target.value }))}>
+                  <option value="">General account note</option>
+                  {activeClientBookings.map((booking) => <option key={booking.id} value={booking.id}>{`${booking.service_variants?.name ?? booking.services?.name} · ${booking.pets?.name ?? "Pet"}`}</option>)}
+                </select>
+              </div>
+              <div>
+                <Label>Type</Label>
+                <select className="mt-1 h-10 w-full rounded-md border border-input bg-background px-3 text-sm" value={clientMessageDraft.kind} onChange={(event) => setClientMessageDraft((current) => ({ ...current, kind: event.target.value as ClientMessage["kind"] }))}>
+                  <option value="customer_service">Customer service</option>
+                  <option value="service_update">Service update</option>
+                  <option value="offer">Client offer</option>
+                </select>
+              </div>
+              <div>
+                <Label>Subject</Label>
+                <Input value={clientMessageDraft.subject} maxLength={120} onChange={(event) => setClientMessageDraft((current) => ({ ...current, subject: event.target.value }))} placeholder="Tomorrow's walk timing" />
+              </div>
+            </div>
+
+            <div className="mt-3">
+              <Label>Message</Label>
+              <textarea value={clientMessageDraft.message} maxLength={1200} onChange={(event) => setClientMessageDraft((current) => ({ ...current, message: event.target.value }))} placeholder="Let them know what changed, what to expect, or what you need from them…" className="mt-1 min-h-32 w-full rounded-md border border-input bg-background px-3 py-2 text-sm" />
+            </div>
+
+            <div className="mt-3 flex flex-wrap gap-3 rounded-xl border border-border bg-muted/40 p-3 text-sm">
+              <label className="flex items-center gap-2"><Checkbox checked={clientMessageDraft.sendEmail} onCheckedChange={(checked) => setClientMessageDraft((current) => ({ ...current, sendEmail: checked === true }))} /> <Mail className="h-4 w-4 text-clay" /> Email</label>
+              <label className="flex items-center gap-2"><Checkbox checked={clientMessageDraft.sendSms} onCheckedChange={(checked) => setClientMessageDraft((current) => ({ ...current, sendSms: checked === true }))} /> <Smartphone className="h-4 w-4 text-clay" /> SMS</label>
+              <span className="text-muted-foreground">In-app delivery is always included.</span>
+            </div>
+
+            {selectedClientProfile && (
+              <p className="mt-3 text-xs text-muted-foreground">{selectedClientProfile.full_name} {selectedClientProfile.sms_opt_in && selectedClientProfile.mobile_phone ? `can receive texts at ${selectedClientProfile.mobile_phone}.` : "will receive texts only after adding a mobile number and opting in."}</p>
+            )}
+
+            <Button onClick={sendClientMessage} disabled={sendingClientMessage} className="mt-4 bg-primary font-display uppercase shadow-pop-accent">
+              <Send className="h-4 w-4" />
+              {sendingClientMessage ? "Sending…" : "Send client message"}
+            </Button>
+          </Card>
+
+          <Card className="border-4 border-primary p-4 shadow-pop sm:p-5">
+            <div className="flex items-start gap-3">
+              <div className="grid h-11 w-11 place-items-center rounded-full bg-secondary text-secondary-foreground shadow-pop-sm">
+                <BellRing className="h-5 w-5" />
+              </div>
+              <div>
+                <h3 className="font-display text-xl uppercase text-primary">Client history</h3>
+                <p className="mt-1 text-sm text-muted-foreground">Recent conversation history for the selected client, including which channels were used.</p>
+              </div>
+            </div>
+
+            {selectedClientMessageLog.length === 0 ? (
+              <p className="mt-4 text-sm text-muted-foreground">No direct client messages yet.</p>
+            ) : (
+              <ul className="mt-4 space-y-2">
+                {selectedClientMessageLog.map((message) => (
+                  <li key={message.id} className="border border-border bg-muted/50 px-3 py-3 text-sm">
+                    <div className="flex flex-wrap items-center justify-between gap-2">
+                      <span className="font-display text-xs uppercase text-primary">{message.kind.replaceAll("_", " ")}</span>
+                      <span className="text-[11px] text-muted-foreground">{formatUpdateTime(message.created_at)}</span>
+                    </div>
+                    <p className="mt-1 font-display text-base uppercase text-primary">{message.subject}</p>
+                    <p className="mt-1 text-foreground/80">{message.message}</p>
+                    <div className="mt-2 flex flex-wrap gap-2 text-[11px] uppercase text-muted-foreground">
+                      <span className={cn("rounded-full px-2 py-0.5", message.send_email ? "bg-highlight text-primary" : "bg-card")}>email {message.delivered_email_at ? "sent" : message.send_email ? "queued" : "off"}</span>
+                      <span className={cn("rounded-full px-2 py-0.5", message.send_sms ? "bg-highlight text-primary" : "bg-card")}>sms {message.delivered_sms_at ? "sent" : message.send_sms ? "requested" : "off"}</span>
+                    </div>
+                  </li>
+                ))}
+              </ul>
+            )}
+          </Card>
+        </div>
+
+        <h2 className="mt-12 font-display text-2xl uppercase text-primary">Service alerts & in-app promos</h2>
+        <div className="mt-3 grid gap-4 xl:grid-cols-[1fr,1fr]">
+          <Card className="border-4 border-primary p-4 shadow-pop sm:p-5">
+            <div className="flex items-start gap-3">
+              <div className="grid h-11 w-11 place-items-center rounded-full bg-highlight text-primary shadow-pop-sm">
+                <Megaphone className="h-5 w-5" />
+              </div>
+              <div>
+                <h3 className="font-display text-xl uppercase text-primary">Publish an alert</h3>
+                <p className="mt-1 text-sm text-muted-foreground">Use this for hours changes, closures, announcements, or in-app promos visible in client profiles.</p>
+              </div>
+            </div>
+
+            <div className="mt-4 grid gap-3 md:grid-cols-2">
+              <div>
+                <Label>Type</Label>
+                <select className="mt-1 h-10 w-full rounded-md border border-input bg-background px-3 text-sm" value={alertDraft.kind} onChange={(event) => setAlertDraft((current) => ({ ...current, kind: event.target.value as ServiceAlert["kind"] }))}>
+                  <option value="hours_update">Hours update</option>
+                  <option value="closure">Closure</option>
+                  <option value="announcement">Announcement</option>
+                  <option value="promo">In-app promo</option>
+                </select>
+              </div>
+              <div>
+                <Label>Title</Label>
+                <Input value={alertDraft.title} maxLength={120} onChange={(event) => setAlertDraft((current) => ({ ...current, title: event.target.value }))} placeholder="Holiday weekend hours" />
+              </div>
+              <div>
+                <Label>Starts</Label>
+                <Input type="datetime-local" value={alertDraft.startsAt} onChange={(event) => setAlertDraft((current) => ({ ...current, startsAt: event.target.value }))} />
+              </div>
+              <div>
+                <Label>Ends (optional)</Label>
+                <Input type="datetime-local" value={alertDraft.endsAt} onChange={(event) => setAlertDraft((current) => ({ ...current, endsAt: event.target.value }))} />
+              </div>
+            </div>
+
+            <div className="mt-3">
+              <Label>Message</Label>
+              <textarea value={alertDraft.message} maxLength={1000} onChange={(event) => setAlertDraft((current) => ({ ...current, message: event.target.value }))} placeholder="Share the change clearly so clients can act on it fast…" className="mt-1 min-h-28 w-full rounded-md border border-input bg-background px-3 py-2 text-sm" />
+            </div>
+
+            <div className="mt-3 flex flex-wrap gap-3 rounded-xl border border-border bg-muted/40 p-3 text-sm">
+              <label className="flex items-center gap-2"><Checkbox checked={alertDraft.isActive} onCheckedChange={(checked) => setAlertDraft((current) => ({ ...current, isActive: checked === true }))} /> Active now</label>
+              <label className="flex items-center gap-2"><Checkbox checked={alertDraft.pinToProfile} onCheckedChange={(checked) => setAlertDraft((current) => ({ ...current, pinToProfile: checked === true }))} /> Pin to client profile</label>
+            </div>
+
+            <Button onClick={saveServiceAlert} disabled={savingAlert} className="mt-4 bg-primary font-display uppercase shadow-pop-accent">
+              <Sparkles className="h-4 w-4" />
+              {savingAlert ? "Publishing…" : "Publish alert"}
+            </Button>
+          </Card>
+
+          <Card className="border-4 border-primary p-4 shadow-pop sm:p-5">
+            <h3 className="font-display text-xl uppercase text-primary">Active profile notices</h3>
+            {serviceAlerts.length === 0 ? (
+              <p className="mt-4 text-sm text-muted-foreground">No service alerts yet.</p>
+            ) : (
+              <ul className="mt-4 space-y-2">
+                {serviceAlerts.map((alert) => (
+                  <li key={alert.id} className="border border-border bg-muted/50 px-3 py-3 text-sm">
+                    <div className="flex flex-wrap items-center justify-between gap-2">
+                      <span className="font-display text-xs uppercase text-primary">{alert.kind.replaceAll("_", " ")}</span>
+                      <button type="button" onClick={() => toggleServiceAlert(alert, !alert.is_active)} className="text-xs uppercase text-clay hover:underline">{alert.is_active ? "Pause" : "Reactivate"}</button>
+                    </div>
+                    <p className="mt-1 font-display text-base uppercase text-primary">{alert.title}</p>
+                    <p className="mt-1 text-foreground/80">{alert.message}</p>
+                    <div className="mt-2 text-[11px] uppercase text-muted-foreground">Starts {formatUpdateTime(alert.starts_at)}{alert.ends_at ? ` · ends ${formatUpdateTime(alert.ends_at)}` : ""}{alert.pin_to_profile ? " · pinned" : ""}</div>
+                  </li>
+                ))}
+              </ul>
+            )}
+          </Card>
+        </div>
 
         <h2 className="mt-12 font-display text-2xl uppercase text-primary">Approval queue</h2>
         {requestBookings.length === 0 ? (
