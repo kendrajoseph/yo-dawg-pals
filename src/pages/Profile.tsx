@@ -12,6 +12,7 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import PetProfilesManager from "@/components/pets/PetProfilesManager";
 import { Camera, LogOut, Save, ArrowLeft, Smartphone } from "lucide-react";
 import { toast } from "sonner";
 
@@ -186,7 +187,7 @@ const Profile = () => {
   return (
     <main className="min-h-screen bg-background texture-grain">
       <SiteNav />
-      <section className="mx-auto max-w-3xl px-5 py-10 sm:px-8 sm:py-14">
+      <section className="mx-auto max-w-5xl px-5 py-10 sm:px-8 sm:py-14">
         <Link
           to="/account"
           className="inline-flex items-center gap-1 font-display text-sm uppercase text-primary hover:underline"
@@ -392,6 +393,16 @@ const Profile = () => {
                 <LogOut className="h-4 w-4" /> Sign out
               </Button>
             </Card>
+
+            <div className="mt-12 border-t-4 border-dashed border-primary/40 pt-10">
+              <PetProfilesManager
+                eyebrow="their details"
+                title="Pet profiles."
+                description="Keep each pet’s care info, behavior notes, meds, contacts, and home entry details alongside your own profile."
+                emptyTitle="no pet profiles yet"
+                emptyDescription="Add your first pet here so their care profile lives right inside your account."
+              />
+            </div>
           </>
         )}
       </section>
