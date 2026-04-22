@@ -314,6 +314,21 @@ const tabMeta: Array<{ value: TabKey; label: string; icon: typeof LayoutDashboar
   { value: "alerts", label: "Alerts", icon: Megaphone },
 ];
 
+const PetNameLabel = ({
+  name,
+  species,
+  className = "",
+}: {
+  name: string;
+  species?: string | null;
+  className?: string;
+}) => (
+  <span className={cn("inline-flex items-center gap-1.5", className)}>
+    {species === "cat" ? <Cat className="h-4 w-4 text-primary" aria-hidden="true" /> : species === "dog" ? <Dog className="h-4 w-4 text-primary" aria-hidden="true" /> : null}
+    <span>{name}</span>
+  </span>
+);
+
 const SitterDashboard = () => {
   const db = supabase as any;
   const { user, canManageDashboard } = useAuth();
