@@ -12,6 +12,12 @@ import { Plus, Pencil, Trash2, PawPrint, Pill, AlertTriangle, KeyRound } from "l
 import PetForm from "@/components/pets/PetForm";
 import { Pet, PetFormValues, emptyPetForm, petSchema, petToForm } from "@/lib/petSchema";
 
+type TemperamentTag = {
+  id: string;
+  label: string;
+  description: string | null;
+};
+
 const Pets = () => {
   const { user } = useAuth();
   const [pets, setPets] = useState<Pet[]>([]);
@@ -21,14 +27,26 @@ const Pets = () => {
   const [form, setForm] = useState<PetFormValues>(emptyPetForm);
   const [photoFile, setPhotoFile] = useState<File | null>(null);
   const [saving, setSaving] = useState(false);
+  const [temperamentTags, setTemperamentTags] = useState<TemperamentTag[]>([]);
 
   const load = async () => {
     if (!user) return;
-    const { data } = await supabase
-      .from("pets").select("*")
-      .eq("owner_id", user.id)
-      .order("created_at", { ascending: true });
-    setPets((data ?? []) as Pet[]);
+    const [{ data }, { data: tagRows }, { data: assignmentRows }] = await Promise.all([
+      supabase.from("pets").select("*").eq("owner_id", user.id).order("created_at", { ascending: true }),
+      supabase.from("pet_temperament_tags").select("id, label, description").eq("visibility", "owner").eq("is_active", true).order("sort_order"),
+      supabase
+        .from("pet_tag_assignments")
+        .select("pet_id, tag_id")
+        .in("pet_id", ((data ?? []) as Pet[]).map((pet) => pet.id)),
+    ]);
+
+    const assignmentsByPet = ((assignmentRows ?? []) as Array<{ pet_id: string; tag_id: string }>).reduce<Record<string, string[]>>((acc, row) => {
+      acc[row.pet_id] = [...(acc[row.pet_id] ?? []), row.tag_id];
+      return acc;
+    }, {});
+
+    setPets(((data ?? []) as Pet[]).map((pet) => ({ ...pet, temperament_tag_ids: assignmentsByPet[pet.id] ?? [] })));
+    setTemperamentTags((tagRows ?? []) as TemperamentTag[]);
     setLoading(false);
   };
 
@@ -112,11 +130,26 @@ const Pets = () => {
     if (editing) {
       const { error } = await supabase.from("pets").update(payload).eq("id", editing.id);
       if (error) toast({ title: "Save failed", description: error.message, variant: "destructive" });
-      else { toast({ title: `${payload.name} updated` }); setOpen(false); load(); }
+      else {
+        await supabase.from("pet_tag_assignments").delete().eq("pet_id", editing.id);
+        if (d.temperament_tag_ids.length > 0) {
+          await supabase.from("pet_tag_assignments").insert(
+            d.temperament_tag_ids.map((tagId) => ({ pet_id: editing.id, tag_id: tagId, created_by: user.id })),
+          );
+        }
+        toast({ title: `${payload.name} updated` }); setOpen(false); load();
+      }
     } else {
-      const { error } = await supabase.from("pets").insert({ ...payload, owner_id: user.id });
-      if (error) toast({ title: "Save failed", description: error.message, variant: "destructive" });
-      else { toast({ title: `${payload.name} added to the pack 🐾` }); setOpen(false); load(); }
+      const { data: insertedPet, error } = await supabase.from("pets").insert({ ...payload, owner_id: user.id }).select("id").single();
+      if (error || !insertedPet) toast({ title: "Save failed", description: error?.message, variant: "destructive" });
+      else {
+        if (d.temperament_tag_ids.length > 0) {
+          await supabase.from("pet_tag_assignments").insert(
+            d.temperament_tag_ids.map((tagId) => ({ pet_id: insertedPet.id, tag_id: tagId, created_by: user.id })),
+          );
+        }
+        toast({ title: `${payload.name} added to the pack 🐾` }); setOpen(false); load();
+      }
     }
     setSaving(false);
   };
@@ -180,6 +213,19 @@ const Pets = () => {
                   </p>
                 </div>
 
+                {(p.temperament_tag_ids ?? []).length > 0 && (
+                  <div className="mt-3 flex flex-wrap gap-2">
+                    {p.temperament_tag_ids
+                      ?.map((tagId) => temperamentTags.find((tag) => tag.id === tagId)?.label)
+                      .filter(Boolean)
+                      .map((label) => (
+                        <span key={label} className="rounded-md bg-muted px-2 py-1 text-[11px] font-tag text-primary ring-1 ring-border">
+                          {label}
+                        </span>
+                      ))}
+                  </div>
+                )}
+
                 <ul className="mt-3 space-y-1 text-xs">
                   {p.medications && (
                     <li className="flex items-start gap-1.5"><Pill className="mt-0.5 h-3.5 w-3.5 text-clay shrink-0" /><span className="line-clamp-1">{p.medications}</span></li>
@@ -220,6 +266,7 @@ const Pets = () => {
           <PetForm
             form={form}
             setForm={setForm}
+            availableTemperamentTags={temperamentTags}
             photoFile={photoFile}
             setPhotoFile={setPhotoFile}
             saving={saving}
