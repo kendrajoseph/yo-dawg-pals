@@ -1441,7 +1441,12 @@ const SitterDashboard = () => {
                               <div key={message.id} className="rounded-md border border-border bg-card px-3 py-2">
                                 <div className="flex items-center justify-between gap-2">
                                   <span className="font-display text-sm uppercase text-primary">{message.subject}</span>
-                                  <span className="text-[11px] text-muted-foreground">{formatUpdateTime(message.created_at)}</span>
+                                  <div className="flex items-center gap-2">
+                                    <span className="text-[11px] text-muted-foreground">{formatUpdateTime(message.created_at)}</span>
+                                    <button type="button" onClick={() => deleteClientMessage(message)} aria-label={`Delete ${message.subject}`} className="text-muted-foreground transition-colors hover:text-destructive">
+                                      <Trash2 className="h-4 w-4" />
+                                    </button>
+                                  </div>
                                 </div>
                                 <div className="mt-1 text-xs text-muted-foreground">{kindCopy[message.kind]} · email {message.send_email ? "on" : "off"} · sms {message.send_sms ? "on" : "off"}</div>
                               </div>
