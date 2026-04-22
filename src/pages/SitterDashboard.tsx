@@ -282,6 +282,12 @@ const parseCurrencyInput = (value: string) => {
   return Math.round(normalized * 100);
 };
 
+const nextDateForWeekday = (fromDate: string, weekday: number) => {
+  const base = new Date(`${fromDate}T12:00:00`);
+  const offset = (weekday - base.getDay() + 7) % 7;
+  return format(addDays(base, offset), "yyyy-MM-dd");
+};
+
 const updateKindLabel: Record<BookingUpdate["kind"], string> = {
   pickup: "Picked up",
   dropoff: "Dropped off",
@@ -898,6 +904,14 @@ const SitterDashboard = () => {
     const variant = booking.service_variant_id ? variantMap.get(booking.service_variant_id) : null;
     const boardingStart = service?.boarding_checkin_minute ?? 12 * 60;
     const boardingEnd = service?.boarding_checkout_minute ?? 12 * 60;
+    const matchingPackOuting = walkWindows.find(
+      (window) =>
+        window.service_id === booking.service_id &&
+        window.window_label === booking.group_assignment_label &&
+        booking.requested_window_start_minute === window.start_minute &&
+        booking.requested_window_end_minute === window.end_minute,
+    );
+
     return {
       date: booking.requested_date ?? format(new Date(booking.start_at), "yyyy-MM-dd"),
       endDate:
@@ -912,8 +926,10 @@ const SitterDashboard = () => {
         booking.requested_window_end_minute != null
           ? formatMinuteTime(booking.requested_window_end_minute)
           : formatMinuteTime(service?.slug === "boarding" ? boardingEnd : (variant?.duration_minutes ?? 60) + timeToMinutes("09:00")),
+      packOutingId: matchingPackOuting?.id ?? "",
       groupLabel: booking.group_assignment_label ?? "",
       internalNotes: booking.internal_notes ?? "",
+      approvedBasePrice: formatCurrencyInput(variant?.price_cents ?? booking.base_price_cents ?? booking.total_cents),
       extraTimeMinutes: booking.extra_time_minutes ?? 0,
       latePickup: Boolean(booking.late_pickup_fee_cents),
     };
@@ -925,6 +941,23 @@ const SitterDashboard = () => {
       ...current,
       [booking.id]: { ...buildDefaultDraft(booking), ...(current[booking.id] ?? {}), ...patch },
     }));
+  };
+
+  const applyPackOutingToDraft = (booking: Booking, outingId: string) => {
+    const outing = walkWindows.find((window) => window.id === outingId);
+    if (!outing) {
+      patchDraft(booking, { packOutingId: "" });
+      return;
+    }
+
+    const nextDate = nextDateForWeekday(getDraft(booking).date, outing.weekday);
+    patchDraft(booking, {
+      packOutingId: outing.id,
+      date: nextDate,
+      start: formatMinuteTime(outing.start_minute),
+      end: formatMinuteTime(outing.end_minute),
+      groupLabel: outing.window_label,
+    });
   };
 
   const getUpdateDraft = (bookingId: string): UpdateDraft => updateDrafts[bookingId] ?? { note: "", sendSms: true };
