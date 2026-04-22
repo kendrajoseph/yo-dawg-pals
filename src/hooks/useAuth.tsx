@@ -10,6 +10,7 @@ type AuthCtx = {
   roles: Role[];
   loading: boolean;
   isSitter: boolean;
+  isAnneke: boolean;
   signOut: () => Promise<void>;
 };
 
@@ -19,8 +20,11 @@ const Ctx = createContext<AuthCtx>({
   roles: [],
   loading: true,
   isSitter: false,
+  isAnneke: false,
   signOut: async () => {},
 });
+
+const ANNEKE_EMAIL = "anneke@yodawg.ca";
 
 export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const [session, setSession] = useState<Session | null>(null);
@@ -61,8 +65,10 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     setRoles([]);
   };
 
+  const isAnneke = user?.email?.toLowerCase() === ANNEKE_EMAIL;
+
   return (
-    <Ctx.Provider value={{ user, session, roles, loading, isSitter: roles.includes("sitter"), signOut }}>
+    <Ctx.Provider value={{ user, session, roles, loading, isSitter: roles.includes("sitter") && isAnneke, isAnneke, signOut }}>
       {children}
     </Ctx.Provider>
   );
