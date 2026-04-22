@@ -28,7 +28,7 @@ const HeroSection = () => {
           <img
             src={wordmark}
             alt="Yo Dawg"
-            className="mx-auto -translate-x-[2px] h-auto w-full max-w-none drop-shadow-[0_14px_28px_hsl(220_50%_4%/0.35)] rounded-sm border-0 text-lg opacity-100 sm:translate-x-0 sm:mx-0 sm:max-w-[42rem]"
+            className="mx-auto -translate-x-[2px] h-auto w-full max-w-none rounded-sm border-0 text-lg opacity-100 sm:translate-x-0 sm:mx-0 sm:max-w-[42rem]"
             loading="eager"
           />
 
