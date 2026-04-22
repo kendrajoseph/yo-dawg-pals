@@ -8,16 +8,13 @@ import { dog3 } from "@/assets/dogs";
 const HeroSection = () => {
   return (
     <header className="relative overflow-hidden bg-gradient-night text-primary-foreground">
-      {/* Halftone overlay to match the illustrated comic style */}
       <div aria-hidden className="pointer-events-none absolute inset-0 texture-halftone opacity-60" />
 
-      {/* Warm orange glow — top right */}
       <div
         aria-hidden
         className="pointer-events-none absolute -right-40 -top-40 h-[640px] w-[640px] rounded-full blur-3xl"
         style={{ background: "radial-gradient(closest-side, hsl(var(--accent) / 0.45), transparent 70%)" }}
       />
-      {/* Yellow glow — bottom left */}
       <div
         aria-hidden
         className="pointer-events-none absolute -left-40 bottom-0 h-[460px] w-[460px] rounded-full blur-3xl"
@@ -27,7 +24,6 @@ const HeroSection = () => {
       <SiteNav variant="dark" />
 
       <div className="relative z-10 mx-auto grid max-w-7xl items-center gap-8 px-5 pb-16 pt-2 sm:gap-10 sm:px-8 sm:pb-24 sm:pt-6 md:grid-cols-[1fr,1.05fr] md:gap-12 md:pb-32 md:pt-10">
-        {/* Left — copy */}
         <div>
           <span className="inline-flex items-center gap-2 rounded-full border border-primary-foreground/20 bg-primary-foreground/5 px-3 py-1.5 text-[11px] font-tag text-primary-foreground/85 backdrop-blur-sm sm:text-xs">
             <MapPin className="h-3.5 w-3.5" />
@@ -43,9 +39,7 @@ const HeroSection = () => {
           </h1>
 
           <p className="mt-5 max-w-lg text-base leading-relaxed text-primary-foreground/75 sm:mt-7 sm:text-lg">
-            Personal walks, drop-in sits and cozy overnight boarding — basic
-            training cues included with every service, from one Hamilton dog
-            person who treats your pup like their own.
+            Premium solo walks, thoughtfully matched group walks, drop-in sits and cozy overnight boarding — all handled by one Hamilton dog person who actually knows your pup.
           </p>
 
           <div className="mt-7 flex flex-col items-stretch gap-3 sm:mt-9 sm:flex-row sm:items-center">
@@ -69,7 +63,6 @@ const HeroSection = () => {
             </Button>
           </div>
 
-          {/* Trust strip */}
           <div className="mt-8 flex flex-wrap items-center gap-x-6 gap-y-3 border-t border-primary-foreground/15 pt-6 sm:mt-12 sm:gap-x-8 sm:gap-y-4 sm:pt-8">
             <div className="flex items-center gap-2">
               <div className="flex gap-0.5 text-secondary">
@@ -86,9 +79,7 @@ const HeroSection = () => {
           </div>
         </div>
 
-        {/* Right — wordmark + dog illustration */}
         <div className="relative flex items-center justify-center">
-          {/* soft circular backdrop behind the artwork */}
           <div
             aria-hidden
             className="pointer-events-none absolute inset-0 -z-10 m-auto h-[420px] w-[420px] rounded-full blur-2xl sm:h-[520px] sm:w-[520px]"
@@ -101,7 +92,6 @@ const HeroSection = () => {
             loading="eager"
           />
 
-          {/* Floating since-2015 sticker */}
           <div className="absolute -right-1 top-2 z-10 grid h-20 w-20 -rotate-12 place-items-center rounded-full border-2 border-primary-foreground bg-secondary text-center font-display text-secondary-foreground shadow-pop-sm sm:right-4 sm:top-4 sm:h-28 sm:w-28">
             <div className="leading-tight">
               <div className="text-[10px] font-tag">since</div>
@@ -109,7 +99,6 @@ const HeroSection = () => {
             </div>
           </div>
 
-          {/* Floating quote with dog */}
           <div className="absolute -bottom-4 left-1 z-10 flex max-w-[260px] items-start gap-2 -rotate-2 rounded-2xl border-2 border-primary-foreground/90 bg-card p-2.5 pl-2 text-foreground shadow-pop-sm sm:-bottom-2 sm:left-4 sm:max-w-[280px] sm:p-3">
             <img src={dog3} alt="" aria-hidden className="h-10 w-auto shrink-0 sm:h-12" />
             <div>
@@ -122,18 +111,16 @@ const HeroSection = () => {
         </div>
       </div>
 
-      {/* Marquee strip */}
       <div className="relative z-10 overflow-hidden border-y-2 border-primary-foreground/15 bg-accent py-2.5 text-accent-foreground sm:py-3">
         <div className="marquee flex gap-8 whitespace-nowrap font-display text-xl sm:gap-12 sm:text-2xl">
           {Array.from({ length: 2 }).map((_, g) => (
             <div key={g} className="flex shrink-0 items-center gap-8 sm:gap-12">
-              <span>★ Walks</span>
+              <span>★ Solo walks</span>
+              <span>★ Group walks</span>
               <span>★ Sits</span>
               <span>★ Boards</span>
               <span>★ Hamilton, ON</span>
               <span>★ Since 2015</span>
-              <span>★ Insured</span>
-              <span>★ Pet first-aid</span>
             </div>
           ))}
         </div>

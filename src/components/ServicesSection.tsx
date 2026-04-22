@@ -1,32 +1,46 @@
-import { Footprints, Home, Bed, ArrowRight } from "lucide-react";
+import { ArrowRight, Bed, CalendarClock, Footprints, Home, Users } from "lucide-react";
 import { Link } from "react-router-dom";
 import { dog1, dog3, dog4 } from "@/assets/dogs";
 
 const services = [
   {
     icon: Footprints,
-    title: "Dog Walking",
-    desc: "Solo or small-buddy walks — basic leash manners and training cues included, rain or shine.",
-    price: "$20",
+    title: "Solo Walk",
+    desc: "Premium one-on-one walks built around your dog's pace, energy, and training needs.",
+    detail: "Choose your preferred window and Anneke confirms the exact walk time.",
+    price: "$28",
     unit: "/ 30 min",
-    slug: "walk",
+    slug: "solo-walk",
     accent: "bg-accent text-accent-foreground",
+    dog: dog1,
+  },
+  {
+    icon: Users,
+    title: "Group Walk",
+    desc: "Small, compatibility-based walks matched thoughtfully for pace, temperament, and social fit.",
+    detail: "Pick a preferred window and Anneke builds the final group and timing.",
+    price: "$18",
+    unit: "/ walk",
+    slug: "group-walk",
+    accent: "bg-secondary text-secondary-foreground",
     dog: dog1,
   },
   {
     icon: Home,
     title: "Pet Sitting",
-    desc: "Drop-in visits for feeding, playtime, cuddles and a real potty break.",
+    desc: "Drop-in visits for feeding, playtime, cuddles, meds, and a real potty break.",
+    detail: "Exact visit times are booked directly on the calendar.",
     price: "$25",
     unit: "/ visit",
     slug: "sitting",
-    accent: "bg-secondary text-secondary-foreground",
+    accent: "bg-electric text-electric-foreground",
     dog: dog3,
   },
   {
     icon: Bed,
     title: "Boarding",
-    desc: "Overnight stays in a calm, dog-friendly home while you're away.",
+    desc: "Overnight stays in a calm, dog-friendly home with consistent routines and lots of check-ins.",
+    detail: "Best for dogs who do well in a home setting and like familiar people.",
     price: "$70",
     unit: "/ night",
     slug: "boarding",
@@ -35,6 +49,23 @@ const services = [
   },
 ];
 
+const walkSteps = [
+  {
+    icon: CalendarClock,
+    title: "Pick a window",
+    text: "Solo walks use premium request windows. Group walks use softer windows like morning, afternoon, or evening.",
+  },
+  {
+    icon: Users,
+    title: "Anneke makes the call",
+    text: "Group dogs are matched by pace, temperament, and compatibility instead of random overlap on a calendar.",
+  },
+  {
+    icon: Footprints,
+    title: "Then timing gets locked in",
+    text: "Solo walks are paid upfront. Group walks are only paid once the final timing and match are approved.",
+  },
+];
 
 const ServicesSection = () => {
   return (
@@ -48,29 +79,35 @@ const ServicesSection = () => {
             <h2 className="mt-3 font-display text-4xl leading-[0.95] text-primary sm:text-5xl md:text-6xl">
               Care that fits the way
               <br />
-              you and your dog{" "}
-              <span className="font-serif italic text-clay">
-                <span className="underline-accent">actually live.</span>
-              </span>
+              you and your dog <span className="underline-accent">actually live.</span>
             </h2>
           </div>
           <p className="max-w-sm text-base leading-relaxed text-foreground/75">
-            Pick a service, book a time, get back to your day. Same trusted
-            sitter every visit — no rotating staff, no guesswork.
+            Separate solo and group walks, one clear booking flow, and one person actually deciding timing and fit.
           </p>
         </div>
 
+        <div className="mt-10 grid gap-5 border-y-2 border-primary/20 py-6 lg:grid-cols-3">
+          {walkSteps.map(({ icon: Icon, title, text }) => (
+            <div key={title} className="flex gap-3">
+              <div className="grid h-11 w-11 shrink-0 place-items-center border-2 border-primary bg-card text-primary shadow-pop-sm">
+                <Icon className="h-5 w-5" />
+              </div>
+              <div>
+                <h3 className="font-display text-lg uppercase text-primary">{title}</h3>
+                <p className="mt-1 text-sm leading-relaxed text-foreground/70">{text}</p>
+              </div>
+            </div>
+          ))}
+        </div>
 
-
-
-        <div className="mt-14 grid gap-7 sm:mt-12 sm:grid-cols-2 sm:gap-5 lg:grid-cols-3">
-          {services.map(({ icon: Icon, title, desc, price, unit, slug, accent, dog }, i) => (
+        <div className="mt-12 grid gap-7 sm:grid-cols-2 lg:grid-cols-4 lg:gap-5">
+          {services.map(({ icon: Icon, title, desc, detail, price, unit, slug, accent, dog }, i) => (
             <article
               key={title}
               className="group relative flex flex-col rounded-2xl border-2 border-primary bg-card p-6 pt-12 shadow-pop-sm transition-all duration-200 hover:-translate-y-1 hover:shadow-pop"
               style={{ transform: `rotate(${i % 2 === 0 ? "-0.6deg" : "0.6deg"})` }}
             >
-              {/* floating dog mascot */}
               <img
                 src={dog}
                 alt=""
@@ -81,7 +118,8 @@ const ServicesSection = () => {
                 <Icon className="h-6 w-6" />
               </div>
               <h3 className="font-display text-2xl text-primary">{title}</h3>
-              <p className="mt-2 flex-1 text-sm leading-relaxed text-foreground/70">{desc}</p>
+              <p className="mt-2 text-sm leading-relaxed text-foreground/70">{desc}</p>
+              <p className="mt-3 text-xs leading-relaxed text-muted-foreground">{detail}</p>
               <div className="mt-6 flex items-baseline gap-1.5 border-t border-border pt-4">
                 <span className="font-display text-3xl text-primary">{price}</span>
                 <span className="text-xs text-muted-foreground">{unit}</span>
