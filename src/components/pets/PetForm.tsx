@@ -8,6 +8,8 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
 import { Upload } from "lucide-react";
 import { PetFormValues } from "@/lib/petSchema";
+import { validateProfileImageFile } from "@/lib/fileValidation";
+import { toast } from "sonner";
 
 type TemperamentTag = {
   id: string;
@@ -99,7 +101,23 @@ const PetForm = ({ form, setForm, availableTemperamentTags = [], photoFile, setP
               <Upload className="h-4 w-4" />
               <span className="truncate">{photoFile?.name ?? "Choose image"}</span>
               <input type="file" accept="image/*" className="hidden"
-                onChange={(e) => setPhotoFile(e.target.files?.[0] ?? null)} />
+                onChange={(e) => {
+                  const file = e.target.files?.[0] ?? null;
+                  if (!file) {
+                    setPhotoFile(null);
+                    return;
+                  }
+
+                  const fileError = validateProfileImageFile(file);
+                  if (fileError) {
+                    toast.error(fileError);
+                    e.target.value = "";
+                    setPhotoFile(null);
+                    return;
+                  }
+
+                  setPhotoFile(file);
+                }} />
             </label>
           </Field>
         </div>
