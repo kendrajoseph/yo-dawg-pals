@@ -2,7 +2,7 @@ import { ArrowRight, MapPin, Star } from "lucide-react";
 import { Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import SiteNav from "@/components/SiteNav";
-import wordmark from "@/assets/yodawg-wordmark.svg";
+import wordmark from "@/assets/yodawg-logo.png";
 import { dog3 } from "@/assets/dogs";
 
 const HeroSection = () => {
@@ -28,7 +28,7 @@ const HeroSection = () => {
           <img
             src={wordmark}
             alt="Yo Dawg"
-            className="h-auto w-full max-w-[33rem] drop-shadow-[0_14px_28px_hsl(220_50%_4%/0.35)] sm:max-w-[42rem] rounded-sm opacity-100 border-0 text-lg"
+            className="h-auto w-full max-w-none drop-shadow-[0_14px_28px_hsl(220_50%_4%/0.35)] rounded-sm opacity-100 border-0 text-lg sm:max-w-[42rem]"
             loading="eager"
           />
 
