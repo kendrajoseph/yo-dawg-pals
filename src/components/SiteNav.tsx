@@ -4,7 +4,7 @@ import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/hooks/useAuth";
 import { cn } from "@/lib/utils";
-import wordmark from "@/assets/yodawg-nav-logo.svg";
+import wordmark from "@/assets/yodawg-logo.svg";
 
 interface SiteNavProps {
   /** "dark" = on hero (light text on navy). "light" = on cream pages. */
@@ -26,9 +26,9 @@ const SiteNav = ({ variant = "light" }: SiteNavProps) => {
   const isHome = location.pathname === "/";
 
   const linkBase = onDark
-    ? "text-sm font-semibold text-primary-foreground/75 transition-colors hover:text-primary-foreground"
+    ? "text-sm font-semibold text-foreground/75 transition-colors hover:text-foreground"
     : "text-sm font-semibold text-foreground/70 transition-colors hover:text-foreground";
-  const linkActive = onDark ? "text-primary-foreground" : "text-foreground";
+  const linkActive = onDark ? "text-foreground" : "text-foreground";
 
   return (
     <nav
@@ -36,7 +36,7 @@ const SiteNav = ({ variant = "light" }: SiteNavProps) => {
         "sticky top-0 z-40 mx-auto flex w-full max-w-7xl items-center justify-between px-5 py-4 backdrop-blur-sm sm:px-8 md:py-5 md:backdrop-blur-0",
         "md:relative md:top-auto",
         onDark
-          ? "bg-primary/95 supports-[backdrop-filter]:bg-primary/88 md:bg-transparent"
+          ? "bg-hero/95 supports-[backdrop-filter]:bg-hero/88 md:bg-transparent"
           : "bg-background/95 supports-[backdrop-filter]:bg-background/88 md:bg-transparent",
       )}
     >
@@ -68,7 +68,7 @@ const SiteNav = ({ variant = "light" }: SiteNavProps) => {
           size="icon"
           className={cn(
             "md:hidden",
-            onDark && "text-primary-foreground hover:bg-primary-foreground/10 hover:text-primary-foreground",
+             onDark && "text-foreground hover:bg-foreground/10 hover:text-foreground",
           )}
           aria-label="Open menu"
           onClick={() => setOpen((o) => !o)}
@@ -81,7 +81,7 @@ const SiteNav = ({ variant = "light" }: SiteNavProps) => {
             variant="ghost"
             className={cn(
               "hidden h-10 text-sm sm:inline-flex",
-              onDark && "text-primary-foreground hover:bg-primary-foreground/10 hover:text-primary-foreground",
+               onDark && "text-foreground hover:bg-foreground/10 hover:text-foreground",
             )}
           >
             <LogOut className="h-4 w-4" /> Sign out
