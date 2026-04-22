@@ -12,7 +12,7 @@ interface SiteNavProps {
 }
 
 const SiteNav = ({ variant = "light" }: SiteNavProps) => {
-  const { user, isSitter, signOut } = useAuth();
+  const { user, canManageDashboard, signOut } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
   const [open, setOpen] = useState(false);
@@ -57,7 +57,7 @@ const SiteNav = ({ variant = "light" }: SiteNavProps) => {
             <NavLink to="/account/profile" className={({ isActive }) => cn(linkBase, isActive && linkActive)}>Profile</NavLink>
           </>
         )}
-        {isSitter && (
+        {canManageDashboard && (
           <NavLink to="/sitter" className={({ isActive }) => cn(linkBase, isActive && linkActive)}>Dashboard</NavLink>
         )}
       </div>
@@ -111,7 +111,7 @@ const SiteNav = ({ variant = "light" }: SiteNavProps) => {
               <Link to="/account/profile" onClick={() => setOpen(false)} className="px-3 py-2 text-sm font-semibold">Profile</Link>
             </>
           )}
-          {isSitter && (
+          {canManageDashboard && (
             <Link to="/sitter" onClick={() => setOpen(false)} className="px-3 py-2 text-sm font-semibold">Dashboard</Link>
           )}
           {user ? (
