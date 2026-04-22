@@ -131,7 +131,7 @@ const Pets = () => {
   return (
     <main className="min-h-screen bg-background texture-grain">
       <SiteNav />
-      <section className="mx-auto max-w-5xl px-5 py-10 sm:px-6 sm:py-14">
+      <section className="mx-auto max-w-5xl px-5 py-10 sm:px-8 sm:py-14">
         <div className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
           <div>
             <span className="font-tag text-2xl text-clay">the pack</span>

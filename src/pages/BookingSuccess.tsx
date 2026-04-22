@@ -100,7 +100,7 @@ const BookingSuccess = () => {
   return (
     <main className="min-h-screen bg-background texture-grain">
       <SiteNav />
-      <section className="mx-auto max-w-2xl px-5 py-12 sm:px-6 sm:py-20">
+      <section className="mx-auto max-w-2xl px-5 py-12 sm:px-8 sm:py-20">
         {loading ? (
           <p className="text-center text-muted-foreground">Loading…</p>
         ) : !booking ? (

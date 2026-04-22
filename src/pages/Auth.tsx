@@ -83,7 +83,7 @@ const Auth = () => {
   return (
     <main className="min-h-screen bg-background texture-grain">
       <SiteNav />
-      <section className="mx-auto flex max-w-md flex-col gap-6 px-5 py-10 sm:px-6 sm:py-16">
+      <section className="mx-auto flex max-w-md flex-col gap-6 px-5 py-10 sm:px-8 sm:py-16">
         <Link to="/" className="font-tag text-clay text-xl -rotate-2 self-start">
           ← back to the pack
         </Link>

@@ -414,7 +414,7 @@ const SitterDashboard = () => {
   return (
     <main className="min-h-screen bg-background texture-grain">
       <SiteNav />
-      <section className="mx-auto max-w-6xl px-5 py-10 sm:px-6 sm:py-14">
+      <section className="mx-auto max-w-6xl px-5 py-10 sm:px-8 sm:py-14">
         <span className="inline-block -rotate-2 font-tag text-2xl text-clay">control room</span>
         <h1 className="font-display text-5xl text-primary sm:text-6xl">Sitter dashboard.</h1>
         <p className="mt-3 max-w-3xl text-sm text-foreground/75">
