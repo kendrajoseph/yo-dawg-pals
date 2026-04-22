@@ -32,7 +32,7 @@ const SiteFooter = () => (
       </div>
     </div>
     <div className="border-t border-primary-foreground/10 px-5 py-6 text-center text-xs text-primary-foreground/55 sm:px-8">
-      © {new Date().getFullYear()} Yo Dawg · Made with treats in Hamilton, Ontario
+      © {new Date().getFullYear()} Yo Dawg
     </div>
   </footer>
 );
