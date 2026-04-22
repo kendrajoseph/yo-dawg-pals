@@ -25,6 +25,13 @@ const HeroSection = () => {
 
       <div className="relative z-10 mx-auto grid max-w-7xl items-center gap-8 px-5 pb-16 pt-2 sm:gap-10 sm:px-8 sm:pb-24 sm:pt-6 md:grid-cols-[1fr,1.05fr] md:gap-12 md:pb-32 md:pt-10">
         <div>
+          <img
+            src={wordmark}
+            alt="Yo Dawg"
+            className="h-auto w-full max-w-[250px] drop-shadow-[0_14px_28px_hsl(220_50%_4%/0.35)] sm:max-w-[320px]"
+            loading="eager"
+          />
+
           <span className="inline-flex items-center gap-2 rounded-full border border-primary-foreground/20 bg-primary-foreground/5 px-3 py-1.5 text-[11px] font-tag text-primary-foreground/85 backdrop-blur-sm sm:text-xs">
             <MapPin className="h-3.5 w-3.5" />
             Hamilton, ON · est. 2015
@@ -86,9 +93,9 @@ const HeroSection = () => {
             style={{ background: "radial-gradient(closest-side, hsl(var(--accent) / 0.22), transparent 70%)" }}
           />
           <img
-            src={wordmark}
-            alt="Yo Dawg — walks, sits, boards & plays for good boys (and girls)"
-            className="relative w-full max-w-[560px] drop-shadow-[0_20px_40px_hsl(220_50%_4%/0.5)]"
+            src={dog3}
+            alt="Illustration of a happy dog"
+            className="relative h-auto w-full max-w-[360px] rotate-[-4deg] drop-shadow-[0_20px_40px_hsl(220_50%_4%/0.5)] sm:max-w-[420px]"
             loading="eager"
           />
 
