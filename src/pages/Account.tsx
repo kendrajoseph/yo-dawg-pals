@@ -284,9 +284,9 @@ const Account = () => {
               const canCancel = isUpcoming && ["requested", "pending_payment", "awaiting_payment", "confirmed"].includes(booking.status);
               const refundEligible = hoursUntil >= 24 && booking.status === "confirmed";
               const helperText = booking.status === "requested"
-                ? "Anneke is reviewing fit, timing, and any service-specific fees before payment opens."
-                : booking.status === "awaiting_payment"
-                ? "Anneke has approved the request — payment is ready when you are."
+                ? "Anneke is reviewing the match and will confirm the final time before payment opens."
+                : booking.status === "awaiting_payment" || booking.status === "pending_payment"
+                ? "Anneke has approved the match and confirmed the final time — payment is ready when you are."
                 : null;
               const updates = bookingUpdates[booking.id] ?? [];
               const displayName = booking.service_variants?.name ?? booking.services?.name ?? "Service";

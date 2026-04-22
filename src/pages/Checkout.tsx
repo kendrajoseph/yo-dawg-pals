@@ -53,7 +53,7 @@ const Checkout = () => {
 
   useEffect(() => {
     if (!booking || confirming) return;
-    if (booking.service_variants?.payment_mode === "free" && booking.status === "pending_payment") {
+    if (booking.service_variants?.payment_mode === "free" && ["pending_payment", "awaiting_payment"].includes(booking.status)) {
       setConfirming(true);
       (async () => {
         await supabase.functions.invoke("create-checkout", {
