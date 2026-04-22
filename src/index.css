@@ -38,13 +38,13 @@
     --accent: 24 95% 58%;
     --accent-foreground: 264 5% 19%;
 
-    --highlight: 24 72% 85%;
+    --highlight: 32 56% 82%;
     --highlight-foreground: 264 5% 19%;
 
-    --clay: 18 40% 76%;
+    --clay: 22 62% 40%;
     --clay-foreground: 264 5% 19%;
 
-    --tag: 24 70% 42%;
+    --tag: 22 68% 36%;
     --tag-foreground: 48 67% 89%;
 
     --electric: 147 24% 48%;
@@ -100,9 +100,9 @@
     --accent-foreground: 147 16% 10%;
     --highlight: 147 12% 22%;
     --highlight-foreground: 48 40% 91%;
-    --clay: 18 34% 66%;
+    --clay: 24 82% 64%;
     --clay-foreground: 147 16% 10%;
-    --tag: 24 62% 46%;
+    --tag: 24 72% 58%;
     --tag-foreground: 48 40% 91%;
     --electric: 147 24% 48%;
     --electric-foreground: 147 16% 10%;
