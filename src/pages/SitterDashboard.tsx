@@ -379,6 +379,7 @@ const SitterDashboard = () => {
   const [blockDate, setBlockDate] = useState<Date | undefined>();
   const [blockReason, setBlockReason] = useState("");
   const [newWindow, setNewWindow] = useState({ serviceId: "", weekday: 1, label: "Morning", start: "09:00", end: "11:00", maxBookings: 4 });
+  const [editingWalkWindowId, setEditingWalkWindowId] = useState<string | null>(null);
   const [scheduleDrafts, setScheduleDrafts] = useState<Record<string, Draft>>({});
   const [updateDrafts, setUpdateDrafts] = useState<Record<string, UpdateDraft>>({});
   const [clientMessageDraft, setClientMessageDraft] = useState<ClientMessageDraft>({
@@ -846,32 +847,65 @@ const SitterDashboard = () => {
     load();
   };
 
+  const resetWalkWindowForm = () => {
+    setEditingWalkWindowId(null);
+    setNewWindow((current) => ({
+      ...current,
+      label: "Morning",
+      weekday: 1,
+      start: "09:00",
+      end: "11:00",
+      maxBookings: 4,
+    }));
+  };
+
+  const beginWalkWindowEdit = (window: WalkWindow) => {
+    setEditingWalkWindowId(window.id);
+    setNewWindow({
+      serviceId: window.service_id,
+      weekday: window.weekday,
+      label: window.window_label,
+      start: formatMinuteTime(window.start_minute),
+      end: formatMinuteTime(window.end_minute),
+      maxBookings: window.max_bookings,
+    });
+  };
+
   const addWalkWindow = async () => {
     if (!user || !newWindow.serviceId) return;
     const start = timeToMinutes(newWindow.start);
     const end = timeToMinutes(newWindow.end);
     if (end <= start) return toast({ title: "End must be after start", variant: "destructive" });
 
-    const sameDayWindows = walkWindows.filter((window) => window.weekday === newWindow.weekday).map((window) => ({ start: window.start_minute, end: window.end_minute }));
+    const sameDayWindows = walkWindows
+      .filter((window) => window.weekday === newWindow.weekday && window.id !== editingWalkWindowId)
+      .map((window) => ({ start: window.start_minute, end: window.end_minute }));
     if (hasBufferedMinuteConflict(sameDayWindows, start, end)) {
       return toast({ title: "Walk windows need a 30 minute gap", variant: "destructive" });
     }
 
-    const nextSortOrder = walkWindows.filter((window) => window.service_id === newWindow.serviceId && window.weekday === newWindow.weekday).length;
-    const { error } = await db.from("walk_windows").insert({
-      sitter_id: user.id,
+    const payload = {
       service_id: newWindow.serviceId,
       weekday: newWindow.weekday,
       start_minute: start,
       end_minute: end,
       window_label: newWindow.label,
-      sort_order: nextSortOrder,
       max_bookings: newWindow.maxBookings,
-    });
+    };
+
+    const nextSortOrder = walkWindows.filter((window) => window.service_id === newWindow.serviceId && window.weekday === newWindow.weekday && window.id !== editingWalkWindowId).length;
+    const { error } = editingWalkWindowId
+      ? await db.from("walk_windows").update(payload).eq("id", editingWalkWindowId)
+      : await db.from("walk_windows").insert({
+          sitter_id: user.id,
+          ...payload,
+          sort_order: nextSortOrder,
+        });
 
     if (error) toast({ title: "Failed", description: error.message, variant: "destructive" });
     else {
-      toast({ title: "Walk window added" });
+      toast({ title: editingWalkWindowId ? "Walk window updated" : "Walk window added" });
+      resetWalkWindowForm();
       load();
     }
   };
@@ -2274,8 +2308,21 @@ const SitterDashboard = () => {
                   </div>
                   <div>
                     <h2 className="font-display text-xl uppercase text-primary">Walk schedule builder</h2>
-                    <p className="text-sm text-muted-foreground">Define dedicated solo and group walk windows with capacity limits and a 30 minute gap between windows.</p>
+                    <p className="text-sm text-muted-foreground">Add new walk windows or tap any existing one to load it into the editor and save changes fast.</p>
                   </div>
+                </div>
+
+                <div className="mt-4 flex flex-wrap gap-2">
+                  {TIME_PRESETS.map((preset) => (
+                    <Button key={preset.label} type="button" variant="outline" className="border-border font-display uppercase" onClick={() => setNewWindow((current) => ({ ...current, start: preset.start, end: preset.end }))}>
+                      {preset.label}
+                    </Button>
+                  ))}
+                  {editingWalkWindowId && (
+                    <Button type="button" variant="ghost" className="font-display uppercase" onClick={resetWalkWindowForm}>
+                      Cancel edit
+                    </Button>
+                  )}
                 </div>
 
                 <div className="mt-4 grid gap-3 md:grid-cols-[1fr,1fr,auto,auto,auto,auto,auto] md:items-end">
@@ -2307,7 +2354,7 @@ const SitterDashboard = () => {
                     <Label>Capacity</Label>
                     <Input type="number" min={1} value={newWindow.maxBookings} onChange={(event) => setNewWindow({ ...newWindow, maxBookings: Math.max(1, Number(event.target.value) || 1) })} />
                   </div>
-                  <Button onClick={addWalkWindow} className="font-display uppercase"><Plus className="h-4 w-4" /> Add</Button>
+                  <Button onClick={addWalkWindow} className="font-display uppercase"><Plus className="h-4 w-4" /> {editingWalkWindowId ? "Save" : "Add"}</Button>
                 </div>
 
                 <div className="mt-5 grid gap-3 lg:grid-cols-2">
@@ -2326,13 +2373,18 @@ const SitterDashboard = () => {
                             {serviceWindows.map((window) => (
                               <li key={window.id} className="rounded-md border border-border bg-card px-3 py-3">
                                 <div className="flex items-center justify-between gap-3">
-                                  <div>
+                                  <button type="button" onClick={() => beginWalkWindowEdit(window)} className="min-w-0 text-left transition-opacity hover:opacity-80">
                                     <div className="font-display text-sm uppercase text-primary">{DAYS[window.weekday]} · {window.window_label}</div>
                                     <div className="text-xs text-muted-foreground">{formatMinuteTime(window.start_minute)}–{formatMinuteTime(window.end_minute)}</div>
-                                  </div>
-                                  <button type="button" onClick={() => removeWalkWindow(window.id)} aria-label="Remove walk window">
-                                    <Trash2 className="h-4 w-4 text-destructive" />
                                   </button>
+                                  <div className="flex items-center gap-2">
+                                    <button type="button" onClick={() => beginWalkWindowEdit(window)} aria-label="Edit walk window" className="text-muted-foreground transition-colors hover:text-primary">
+                                      <Pencil className="h-4 w-4" />
+                                    </button>
+                                    <button type="button" onClick={() => removeWalkWindow(window.id)} aria-label="Remove walk window">
+                                      <Trash2 className="h-4 w-4 text-destructive" />
+                                    </button>
+                                  </div>
                                 </div>
                                 <div className="mt-3 flex items-center justify-between rounded-md border border-border bg-muted px-2 py-1.5 text-sm">
                                   <span>Capacity</span>
