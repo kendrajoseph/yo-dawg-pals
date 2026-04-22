@@ -2183,6 +2183,7 @@ const SitterDashboard = () => {
                   </div>
 
                   {selectedClientId && (
+                    <>
                     <div className="mt-4 grid gap-3 lg:grid-cols-2">
                       <div className="rounded-md border border-border bg-muted/40 p-4">
                         <h3 className="font-display text-base uppercase text-primary">Bookings</h3>
@@ -2299,6 +2300,7 @@ const SitterDashboard = () => {
                         </div>
                       </div>
                     )}
+                    </>
                   )}
                 </Card>
 
