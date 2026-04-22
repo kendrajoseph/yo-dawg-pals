@@ -112,20 +112,6 @@ const HeroSection = () => {
         </div>
       </div>
 
-       <div className="relative z-10 overflow-hidden border-y-2 border-primary/15 bg-accent py-2.5 text-accent-foreground sm:py-3">
-        <div className="marquee flex gap-8 whitespace-nowrap font-display text-xl sm:gap-12 sm:text-2xl">
-          {Array.from({ length: 2 }).map((_, g) => (
-            <div key={g} className="flex shrink-0 items-center gap-8 sm:gap-12">
-              <span>★ Premium solo walks</span>
-              <span>★ Thoughtful group matching</span>
-              <span>★ Drop-in sits</span>
-              <span>★ Home-style boarding</span>
-              <span>★ Hamilton, ON</span>
-              <span>★ Since 2015</span>
-            </div>
-          ))}
-        </div>
-      </div>
     </header>
   );
 };
