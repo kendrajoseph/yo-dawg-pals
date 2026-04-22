@@ -4,7 +4,7 @@ import { dog2, dog6, dog1 } from "@/assets/dogs";
 const testimonials = [
   {
     quote:
-      "Anneke is always my first choice. My Moose adores her and that makes me happy when he's with someone he loves extra.",
+      "Anneke is always my first choice. My Moose adores her and that makes me extra happy when he's with someone he loves.",
     name: "Natalia & Moose",
     role: "Aussie shepherd mix",
     bg: "bg-card",
