@@ -35,6 +35,7 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Textarea } from "@/components/ui/textarea";
 import { useAuth } from "@/hooks/useAuth";
@@ -160,8 +161,10 @@ type Draft = {
   endDate: string;
   start: string;
   end: string;
+  packOutingId: string;
   groupLabel: string;
   internalNotes: string;
+  approvedBasePrice: string;
   extraTimeMinutes: number;
   latePickup: boolean;
 };
@@ -270,6 +273,14 @@ const formatUpdateTime = (iso: string) =>
     hour: "numeric",
     minute: "2-digit",
   });
+
+const formatCurrencyInput = (cents: number) => (cents / 100).toFixed(2);
+
+const parseCurrencyInput = (value: string) => {
+  const normalized = Number.parseFloat(value);
+  if (!Number.isFinite(normalized) || normalized < 0) return null;
+  return Math.round(normalized * 100);
+};
 
 const updateKindLabel: Record<BookingUpdate["kind"], string> = {
   pickup: "Picked up",
