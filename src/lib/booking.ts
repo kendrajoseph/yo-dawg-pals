@@ -36,13 +36,24 @@ export const formatBookingSchedule = (booking: {
   booking_kind?: string | null;
   requested_date?: string | null;
   requested_window_label?: string | null;
+  requested_window_start_minute?: number | null;
+  requested_window_end_minute?: number | null;
   scheduled_start_at?: string | null;
   start_at?: string | null;
 }) => {
   if (booking.booking_kind === "requested" && !booking.scheduled_start_at) {
+    const requestedTimeSlot =
+      booking.requested_window_start_minute != null && booking.requested_window_end_minute != null
+        ? `${minutesToTime(booking.requested_window_start_minute)}–${minutesToTime(booking.requested_window_end_minute)}`
+        : null;
+
     const parts = [
       booking.requested_date ? formatRequestedDate(booking.requested_date) : null,
-      booking.requested_window_label ?? null,
+      booking.requested_window_label
+        ? requestedTimeSlot
+          ? `${booking.requested_window_label} · ${requestedTimeSlot}`
+          : booking.requested_window_label
+        : requestedTimeSlot,
     ].filter(Boolean);
 
     return parts.length ? parts.join(" · ") : "Scheduling in progress";
