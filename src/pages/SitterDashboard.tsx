@@ -5,9 +5,11 @@ import {
   BellRing,
   CalendarDays,
   CalendarOff,
+  Cat,
   Check,
   ChevronRight,
   Clock3,
+  Dog,
   Filter,
   LayoutDashboard,
   Mail,
@@ -1705,18 +1707,20 @@ const SitterDashboard = () => {
                               <span className={cn("px-2 py-0.5 text-[11px] font-tag", STATUS_STYLES[booking.status] ?? "bg-muted text-muted-foreground")}>
                                 {STATUS_LABELS[booking.status] ?? booking.status}
                               </span>
-                              {booking.pets?.species ? (
-                                <span className="px-2 py-0.5 text-[11px] font-tag bg-secondary text-secondary-foreground">
-                                  {booking.pets.species === "dog" ? "Dog" : booking.pets.species === "cat" ? "Cat" : booking.pets.species}
-                                </span>
-                              ) : null}
                               {service?.requires_pet_approval && approval && (
                                 <span className={cn("px-2 py-0.5 text-[11px] font-tag", approval.status === "approved" ? "bg-secondary text-secondary-foreground" : approval.status === "declined" ? "bg-muted text-muted-foreground" : "bg-accent text-accent-foreground")}>
                                   Pet {approval.status}
                                 </span>
                               )}
                             </div>
-                            <p className="mt-1 text-sm text-foreground/80">{owner?.full_name ?? "Customer"} · {booking.pets?.name ?? "Pet"}</p>
+                            <p className="mt-1 flex flex-wrap items-center gap-2 text-sm text-foreground/80">
+                              <span>{owner?.full_name ?? "Customer"}</span>
+                              <span className="text-muted-foreground">·</span>
+                              <span className="inline-flex items-center gap-1.5">
+                                {booking.pets?.species === "cat" ? <Cat className="h-4 w-4 text-primary" aria-hidden="true" /> : booking.pets?.species === "dog" ? <Dog className="h-4 w-4 text-primary" aria-hidden="true" /> : null}
+                                <span>{booking.pets?.name ?? "Pet"}</span>
+                              </span>
+                            </p>
                             <p className="mt-1 text-sm text-muted-foreground">Requested: {formatBookingSchedule(booking)}</p>
                             {booking.notes && <p className="mt-2 text-xs text-muted-foreground">Client note: “{booking.notes}”</p>}
                           </div>
