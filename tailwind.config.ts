@@ -12,10 +12,10 @@ export default {
     },
     extend: {
       fontFamily: {
-        display: ['"Bricolage Grotesque"', 'Inter', "sans-serif"],
-        serif: ['Fraunces', 'Georgia', "serif"],
-        body: ['Inter', "system-ui", "sans-serif"],
-        tag: ['Inter', "system-ui", "sans-serif"],
+        display: ['Urbanist', 'Epilogue', "sans-serif"],
+        serif: ['Urbanist', 'Epilogue', "sans-serif"],
+        body: ['Epilogue', "system-ui", "sans-serif"],
+        tag: ['Urbanist', 'Epilogue', "sans-serif"],
       },
       colors: {
         border: "hsl(var(--border))",
