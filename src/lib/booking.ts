@@ -25,8 +25,37 @@ export const formatBookingDateTime = (iso: string) =>
     minute: "2-digit",
   });
 
+export const formatRequestedDate = (date: string) =>
+  new Date(`${date}T12:00:00`).toLocaleDateString(undefined, {
+    weekday: "short",
+    month: "short",
+    day: "numeric",
+  });
+
+export const formatBookingSchedule = (booking: {
+  booking_kind?: string | null;
+  requested_date?: string | null;
+  requested_window_label?: string | null;
+  scheduled_start_at?: string | null;
+  start_at?: string | null;
+}) => {
+  if (booking.booking_kind === "requested" && !booking.scheduled_start_at) {
+    const parts = [
+      booking.requested_date ? formatRequestedDate(booking.requested_date) : null,
+      booking.requested_window_label ?? null,
+    ].filter(Boolean);
+
+    return parts.length ? parts.join(" · ") : "Scheduling in progress";
+  }
+
+  const when = booking.scheduled_start_at ?? booking.start_at;
+  return when ? formatBookingDateTime(when) : "Scheduling in progress";
+};
+
 export const STATUS_STYLES: Record<string, string> = {
+  requested: "bg-accent text-accent-foreground",
   pending_payment: "bg-highlight text-highlight-foreground",
+  awaiting_payment: "bg-electric text-electric-foreground",
   confirmed: "bg-secondary text-secondary-foreground",
   cancelled: "bg-muted text-muted-foreground",
   completed: "bg-accent text-accent-foreground",
@@ -34,7 +63,9 @@ export const STATUS_STYLES: Record<string, string> = {
 };
 
 export const STATUS_LABELS: Record<string, string> = {
-  pending_payment: "Awaiting deposit",
+  requested: "Request received",
+  pending_payment: "Awaiting payment",
+  awaiting_payment: "Ready for payment",
   confirmed: "Confirmed",
   cancelled: "Cancelled",
   completed: "Completed",
