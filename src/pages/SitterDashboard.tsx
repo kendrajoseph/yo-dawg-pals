@@ -355,6 +355,7 @@ const SitterDashboard = () => {
   const [activePetProfileId, setActivePetProfileId] = useState<string | null>(null);
   const [snapshotEditor, setSnapshotEditor] = useState<SnapshotEditor | null>(null);
   const requestCardRefs = useRef<Record<string, HTMLDivElement | null>>({});
+  const walkWindowEditorRef = useRef<HTMLDivElement | null>(null);
 
   const [availability, setAvailability] = useState<Availability[]>([]);
   const [blocked, setBlocked] = useState<Blocked[]>([]);
@@ -859,15 +860,18 @@ const SitterDashboard = () => {
     }));
   };
 
-  const beginWalkWindowEdit = (window: WalkWindow) => {
-    setEditingWalkWindowId(window.id);
+  const beginWalkWindowEdit = (walkWindow: WalkWindow) => {
+    setEditingWalkWindowId(walkWindow.id);
     setNewWindow({
-      serviceId: window.service_id,
-      weekday: window.weekday,
-      label: window.window_label,
-      start: formatMinuteTime(window.start_minute),
-      end: formatMinuteTime(window.end_minute),
-      maxBookings: window.max_bookings,
+      serviceId: walkWindow.service_id,
+      weekday: walkWindow.weekday,
+      label: walkWindow.window_label,
+      start: formatMinuteTime(walkWindow.start_minute),
+      end: formatMinuteTime(walkWindow.end_minute),
+      maxBookings: walkWindow.max_bookings,
+    });
+    window.requestAnimationFrame(() => {
+      walkWindowEditorRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
     });
   };
 
@@ -2325,7 +2329,7 @@ const SitterDashboard = () => {
                   )}
                 </div>
 
-                <div className="mt-4 grid gap-3 md:grid-cols-[1fr,1fr,auto,auto,auto,auto,auto] md:items-end">
+                <div ref={walkWindowEditorRef} className="mt-4 grid gap-3 md:grid-cols-[1fr,1fr,auto,auto,auto,auto,auto] md:items-end">
                   <div>
                     <Label>Walk type</Label>
                     <select className="mt-1 h-10 w-full rounded-md border border-input bg-background px-3 text-sm" value={newWindow.serviceId} onChange={(event) => setNewWindow({ ...newWindow, serviceId: event.target.value })}>
@@ -2371,7 +2375,7 @@ const SitterDashboard = () => {
                         ) : (
                           <ul className="mt-3 space-y-2">
                             {serviceWindows.map((window) => (
-                              <li key={window.id} className="rounded-md border border-border bg-card px-3 py-3">
+                              <li key={window.id} className={cn("rounded-md border bg-card px-3 py-3 transition-colors", editingWalkWindowId === window.id ? "border-primary ring-2 ring-primary/20" : "border-border")}>
                                 <div className="flex items-center justify-between gap-3">
                                   <button type="button" onClick={() => beginWalkWindowEdit(window)} className="min-w-0 text-left transition-opacity hover:opacity-80">
                                     <div className="font-display text-sm uppercase text-primary">{DAYS[window.weekday]} · {window.window_label}</div>
