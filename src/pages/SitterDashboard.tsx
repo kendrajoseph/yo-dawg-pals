@@ -711,6 +711,113 @@ const SitterDashboard = () => {
     else load();
   };
 
+  const openSlotEditor = (slot: Availability) => {
+    setSnapshotEditor({
+      kind: "slot",
+      id: slot.id,
+      weekday: slot.weekday,
+      start: formatMinuteTime(slot.start_minute),
+      end: formatMinuteTime(slot.end_minute),
+      maxBookings: slot.max_bookings,
+      serviceIds: Array.from(tagsBySlot.get(slot.id) ?? []),
+    });
+  };
+
+  const openWindowEditor = (window: WalkWindow) => {
+    setSnapshotEditor({
+      kind: "window",
+      id: window.id,
+      serviceId: window.service_id,
+      weekday: window.weekday,
+      label: window.window_label,
+      start: formatMinuteTime(window.start_minute),
+      end: formatMinuteTime(window.end_minute),
+      maxBookings: window.max_bookings,
+    });
+  };
+
+  const saveSnapshotEditor = async () => {
+    if (!snapshotEditor) return;
+
+    const start = timeToMinutes(snapshotEditor.start);
+    const end = timeToMinutes(snapshotEditor.end);
+    if (end <= start) {
+      toast({ title: "End must be after start", variant: "destructive" });
+      return;
+    }
+
+    if (snapshotEditor.kind === "slot") {
+      if (snapshotEditor.serviceIds.length === 0) {
+        toast({ title: "Pick at least one service", variant: "destructive" });
+        return;
+      }
+
+      const sameDayRanges = availability
+        .filter((slot) => slot.weekday === snapshotEditor.weekday && slot.id !== snapshotEditor.id)
+        .map((slot) => ({ start: slot.start_minute, end: slot.end_minute }));
+
+      if (hasBufferedMinuteConflict(sameDayRanges, start, end)) {
+        toast({ title: "Leave a 30 minute gap between booking blocks", variant: "destructive" });
+        return;
+      }
+
+      const { error } = await db
+        .from("availability")
+        .update({
+          weekday: snapshotEditor.weekday,
+          start_minute: start,
+          end_minute: end,
+          max_bookings: Math.max(1, snapshotEditor.maxBookings),
+        })
+        .eq("id", snapshotEditor.id);
+
+      if (error) {
+        toast({ title: "Couldn't update block", description: error.message, variant: "destructive" });
+        return;
+      }
+
+      await db.from("availability_services").delete().eq("availability_id", snapshotEditor.id);
+      const { error: linkError } = await db
+        .from("availability_services")
+        .insert(snapshotEditor.serviceIds.map((serviceId) => ({ availability_id: snapshotEditor.id, service_id: serviceId })));
+
+      if (linkError) {
+        toast({ title: "Block updated, but service tags failed", description: linkError.message, variant: "destructive" });
+        return;
+      }
+    } else {
+      const sameDayRanges = walkWindows
+        .filter((window) => window.weekday === snapshotEditor.weekday && window.id !== snapshotEditor.id)
+        .map((window) => ({ start: window.start_minute, end: window.end_minute }));
+
+      if (hasBufferedMinuteConflict(sameDayRanges, start, end)) {
+        toast({ title: "Walk windows need a 30 minute gap", variant: "destructive" });
+        return;
+      }
+
+      const { error } = await db
+        .from("walk_windows")
+        .update({
+          service_id: snapshotEditor.serviceId,
+          weekday: snapshotEditor.weekday,
+          window_label: snapshotEditor.label,
+          start_minute: start,
+          end_minute: end,
+          max_bookings: Math.max(1, snapshotEditor.maxBookings),
+        })
+        .eq("id", snapshotEditor.id);
+
+      if (error) {
+        toast({ title: "Couldn't update walk window", description: error.message, variant: "destructive" });
+        return;
+      }
+    }
+
+    toast({ title: "Schedule updated" });
+    setSnapshotEditor(null);
+    load();
+  };
+
   const updateBookingStatus = async (id: string, status: "cancelled" | "completed") => {
     const { error } = await db.from("bookings").update({ status }).eq("id", id);
     if (error) toast({ title: "Failed", description: error.message, variant: "destructive" });
