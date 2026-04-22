@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from "react";
-import { addDays, format } from "date-fns";
+import { addDays, endOfWeek, format, startOfWeek } from "date-fns";
 import { Link } from "react-router-dom";
 import {
   BellRing,
@@ -259,6 +259,7 @@ type SnapshotEditor =
 
 type TabKey = "overview" | "day" | "clients" | "schedule" | "care" | "alerts";
 type MessageAudience = "single" | "group";
+type SnapshotRange = "day" | "week";
 
 const WALK_SLUGS = new Set(["solo-walk", "group-walk"]);
 const MIN_BUFFER_MINUTES = 30;
@@ -319,6 +320,7 @@ const SitterDashboard = () => {
 
   const [activeTab, setActiveTab] = useState<TabKey>("overview");
   const [selectedDay, setSelectedDay] = useState(format(new Date(), "yyyy-MM-dd"));
+  const [snapshotRange, setSnapshotRange] = useState<SnapshotRange>("day");
   const [selectedRequestId, setSelectedRequestId] = useState<string | null>(null);
   const [clientSearch, setClientSearch] = useState("");
   const [selectedClientId, setSelectedClientId] = useState("");
@@ -594,27 +596,55 @@ const SitterDashboard = () => {
   );
   const dailySnapshotBookings = useMemo(() => {
     const targetDate = selectedDay;
+    const rangeStart = format(startOfWeek(new Date(`${selectedDay}T12:00:00`), { weekStartsOn: 1 }), "yyyy-MM-dd");
+    const rangeEnd = format(endOfWeek(new Date(`${selectedDay}T12:00:00`), { weekStartsOn: 1 }), "yyyy-MM-dd");
 
     return bookings
       .filter((booking) => !["cancelled", "refunded"].includes(booking.status))
       .filter((booking) => {
-        if (booking.booking_kind === "requested" && !booking.scheduled_start_at && booking.requested_date) {
-          return booking.requested_date === targetDate;
-        }
+        const bookingDate = booking.booking_kind === "requested" && !booking.scheduled_start_at && booking.requested_date
+          ? booking.requested_date
+          : format(new Date(booking.scheduled_start_at ?? booking.start_at), "yyyy-MM-dd");
 
-        return format(new Date(booking.scheduled_start_at ?? booking.start_at), "yyyy-MM-dd") === targetDate;
+        return snapshotRange === "week"
+          ? bookingDate >= rangeStart && bookingDate <= rangeEnd
+          : bookingDate === targetDate;
       })
       .sort((a, b) => {
-        const aTime = new Date(a.scheduled_start_at ?? a.start_at).getTime();
-        const bTime = new Date(b.scheduled_start_at ?? b.start_at).getTime();
+        const aTime = a.booking_kind === "requested" && !a.scheduled_start_at && a.requested_date
+          ? new Date(`${a.requested_date}T${formatMinuteTime(a.requested_window_start_minute ?? 9 * 60)}:00`).getTime()
+          : new Date(a.scheduled_start_at ?? a.start_at).getTime();
+        const bTime = b.booking_kind === "requested" && !b.scheduled_start_at && b.requested_date
+          ? new Date(`${b.requested_date}T${formatMinuteTime(b.requested_window_start_minute ?? 9 * 60)}:00`).getTime()
+          : new Date(b.scheduled_start_at ?? b.start_at).getTime();
         return aTime - bTime;
       });
-  }, [bookings, selectedDay]);
+  }, [bookings, selectedDay, snapshotRange]);
   const dailySnapshotSummary = useMemo(() => {
     const confirmed = dailySnapshotBookings.filter((booking) => booking.status === "confirmed").length;
     const pending = dailySnapshotBookings.filter((booking) => ["requested", "awaiting_payment", "pending_payment"].includes(booking.status)).length;
     const walks = dailySnapshotBookings.filter((booking) => WALK_SLUGS.has(booking.services?.slug ?? "")).length;
     return { total: dailySnapshotBookings.length, confirmed, pending, walks };
+  }, [dailySnapshotBookings]);
+  const weeklySnapshotGroups = useMemo(() => {
+    return dailySnapshotBookings.reduce<Array<{ date: string; label: string; bookings: Booking[] }>>((groups, booking) => {
+      const bookingDate = booking.booking_kind === "requested" && !booking.scheduled_start_at && booking.requested_date
+        ? booking.requested_date
+        : format(new Date(booking.scheduled_start_at ?? booking.start_at), "yyyy-MM-dd");
+      const existing = groups.find((group) => group.date === bookingDate);
+
+      if (existing) {
+        existing.bookings.push(booking);
+      } else {
+        groups.push({
+          date: bookingDate,
+          label: format(new Date(`${bookingDate}T12:00:00`), "EEEE, MMM d"),
+          bookings: [booking],
+        });
+      }
+
+      return groups;
+    }, []);
   }, [dailySnapshotBookings]);
   const activeClientBookings = useMemo(
     () => bookings.filter((booking) => booking.customer_id === clientMessageDraft.customerId),
