@@ -575,6 +575,10 @@ const SitterDashboard = () => {
   );
   const selectedDraftClientProfile = clientMessageDraft.customerId ? profileDetails[clientMessageDraft.customerId] : null;
   const activePetProfile = activePetProfileId ? petProfiles[activePetProfileId] ?? null : null;
+  const activePetTags = useMemo(
+    () => (activePetProfileId ? (petTagIdsByPet[activePetProfileId] ?? []).map((tagId) => temperamentTags.find((tag) => tag.id === tagId)).filter(Boolean) as TemperamentTag[] : []),
+    [activePetProfileId, petTagIdsByPet, temperamentTags],
+  );
 
   const pendingPetApprovals = useMemo(() => {
     const seen = new Set<string>();
@@ -585,6 +589,11 @@ const SitterDashboard = () => {
       const key = `${booking.pet_id}-${booking.service_id}`;
       if (seen.has(key)) return [];
       seen.add(key);
+      const selectedTags = (petTagIdsByPet[booking.pet_id] ?? [])
+        .map((tagId) => temperamentTags.find((tag) => tag.id === tagId))
+        .filter(Boolean) as TemperamentTag[];
+      const riskyTags = selectedTags.filter((tag) => tag.risk_services.includes(service.slug));
+      const openAlert = fitAlerts.find((alert) => alert.pet_id === booking.pet_id && alert.service_id === booking.service_id && !alert.is_resolved);
       return [{
         key,
         petId: booking.pet_id,
@@ -593,9 +602,11 @@ const SitterDashboard = () => {
         serviceName: booking.services?.name ?? "Service",
         status: approval?.status ?? "pending",
         notes: approval?.notes ?? null,
+        riskyTags,
+        openAlert,
       }];
     });
-  }, [petApprovals, requestBookings, serviceMap]);
+  }, [fitAlerts, petApprovals, petTagIdsByPet, requestBookings, serviceMap, temperamentTags]);
 
   const weeklySchedule = useMemo(
     () => DAYS.map((day, weekday) => ({
@@ -911,6 +922,56 @@ const SitterDashboard = () => {
     }));
   };
 
+  const savePetTags = async (petId: string, nextTagIds: string[]) => {
+    if (!user) return;
+
+    const { error: deleteError } = await db.from("pet_tag_assignments").delete().eq("pet_id", petId);
+    if (deleteError) {
+      toast({ title: "Couldn't update tags", description: deleteError.message, variant: "destructive" });
+      return;
+    }
+
+    if (nextTagIds.length > 0) {
+      const { error: insertError } = await db.from("pet_tag_assignments").insert(
+        nextTagIds.map((tagId) => ({ pet_id: petId, tag_id: tagId, created_by: user.id })),
+      );
+      if (insertError) {
+        toast({ title: "Couldn't update tags", description: insertError.message, variant: "destructive" });
+        return;
+      }
+    }
+
+    toast({ title: "Pet tags updated" });
+    load();
+  };
+
+  const createFitAlert = async (booking: Booking, riskyTags: TemperamentTag[]) => {
+    if (!user || riskyTags.length === 0) return;
+    const service = serviceMap.get(booking.service_id);
+    if (!service) return;
+
+    const title = `${booking.pets?.name ?? "Pet"} flagged for ${service.name}`;
+    const message = riskyTags.map((tag) => tag.risk_message || `${tag.label} requires extra review for ${service.name}.`).join(" ");
+
+    const existingAlert = fitAlerts.find((alert) => alert.pet_id === booking.pet_id && alert.service_id === booking.service_id && alert.booking_id === booking.id && !alert.is_resolved);
+    if (existingAlert) return;
+
+    const { error } = await db.from("pet_fit_alerts").insert({
+      pet_id: booking.pet_id,
+      service_id: booking.service_id,
+      booking_id: booking.id,
+      triggered_by: user.id,
+      severity: riskyTags.some((tag) => tag.slug === "aggression-history" || tag.slug === "bite-incident") ? "critical" : "warning",
+      title,
+      message,
+      conflicting_tag_ids: riskyTags.map((tag) => tag.id),
+    });
+
+    if (error) {
+      toast({ title: "Alert could not be saved", description: error.message, variant: "destructive" });
+    }
+  };
+
   const setPetApproval = async (petId: string, serviceId: string, status: PetApproval["status"], notes?: string) => {
     if (!user) return;
     const { error } = await db.from("sitter_pet_approvals").upsert(
@@ -924,7 +985,26 @@ const SitterDashboard = () => {
       { onConflict: "sitter_id,pet_id,service_id" },
     );
     if (error) toast({ title: "Approval failed", description: error.message, variant: "destructive" });
-    else load();
+    else {
+      const service = serviceMap.get(serviceId);
+      const riskyTags = service
+        ? ((petTagIdsByPet[petId] ?? []).map((tagId) => temperamentTags.find((tag) => tag.id === tagId)).filter(Boolean) as TemperamentTag[])
+            .filter((tag) => tag.risk_services.includes(service.slug))
+        : [];
+      if (status === "approved" && riskyTags.length > 0) {
+        await createFitAlert(
+          requestBookings.find((booking) => booking.pet_id === petId && booking.service_id === serviceId) ?? {
+            id: null,
+            pet_id: petId,
+            service_id: serviceId,
+            pets: { name: activePetProfile?.name ?? "Pet" },
+          } as Booking,
+          riskyTags,
+        );
+        toast({ title: "Approved with risk alert", description: "This fit was approved, but it has been flagged for follow-up." });
+      }
+      load();
+    }
   };
 
   const approveRequest = async (booking: Booking) => {
