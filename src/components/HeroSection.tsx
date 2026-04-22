@@ -32,11 +32,6 @@ const HeroSection = () => {
             loading="eager"
           />
 
-          <span className="inline-flex items-center gap-2 rounded-full border border-primary-foreground/20 bg-primary-foreground/5 px-3 py-1.5 text-[11px] font-tag text-primary-foreground/85 backdrop-blur-sm sm:text-xs">
-            <MapPin className="h-3.5 w-3.5" />
-            Hamilton, ON · est. 2015
-          </span>
-
           <h1 className="mt-5 font-display text-[2.625rem] leading-[0.95] sm:mt-6 sm:text-6xl md:text-[5rem] lg:text-[5.75rem]">
             Thoughtful care
             <br />
