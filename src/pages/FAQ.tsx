@@ -26,7 +26,7 @@ const faqItems = [
   {
     question: "What happens in an emergency?",
     answer:
-      "If Anneke believes urgent care is required, she may contact your veterinarian, an emergency clinic, or your listed emergency contact and take reasonable steps to protect your dog’s wellbeing.",
+      "If urgent care is required, we may contact your veterinarian, an emergency clinic, or your listed emergency contact and take reasonable steps to protect your dog’s wellbeing.",
   },
   {
     question: "Are owners still responsible for their dogs?",

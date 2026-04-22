@@ -5,7 +5,7 @@ const sections = [
   {
     title: "1. Booking and approval",
     body:
-      "All services are subject to availability and approval. Booking requests are not confirmed until accepted. Anneke may decline or limit service where a dog’s needs, health status, behaviour, or schedule are not a safe fit.",
+      "All services are subject to availability and approval. Booking requests are not confirmed until accepted. We may decline or limit service where a dog’s needs, health status, behaviour, or schedule are not a safe fit.",
   },
   {
     title: "2. Owner disclosures",
@@ -15,17 +15,17 @@ const sections = [
   {
     title: "3. Health and safety",
     body:
-      "By using these services, you confirm that your dog is suitable for the selected care type and that you have disclosed any issue that could affect safety. Anneke may use reasonable judgment regarding walk routes, weather adjustments, supervision, separation from other dogs, transport, and handling.",
+      "By using these services, you confirm that your dog is suitable for the selected care type and that you have disclosed any issue that could affect safety. We may use reasonable judgment regarding walk routes, weather adjustments, supervision, separation from other dogs, transport, and handling.",
   },
   {
     title: "4. Veterinary care authorization",
     body:
-      "If Anneke reasonably believes veterinary attention is necessary, you authorize her to seek care for your dog and to contact your listed veterinarian, emergency clinic, or emergency contact. You remain responsible for all related veterinary and emergency expenses.",
+      "If we reasonably believe veterinary attention is necessary, you authorize us to seek care for your dog and to contact your listed veterinarian, emergency clinic, or emergency contact. You remain responsible for all related veterinary and emergency expenses.",
   },
   {
     title: "5. Assumption of risk and release",
     body:
-      "You understand that dog walks, boarding, transport, home visits, and group interactions carry inherent risks, including illness, injury, escape, property damage, dog-to-dog incidents, and unforeseen emergencies. To the maximum extent permitted by applicable law, you voluntarily assume those risks and release Anneke, operating as Yo Dawg, from claims, losses, damages, costs, or liabilities arising from the ordinary risks of providing care, except to the extent caused by gross negligence, wilful misconduct, or any liability that cannot legally be excluded.",
+      "You understand that dog walks, boarding, transport, home visits, and group interactions carry inherent risks, including illness, injury, escape, property damage, dog-to-dog incidents, and unforeseen emergencies. To the maximum extent permitted by applicable law, you voluntarily assume those risks and release Yo Dawg from claims, losses, damages, costs, or liabilities arising from the ordinary risks of providing care, except to the extent caused by gross negligence, wilful misconduct, or any liability that cannot legally be excluded.",
   },
   {
     title: "6. Damage caused by a dog",
