@@ -923,7 +923,7 @@ const SitterDashboard = () => {
                 {selectedClientMessageLog.map((message) => (
                   <li key={message.id} className="border border-border bg-muted/50 px-3 py-3 text-sm">
                     <div className="flex flex-wrap items-center justify-between gap-2">
-                      <span className="font-display text-xs uppercase text-primary">{message.kind.replaceAll("_", " ")}</span>
+                      <span className="font-display text-xs uppercase text-primary">{message.kind.replace(/_/g, " ")}</span>
                       <span className="text-[11px] text-muted-foreground">{formatUpdateTime(message.created_at)}</span>
                     </div>
                     <p className="mt-1 font-display text-base uppercase text-primary">{message.subject}</p>
@@ -1001,7 +1001,7 @@ const SitterDashboard = () => {
                 {serviceAlerts.map((alert) => (
                   <li key={alert.id} className="border border-border bg-muted/50 px-3 py-3 text-sm">
                     <div className="flex flex-wrap items-center justify-between gap-2">
-                      <span className="font-display text-xs uppercase text-primary">{alert.kind.replaceAll("_", " ")}</span>
+                      <span className="font-display text-xs uppercase text-primary">{alert.kind.replace(/_/g, " ")}</span>
                       <button type="button" onClick={() => toggleServiceAlert(alert, !alert.is_active)} className="text-xs uppercase text-clay hover:underline">{alert.is_active ? "Pause" : "Reactivate"}</button>
                     </div>
                     <p className="mt-1 font-display text-base uppercase text-primary">{alert.title}</p>

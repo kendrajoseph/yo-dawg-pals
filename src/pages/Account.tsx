@@ -6,7 +6,7 @@ import SiteNav from "@/components/SiteNav";
 import SiteFooter from "@/components/SiteFooter";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
-import { CalendarPlus, ChevronRight, CreditCard, PawPrint, Smartphone, User, X } from "lucide-react";
+import { BellRing, CalendarPlus, ChevronRight, CreditCard, Mail, PawPrint, Smartphone, User, X } from "lucide-react";
 import { formatBookingSchedule, formatPriceWithDecimals, STATUS_LABELS, STATUS_STYLES } from "@/lib/booking";
 import { toast } from "@/hooks/use-toast";
 import {
@@ -56,6 +56,29 @@ type ProfileSettings = {
   sms_opt_in: boolean;
 };
 
+type ClientMessageRow = {
+  id: string;
+  subject: string;
+  message: string;
+  kind: "service_update" | "customer_service" | "offer";
+  send_email: boolean;
+  send_sms: boolean;
+  delivered_email_at: string | null;
+  delivered_sms_at: string | null;
+  booking_id: string | null;
+  created_at: string;
+};
+
+type ServiceAlertRow = {
+  id: string;
+  title: string;
+  message: string;
+  kind: "hours_update" | "closure" | "announcement" | "promo";
+  starts_at: string;
+  ends_at: string | null;
+  pin_to_profile: boolean;
+};
+
 const kindLabel: Record<BookingUpdateRow["kind"], string> = {
   pickup: "Picked up",
   dropoff: "Dropped off",
@@ -76,19 +99,23 @@ const Account = () => {
   const [bookings, setBookings] = useState<BookingRow[]>([]);
   const [bookingUpdates, setBookingUpdates] = useState<Record<string, BookingUpdateRow[]>>({});
   const [profileSettings, setProfileSettings] = useState<ProfileSettings>({ mobile_phone: null, sms_opt_in: false });
+  const [clientMessages, setClientMessages] = useState<ClientMessageRow[]>([]);
+  const [serviceAlerts, setServiceAlerts] = useState<ServiceAlertRow[]>([]);
   const [loading, setLoading] = useState(true);
   const [cancellingId, setCancellingId] = useState<string | null>(null);
 
   const load = async () => {
     if (!user) return;
 
-    const [{ data: bookingData }, { data: profileData }] = await Promise.all([
+    const [{ data: bookingData }, { data: profileData }, { data: messageData }, { data: alertData }] = await Promise.all([
       db
         .from("bookings")
         .select("id, start_at, end_at, status, total_cents, deposit_cents, payment_amount_cents, extra_time_fee_cents, late_pickup_fee_cents, notes, booking_kind, requested_date, requested_window_label, scheduled_start_at, services(name, slug), service_variants(name), pets(name)")
         .eq("customer_id", user.id)
         .order("created_at", { ascending: false }),
       db.from("profiles").select("mobile_phone, sms_opt_in").eq("id", user.id).maybeSingle(),
+      db.from("client_messages").select("id, subject, message, kind, send_email, send_sms, delivered_email_at, delivered_sms_at, booking_id, created_at").eq("customer_id", user.id).order("created_at", { ascending: false }).limit(8),
+      db.from("service_alerts").select("id, title, message, kind, starts_at, ends_at, pin_to_profile").eq("is_active", true).order("starts_at", { ascending: false }).limit(6),
     ]);
 
     const nextBookings = (bookingData ?? []) as BookingRow[];
@@ -97,6 +124,8 @@ const Account = () => {
       mobile_phone: (profileData as { mobile_phone?: string | null } | null)?.mobile_phone ?? null,
       sms_opt_in: Boolean((profileData as { sms_opt_in?: boolean | null } | null)?.sms_opt_in),
     });
+    setClientMessages((messageData ?? []) as ClientMessageRow[]);
+    setServiceAlerts((alertData ?? []) as ServiceAlertRow[]);
 
     if (nextBookings.length > 0) {
       const { data: updatesData } = await db
@@ -176,6 +205,65 @@ const Account = () => {
             </Button>
           </div>
         </Card>
+
+        <div className="mt-8 grid gap-4 lg:grid-cols-[1fr,1fr]">
+          <Card className="border-4 border-primary p-5 shadow-pop sm:p-6">
+            <div className="flex items-start gap-3">
+              <div className="grid h-11 w-11 shrink-0 place-items-center rounded-full bg-highlight text-primary"><BellRing className="h-5 w-5" /></div>
+              <div>
+                <h2 className="font-display text-xl uppercase text-primary">Service alerts</h2>
+                <p className="mt-1 text-sm text-muted-foreground">Hours changes, closures, and important announcements from Anneke live here.</p>
+              </div>
+            </div>
+            {serviceAlerts.length === 0 ? (
+              <p className="mt-4 text-sm text-muted-foreground">No active alerts right now.</p>
+            ) : (
+              <ul className="mt-4 space-y-2">
+                {serviceAlerts.map((alert) => (
+                  <li key={alert.id} className="border border-border bg-muted/50 px-3 py-3 text-sm">
+                    <div className="flex flex-wrap items-center justify-between gap-2">
+                      <span className="font-display text-xs uppercase text-primary">{alert.kind.replace(/_/g, " ")}</span>
+                      <span className="text-[11px] text-muted-foreground">{formatUpdateTime(alert.starts_at)}</span>
+                    </div>
+                    <p className="mt-1 font-display text-base uppercase text-primary">{alert.title}</p>
+                    <p className="mt-1 text-foreground/80">{alert.message}</p>
+                  </li>
+                ))}
+              </ul>
+            )}
+          </Card>
+
+          <Card className="border-4 border-primary p-5 shadow-pop sm:p-6">
+            <div className="flex items-start gap-3">
+              <div className="grid h-11 w-11 shrink-0 place-items-center rounded-full bg-accent text-accent-foreground"><Mail className="h-5 w-5" /></div>
+              <div>
+                <h2 className="font-display text-xl uppercase text-primary">Message hub</h2>
+                <p className="mt-1 text-sm text-muted-foreground">Direct notes from Anneke, with in-app delivery and optional email or text.</p>
+              </div>
+            </div>
+            {clientMessages.length === 0 ? (
+              <p className="mt-4 text-sm text-muted-foreground">No direct messages yet.</p>
+            ) : (
+              <ul className="mt-4 space-y-2">
+                {clientMessages.map((message) => (
+                  <li key={message.id} className="border border-border bg-muted/50 px-3 py-3 text-sm">
+                    <div className="flex flex-wrap items-center justify-between gap-2">
+                      <span className="font-display text-xs uppercase text-primary">{message.kind.replace(/_/g, " ")}</span>
+                      <span className="text-[11px] text-muted-foreground">{formatUpdateTime(message.created_at)}</span>
+                    </div>
+                    <p className="mt-1 font-display text-base uppercase text-primary">{message.subject}</p>
+                    <p className="mt-1 text-foreground/80">{message.message}</p>
+                    <div className="mt-2 flex flex-wrap gap-2 text-[11px] uppercase text-muted-foreground">
+                      <span className="rounded-full bg-card px-2 py-0.5">in-app</span>
+                      {message.send_email && <span className="rounded-full bg-highlight px-2 py-0.5 text-primary">email</span>}
+                      {message.send_sms && <span className="rounded-full bg-highlight px-2 py-0.5 text-primary">sms</span>}
+                    </div>
+                  </li>
+                ))}
+              </ul>
+            )}
+          </Card>
+        </div>
 
         <h2 className="mt-10 font-display text-2xl uppercase text-primary">Bookings</h2>
         {loading ? (
