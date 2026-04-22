@@ -10,11 +10,11 @@ const HeroSection = () => {
     <header className="relative overflow-hidden bg-hero text-foreground">
       <div aria-hidden className="pointer-events-none absolute inset-0 texture-halftone opacity-60" />
 
-      <div
-        aria-hidden
-        className="pointer-events-none absolute -right-40 -top-40 h-[640px] w-[640px] rounded-full blur-3xl"
-        style={{ background: "radial-gradient(closest-side, hsl(var(--accent) / 0.45), transparent 70%)" }}
-      />
+        <div
+          aria-hidden
+          className="pointer-events-none absolute -right-40 -top-40 h-[640px] w-[640px] rounded-full blur-3xl"
+          style={{ background: "radial-gradient(closest-side, hsl(var(--hero-glow) / 0.7), transparent 70%)" }}
+        />
       <div
         aria-hidden
         className="pointer-events-none absolute -left-40 bottom-0 h-[460px] w-[460px] rounded-full blur-3xl"

@@ -11,6 +11,7 @@
     /* Warm cream — main page background */
     --background: 48 67% 89%;
     --hero: 48 67% 89%;
+    --hero-glow: 0 0% 100%;
     --foreground: 264 5% 19%;
 
     --card: 48 56% 95%;
@@ -80,6 +81,7 @@
   .dark {
     --background: 264 9% 11%;
     --hero: 48 67% 89%;
+    --hero-glow: 0 0% 100%;
     --foreground: 48 60% 92%;
     --card: 264 8% 14%;
     --card-foreground: 48 60% 92%;
