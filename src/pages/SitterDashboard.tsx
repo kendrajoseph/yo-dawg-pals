@@ -257,7 +257,7 @@ type SnapshotEditor =
       maxBookings: number;
     };
 
-type TabKey = "overview" | "day" | "clients" | "schedule" | "care" | "alerts";
+type TabKey = "overview" | "day" | "playbook" | "clients" | "schedule" | "care" | "alerts";
 type MessageAudience = "single" | "group";
 type SnapshotRange = "day" | "week";
 
@@ -308,6 +308,7 @@ const kindCopy: Record<ClientMessage["kind"], string> = {
 const tabMeta: Array<{ value: TabKey; label: string; icon: typeof LayoutDashboard }> = [
   { value: "overview", label: "Overview", icon: LayoutDashboard },
   { value: "day", label: "Day view", icon: Clock3 },
+  { value: "playbook", label: "Playbook", icon: Sparkles },
   { value: "clients", label: "Clients", icon: UserRound },
   { value: "schedule", label: "Schedule", icon: CalendarDays },
   { value: "care", label: "Care", icon: MessageSquare },
@@ -1409,7 +1410,7 @@ const SitterDashboard = () => {
         </div>
 
         <Tabs value={activeTab} onValueChange={(value) => setActiveTab(value as TabKey)} className="mt-6">
-          <TabsList className="grid h-auto w-full grid-cols-2 gap-2 bg-muted p-1 md:grid-cols-6">
+          <TabsList className="grid h-auto w-full grid-cols-2 gap-2 bg-muted p-1 md:grid-cols-7">
             {tabMeta.map((tab) => {
               const Icon = tab.icon;
               return (
@@ -1590,35 +1591,10 @@ const SitterDashboard = () => {
 
               <Card className="border border-border p-4 shadow-soft">
                 <h2 className="font-display text-xl uppercase text-primary">Service playbook</h2>
-                <div className="mt-3 grid gap-2">
-                  {services.map((service) => (
-                    <div key={service.id} className="rounded-md border border-border bg-muted/40 px-3 py-2.5">
-                      <div className="flex items-start justify-between gap-3">
-                        <div>
-                          <p className="font-display text-base uppercase text-primary">{service.name}</p>
-                          <p className="text-xs text-muted-foreground">
-                            {service.scheduling_mode === "boarding" ? "Noon-to-noon boarding" : WALK_SLUGS.has(service.slug) ? "Walk-specific schedule lanes" : "Exact booking blocks"}
-                          </p>
-                        </div>
-                        {service.requires_pet_approval && <ShieldCheck className="h-4 w-4 text-clay" />}
-                      </div>
-                      <div className="mt-2 flex flex-wrap gap-x-4 gap-y-1 text-xs text-foreground/80">
-                        <span>Buffer {Math.max(service.turnaround_buffer_minutes, MIN_BUFFER_MINUTES)} min</span>
-                        <span>Capacity {service.max_capacity}</span>
-                        {service.extra_time_fee_cents && service.extra_time_increment_minutes ? (
-                          <span>Add-on {formatPriceWithDecimals(service.extra_time_fee_cents)} / {service.extra_time_increment_minutes} min</span>
-                        ) : (
-                          <span>No extra-time fee preset</span>
-                        )}
-                        {service.slug === "boarding" ? (
-                          <span>Check-in/out {minutesToTime(service.boarding_checkin_minute ?? 12 * 60)} → {minutesToTime(service.boarding_checkout_minute ?? 12 * 60)}</span>
-                        ) : (
-                          <span>{service.late_pickup_fee_cents ? `Late fee ${formatPriceWithDecimals(service.late_pickup_fee_cents)}` : "Late fees handled manually"}</span>
-                        )}
-                      </div>
-                    </div>
-                  ))}
-                </div>
+                <p className="mt-2 text-sm text-muted-foreground">Moved into its own tab for cleaner daily operations.</p>
+                <Button size="sm" variant="outline" onClick={() => setActiveTab("playbook")} className="mt-4 border-border font-display uppercase">
+                  Open playbook <ChevronRight className="h-4 w-4" />
+                </Button>
               </Card>
             </div>
 
@@ -1672,52 +1648,10 @@ const SitterDashboard = () => {
 
               <Card className="border border-border p-5 shadow-soft">
                 <h2 className="font-display text-xl uppercase text-primary">Weekly schedule snapshot</h2>
-                <p className="mt-1 text-sm text-muted-foreground">Every service lane at a glance, including walk windows and exact booking blocks.</p>
-                <div className="mt-4 grid gap-3 lg:grid-cols-2">
-                  {weeklySchedule.map((day) => (
-                    <div key={day.day} className="rounded-md border border-border bg-muted/40 p-4">
-                      <div className="flex items-center justify-between gap-2">
-                        <h3 className="font-display text-lg uppercase text-primary">{day.day}</h3>
-                        <span className="text-[11px] font-tag text-muted-foreground">{day.slots.length} blocks · {day.windows.length} walk windows</span>
-                      </div>
-                      <div className="mt-3 space-y-2 text-sm">
-                        {day.slots.slice(0, 3).map((slot) => (
-                          <div key={slot.id} className="rounded-md border border-border bg-card px-3 py-2">
-                            <div className="flex items-center justify-between gap-2">
-                              <span>{formatMinuteTime(slot.start_minute)}–{formatMinuteTime(slot.end_minute)}</span>
-                              <div className="flex items-center gap-3">
-                                <span className="text-xs text-muted-foreground">Cap {slot.max_bookings}</span>
-                                <button type="button" onClick={() => openSlotEditor(slot)} aria-label="Edit booking block" className="text-muted-foreground transition-colors hover:text-primary">
-                                  <Pencil className="h-4 w-4" />
-                                </button>
-                              </div>
-                            </div>
-                            <div className="mt-2 flex flex-wrap gap-1">
-                              {exactSlotServices.filter((service) => tagsBySlot.get(slot.id)?.has(service.id)).map((service) => (
-                                <span key={service.id} className="rounded-md bg-card px-2 py-1 text-[11px] font-tag text-primary ring-1 ring-border">{service.name}</span>
-                              ))}
-                            </div>
-                          </div>
-                        ))}
-                        {day.windows.slice(0, 2).map((window) => (
-                          <div key={window.id} className="rounded-md border border-border bg-card px-3 py-2">
-                            <div className="flex items-center justify-between gap-2">
-                              <span>{formatMinuteTime(window.start_minute)}–{formatMinuteTime(window.end_minute)}</span>
-                              <div className="flex items-center gap-3">
-                                <span className="text-xs text-muted-foreground">{serviceMap.get(window.service_id)?.name ?? "Walk"}</span>
-                                <button type="button" onClick={() => openWindowEditor(window)} aria-label="Edit walk window" className="text-muted-foreground transition-colors hover:text-primary">
-                                  <Pencil className="h-4 w-4" />
-                                </button>
-                              </div>
-                            </div>
-                            <div className="mt-1 text-xs text-muted-foreground">{window.window_label} · cap {window.max_bookings}</div>
-                          </div>
-                        ))}
-                        {day.slots.length === 0 && day.windows.length === 0 && <p className="text-sm text-muted-foreground">No schedule blocks yet.</p>}
-                      </div>
-                    </div>
-                  ))}
-                </div>
+                <p className="mt-2 text-sm text-muted-foreground">Moved into the playbook tab with service settings and weekly lane planning.</p>
+                <Button size="sm" variant="outline" onClick={() => setActiveTab("playbook")} className="mt-4 border-border font-display uppercase">
+                  Open playbook <ChevronRight className="h-4 w-4" />
+                </Button>
               </Card>
             </div>
 
@@ -1888,6 +1822,93 @@ const SitterDashboard = () => {
                 </div>
               </Card>
             )}
+          </TabsContent>
+
+          <TabsContent value="playbook" className="mt-6 space-y-6">
+            <div className="grid gap-4 xl:grid-cols-[0.92fr,1.08fr]">
+              <Card className="border border-border p-4 shadow-soft">
+                <h2 className="font-display text-xl uppercase text-primary">Service playbook</h2>
+                <div className="mt-3 grid gap-2">
+                  {services.map((service) => (
+                    <div key={service.id} className="rounded-md border border-border bg-muted/40 px-3 py-2.5">
+                      <div className="flex items-start justify-between gap-3">
+                        <div>
+                          <p className="font-display text-base uppercase text-primary">{service.name}</p>
+                          <p className="text-xs text-muted-foreground">
+                            {service.scheduling_mode === "boarding" ? "Noon-to-noon boarding" : WALK_SLUGS.has(service.slug) ? "Walk-specific schedule lanes" : "Exact booking blocks"}
+                          </p>
+                        </div>
+                        {service.requires_pet_approval && <ShieldCheck className="h-4 w-4 text-clay" />}
+                      </div>
+                      <div className="mt-2 flex flex-wrap gap-x-4 gap-y-1 text-xs text-foreground/80">
+                        <span>Buffer {Math.max(service.turnaround_buffer_minutes, MIN_BUFFER_MINUTES)} min</span>
+                        <span>Capacity {service.max_capacity}</span>
+                        {service.extra_time_fee_cents && service.extra_time_increment_minutes ? (
+                          <span>Add-on {formatPriceWithDecimals(service.extra_time_fee_cents)} / {service.extra_time_increment_minutes} min</span>
+                        ) : (
+                          <span>No extra-time fee preset</span>
+                        )}
+                        {service.slug === "boarding" ? (
+                          <span>Check-in/out {minutesToTime(service.boarding_checkin_minute ?? 12 * 60)} → {minutesToTime(service.boarding_checkout_minute ?? 12 * 60)}</span>
+                        ) : (
+                          <span>{service.late_pickup_fee_cents ? `Late fee ${formatPriceWithDecimals(service.late_pickup_fee_cents)}` : "Late fees handled manually"}</span>
+                        )}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </Card>
+
+              <Card className="border border-border p-5 shadow-soft">
+                <h2 className="font-display text-xl uppercase text-primary">Weekly schedule snapshot</h2>
+                <p className="mt-1 text-sm text-muted-foreground">Every service lane at a glance, including walk windows and exact booking blocks.</p>
+                <div className="mt-4 grid gap-3 lg:grid-cols-2">
+                  {weeklySchedule.map((day) => (
+                    <div key={day.day} className="rounded-md border border-border bg-muted/40 p-4">
+                      <div className="flex items-center justify-between gap-2">
+                        <h3 className="font-display text-lg uppercase text-primary">{day.day}</h3>
+                        <span className="text-[11px] font-tag text-muted-foreground">{day.slots.length} blocks · {day.windows.length} walk windows</span>
+                      </div>
+                      <div className="mt-3 space-y-2 text-sm">
+                        {day.slots.slice(0, 3).map((slot) => (
+                          <div key={slot.id} className="rounded-md border border-border bg-card px-3 py-2">
+                            <div className="flex items-center justify-between gap-2">
+                              <span>{formatMinuteTime(slot.start_minute)}–{formatMinuteTime(slot.end_minute)}</span>
+                              <div className="flex items-center gap-3">
+                                <span className="text-xs text-muted-foreground">Cap {slot.max_bookings}</span>
+                                <button type="button" onClick={() => openSlotEditor(slot)} aria-label="Edit booking block" className="text-muted-foreground transition-colors hover:text-primary">
+                                  <Pencil className="h-4 w-4" />
+                                </button>
+                              </div>
+                            </div>
+                            <div className="mt-2 flex flex-wrap gap-1">
+                              {exactSlotServices.filter((service) => tagsBySlot.get(slot.id)?.has(service.id)).map((service) => (
+                                <span key={service.id} className="rounded-md bg-card px-2 py-1 text-[11px] font-tag text-primary ring-1 ring-border">{service.name}</span>
+                              ))}
+                            </div>
+                          </div>
+                        ))}
+                        {day.windows.slice(0, 2).map((window) => (
+                          <div key={window.id} className="rounded-md border border-border bg-card px-3 py-2">
+                            <div className="flex items-center justify-between gap-2">
+                              <span>{formatMinuteTime(window.start_minute)}–{formatMinuteTime(window.end_minute)}</span>
+                              <div className="flex items-center gap-3">
+                                <span className="text-xs text-muted-foreground">{serviceMap.get(window.service_id)?.name ?? "Walk"}</span>
+                                <button type="button" onClick={() => openWindowEditor(window)} aria-label="Edit walk window" className="text-muted-foreground transition-colors hover:text-primary">
+                                  <Pencil className="h-4 w-4" />
+                                </button>
+                              </div>
+                            </div>
+                            <div className="mt-1 text-xs text-muted-foreground">{window.window_label} · cap {window.max_bookings}</div>
+                          </div>
+                        ))}
+                        {day.slots.length === 0 && day.windows.length === 0 && <p className="text-sm text-muted-foreground">No schedule blocks yet.</p>}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </Card>
+            </div>
           </TabsContent>
 
           <TabsContent value="clients" className="mt-6 space-y-6">
