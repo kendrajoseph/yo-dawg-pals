@@ -1301,6 +1301,11 @@ const SitterDashboard = () => {
                               <X className="h-4 w-4" /> Decline
                             </Button>
                           )}
+                          {booking.status === "cancelled" && (
+                            <Button size="sm" variant="ghost" onClick={() => deleteBooking(booking)} className="font-display uppercase text-destructive hover:text-destructive">
+                              <Trash2 className="h-4 w-4" /> Delete
+                            </Button>
+                          )}
                           {booking.status === "confirmed" && (
                             <Button size="sm" variant="ghost" onClick={() => updateBookingStatus(booking.id, "completed")} className="font-display uppercase">
                               <Check className="h-4 w-4" /> Mark done
@@ -1922,6 +1927,9 @@ const SitterDashboard = () => {
                           {booking.status !== "cancelled" && booking.status !== "completed" && (
                             <Button size="sm" variant="outline" onClick={() => updateBookingStatus(booking.id, "cancelled")} className="border-border font-display uppercase"><X className="h-4 w-4" /> Cancel</Button>
                           )}
+                          {booking.status === "cancelled" && (
+                            <Button size="sm" variant="ghost" onClick={() => deleteBooking(booking)} className="font-display uppercase text-destructive hover:text-destructive"><Trash2 className="h-4 w-4" /> Delete</Button>
+                          )}
                           {booking.status === "confirmed" && (
                             <Button size="sm" variant="ghost" onClick={() => updateBookingStatus(booking.id, "completed")} className="font-display uppercase"><Check className="h-4 w-4" /> Mark done</Button>
                           )}
@@ -2022,7 +2030,12 @@ const SitterDashboard = () => {
                       <li key={alert.id} className="rounded-md border border-border bg-muted/40 px-3 py-3 text-sm">
                         <div className="flex flex-wrap items-center justify-between gap-2">
                           <span className="font-display text-xs uppercase text-primary">{alert.kind.replace(/_/g, " ")}</span>
-                          <button type="button" onClick={() => toggleServiceAlert(alert, !alert.is_active)} className="text-xs uppercase text-clay hover:underline">{alert.is_active ? "Pause" : "Reactivate"}</button>
+                          <div className="flex items-center gap-3">
+                            <button type="button" onClick={() => toggleServiceAlert(alert, !alert.is_active)} className="text-xs uppercase text-clay hover:underline">{alert.is_active ? "Pause" : "Reactivate"}</button>
+                            <button type="button" onClick={() => deleteServiceAlert(alert)} aria-label={`Delete ${alert.title}`} className="text-muted-foreground transition-colors hover:text-destructive">
+                              <Trash2 className="h-4 w-4" />
+                            </button>
+                          </div>
                         </div>
                         <p className="mt-1 font-display text-base uppercase text-primary">{alert.title}</p>
                         <p className="mt-1 text-foreground/80">{alert.message}</p>
