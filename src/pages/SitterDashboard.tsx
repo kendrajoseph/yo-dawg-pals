@@ -2329,7 +2329,7 @@ const SitterDashboard = () => {
                   )}
                 </div>
 
-                <div className="mt-4 grid gap-3 md:grid-cols-[1fr,1fr,auto,auto,auto,auto,auto] md:items-end">
+                <div ref={walkWindowEditorRef} className="mt-4 grid gap-3 md:grid-cols-[1fr,1fr,auto,auto,auto,auto,auto] md:items-end">
                   <div>
                     <Label>Walk type</Label>
                     <select className="mt-1 h-10 w-full rounded-md border border-input bg-background px-3 text-sm" value={newWindow.serviceId} onChange={(event) => setNewWindow({ ...newWindow, serviceId: event.target.value })}>
@@ -2375,7 +2375,7 @@ const SitterDashboard = () => {
                         ) : (
                           <ul className="mt-3 space-y-2">
                             {serviceWindows.map((window) => (
-                              <li key={window.id} className="rounded-md border border-border bg-card px-3 py-3">
+                              <li key={window.id} className={cn("rounded-md border bg-card px-3 py-3 transition-colors", editingWalkWindowId === window.id ? "border-primary ring-2 ring-primary/20" : "border-border")}>
                                 <div className="flex items-center justify-between gap-3">
                                   <button type="button" onClick={() => beginWalkWindowEdit(window)} className="min-w-0 text-left transition-opacity hover:opacity-80">
                                     <div className="font-display text-sm uppercase text-primary">{DAYS[window.weekday]} · {window.window_label}</div>
