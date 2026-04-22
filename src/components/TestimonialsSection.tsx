@@ -45,11 +45,11 @@ const TestimonialsSection = () => {
     <section id="reviews" className="relative overflow-hidden bg-muted/40 py-16 sm:py-24 md:py-32">
       <div className="mx-auto max-w-7xl px-5 sm:px-8">
         <div className="max-w-2xl">
-          <span className="text-xs font-tag text-clay">Reviews</span>
+          <span className="text-xs font-tag text-clay">Kind words</span>
           <h2 className="mt-3 font-display text-4xl leading-[0.95] text-primary sm:text-5xl md:text-6xl">
-            Loved by good dogs
+            Trusted by dogs,
             <br />
-            <span className="font-serif italic text-clay">and their people.</span>
+            <span className="font-serif italic text-clay">appreciated by their people.</span>
           </h2>
         </div>
 

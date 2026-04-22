@@ -90,17 +90,13 @@ const MeetSitter = () => {
         <div>
           <span className="inline-flex items-center gap-2 rounded-full border-2 border-primary bg-card px-3 py-1.5 text-xs font-tag text-primary shadow-pop-sm">
             <MapPin className="h-3.5 w-3.5" />
-            Now booking locally
+            Local, personal care
           </span>
           <h2 className="mt-5 font-display text-4xl leading-[0.95] text-primary sm:text-5xl md:text-6xl">
-            Meet your{" "}
-            <span className="font-serif italic text-clay">sitter.</span>
+            Meet <span className="font-serif italic text-clay">Anneke.</span>
           </h2>
           <p className="mt-5 max-w-xl text-base leading-relaxed text-foreground/75 sm:text-lg">
-            Hi — I'm the human behind Yo Dawg. A lifelong dog person offering
-            personal, one-on-one walks, sits and boarding — with basic training
-            cues woven into every service. Trail-ready, treat-stocked, slightly
-            obsessed with your dog already.
+            I’m the person behind every Yo Dawg walk, visit, and overnight stay. I keep things small on purpose so I can learn your dog properly, make smart group decisions, and give you care that feels consistent, calm, and personal.
           </p>
 
           <ul className="mt-8 flex flex-wrap gap-2">
