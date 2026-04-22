@@ -23,7 +23,7 @@ const HeroSection = () => {
 
       <SiteNav variant="dark" />
 
-      <div className="relative z-10 mx-auto grid max-w-7xl items-center gap-8 px-5 pb-16 pt-2 sm:gap-10 sm:px-8 sm:pb-24 sm:pt-6 md:grid-cols-[1fr,1.05fr] md:gap-12 md:pb-32 md:pt-10">
+      <div className="relative z-10 mx-auto grid max-w-7xl items-center gap-7 px-5 pb-12 pt-2 sm:gap-8 sm:px-8 sm:pb-16 sm:pt-5 md:grid-cols-[1fr,1.02fr] md:gap-10 md:pb-24 md:pt-8">
         <div>
           <img
             src={wordmark}
@@ -32,7 +32,7 @@ const HeroSection = () => {
             loading="eager"
           />
 
-          <h1 className="mt-5 font-display text-[2.625rem] leading-[0.95] sm:mt-6 sm:text-6xl md:text-[5rem] lg:text-[5.75rem]">
+          <h1 className="mt-4 font-display text-[2.35rem] leading-[0.95] sm:mt-5 sm:text-5xl md:text-[4.35rem] lg:text-[5rem]">
             Thoughtful care
             <br />
             for <span className="text-accent">Hamilton dogs</span>
@@ -40,11 +40,11 @@ const HeroSection = () => {
             <span className="font-serif italic font-normal text-secondary">and the people who love them.</span>
           </h1>
 
-          <p className="mt-5 max-w-lg text-base leading-relaxed text-primary/75 sm:mt-7 sm:text-lg">
+          <p className="mt-4 max-w-[34rem] text-base leading-relaxed text-primary/75 sm:mt-6 sm:text-[1.05rem]">
             Premium solo walks, carefully matched group walks, dependable drop-in sits, and cozy home-style boarding — all handled personally by Anneke, with timing and care shaped around what actually works for your dog.
           </p>
 
-          <div className="mt-7 flex flex-col items-stretch gap-3 sm:mt-9 sm:flex-row sm:items-center">
+          <div className="mt-6 flex flex-col items-stretch gap-3 sm:mt-8 sm:flex-row sm:items-center">
             <Button
               asChild
               size="lg"
@@ -65,7 +65,7 @@ const HeroSection = () => {
             </Button>
           </div>
 
-          <div className="mt-8 flex flex-wrap items-center gap-x-6 gap-y-3 border-t border-primary/15 pt-6 sm:mt-12 sm:gap-x-8 sm:gap-y-4 sm:pt-8">
+          <div className="mt-7 flex flex-wrap items-center gap-x-5 gap-y-3 border-t border-primary/15 pt-5 sm:mt-10 sm:gap-x-7 sm:gap-y-4 sm:pt-7">
             <div className="flex items-center gap-2">
               <div className="flex gap-0.5 text-secondary">
                 {Array.from({ length: 5 }).map((_, i) => (

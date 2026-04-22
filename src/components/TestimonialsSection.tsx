@@ -42,18 +42,18 @@ const testimonials = [
 
 const TestimonialsSection = () => {
   return (
-    <section id="reviews" className="relative overflow-hidden bg-muted/40 py-16 sm:py-24 md:py-32">
+    <section id="reviews" className="relative overflow-hidden bg-muted/40 py-12 sm:py-16 md:py-22">
       <div className="mx-auto max-w-7xl px-5 sm:px-8">
         <div className="max-w-2xl">
           <span className="text-xs font-tag text-clay">Kind words</span>
-          <h2 className="mt-3 font-display text-4xl leading-[0.95] text-primary sm:text-5xl md:text-6xl">
+          <h2 className="mt-3 font-display text-[2.2rem] leading-[0.95] text-primary sm:text-[2.8rem] md:text-[3.5rem]">
             Trusted by dogs,
             <br />
             <span className="font-serif italic text-clay">appreciated by their people.</span>
           </h2>
         </div>
 
-        <div className="mt-14 grid gap-7 sm:gap-6 md:grid-cols-2 lg:grid-cols-4">
+        <div className="mt-10 grid gap-6 sm:gap-5 md:grid-cols-2 lg:grid-cols-4">
           {testimonials.map(({ quote, name, role, bg, rotate, dog }) => (
             <figure
               key={name}

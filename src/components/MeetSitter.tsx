@@ -32,10 +32,10 @@ const MeetSitter = () => {
   }, []);
 
   return (
-    <section id="sitters" className="relative overflow-hidden bg-background py-16 sm:py-24 md:py-32">
+    <section id="sitters" className="relative overflow-hidden bg-background py-12 sm:py-16 md:py-22">
       <div aria-hidden className="pointer-events-none absolute inset-0 texture-topo opacity-40" />
 
-      <div className="relative mx-auto grid max-w-6xl items-center gap-14 px-5 sm:gap-12 sm:px-8 md:grid-cols-[auto,1fr] md:gap-20">
+      <div className="relative mx-auto grid max-w-6xl items-center gap-10 px-5 sm:gap-10 sm:px-8 md:grid-cols-[auto,1fr] md:gap-14">
         {/* Portrait carousel */}
         <div className="relative mx-auto md:mx-0">
           {/* sticker badge */}
@@ -92,14 +92,14 @@ const MeetSitter = () => {
             <MapPin className="h-3.5 w-3.5" />
             Local, personal care
           </span>
-          <h2 className="mt-5 font-display text-4xl leading-[0.95] text-primary sm:text-5xl md:text-6xl">
+          <h2 className="mt-4 font-display text-[2.2rem] leading-[0.95] text-primary sm:text-[2.8rem] md:text-[3.5rem]">
             Meet <span className="font-serif italic text-clay">AJ.</span>
           </h2>
-          <p className="mt-5 max-w-xl text-base leading-relaxed text-foreground/75 sm:text-lg">
+          <p className="mt-4 max-w-xl text-base leading-relaxed text-foreground/75 sm:text-[1.05rem]">
             I’m the person behind every Yo Dawg walk, visit, and overnight stay. I keep things small on purpose so I can learn your dog properly, make smart group decisions, and give you care that feels consistent, calm, and personal.
           </p>
 
-          <ul className="mt-8 flex flex-wrap gap-2">
+          <ul className="mt-6 flex flex-wrap gap-2">
             <li className="inline-flex items-center gap-1.5 rounded-full border-2 border-primary bg-secondary px-3 py-1.5 text-xs font-tag text-secondary-foreground shadow-pop-sm">
               <ShieldCheck className="h-3.5 w-3.5" /> Fully insured
             </li>
@@ -111,7 +111,7 @@ const MeetSitter = () => {
             </li>
           </ul>
 
-          <div className="mt-9 flex flex-col items-stretch gap-3 sm:flex-row sm:items-center">
+          <div className="mt-7 flex flex-col items-stretch gap-3 sm:flex-row sm:items-center">
             <Button
               asChild
               size="lg"
