@@ -69,14 +69,14 @@ const walkSteps = [
 
 const ServicesSection = () => {
   return (
-    <section id="services" className="relative bg-background py-16 sm:py-24 md:py-32">
+    <section id="services" className="relative bg-background py-12 sm:py-16 md:py-22">
       <div aria-hidden className="pointer-events-none absolute inset-0 texture-halftone-light opacity-60" />
 
       <div className="relative mx-auto max-w-7xl px-5 sm:px-8">
         <div className="flex flex-col gap-5 md:flex-row md:items-end md:justify-between md:gap-6">
           <div className="max-w-2xl">
             <span className="text-xs font-tag text-clay">Services</span>
-            <h2 className="mt-3 font-display text-4xl leading-[0.95] text-primary sm:text-5xl md:text-6xl">
+            <h2 className="mt-3 font-display text-[2.2rem] leading-[0.95] text-primary sm:text-[2.8rem] md:text-[3.5rem]">
               Choose the kind of care
               <br />
               your dog <span className="underline-accent">actually needs.</span>
@@ -87,7 +87,7 @@ const ServicesSection = () => {
           </p>
         </div>
 
-        <div className="mt-10 grid gap-5 border-y-2 border-primary/20 py-6 lg:grid-cols-3">
+        <div className="mt-8 grid gap-4 border-y-2 border-primary/20 py-5 lg:grid-cols-3">
           {walkSteps.map(({ icon: Icon, title, text }) => (
             <div key={title} className="flex gap-3">
               <div className="grid h-11 w-11 shrink-0 place-items-center border-2 border-primary bg-card text-primary shadow-pop-sm">
@@ -101,7 +101,7 @@ const ServicesSection = () => {
           ))}
         </div>
 
-        <div className="mt-12 grid gap-7 sm:grid-cols-2 lg:grid-cols-4 lg:gap-5">
+        <div className="mt-10 grid gap-6 sm:grid-cols-2 lg:grid-cols-4 lg:gap-5">
           {services.map(({ icon: Icon, title, desc, detail, price, unit, slug, accent, dog }, i) => (
             <article
               key={title}
