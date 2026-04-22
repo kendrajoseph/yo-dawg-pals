@@ -4,7 +4,7 @@ import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/hooks/useAuth";
 import { cn } from "@/lib/utils";
-import wordmark from "@/assets/yodawg-wordmark.svg";
+import wordmark from "@/assets/yodawg-logo.png";
 
 interface SiteNavProps {
   /** "dark" = on hero (light text on navy). "light" = on cream pages. */
@@ -36,7 +36,7 @@ const SiteNav = ({ variant = "light" }: SiteNavProps) => {
         <div aria-hidden className="h-10 w-[136px] sm:w-[176px]" />
       ) : (
         <Link to="/" className="flex items-center" aria-label="Back to Yo Dawg home">
-          <img src={wordmark} alt="Yo Dawg" className="h-10 w-auto sm:h-12" loading="eager" />
+          <img src={wordmark} alt="Yo Dawg" className="h-auto w-full max-w-[9.5rem] sm:max-w-[11.5rem]" loading="eager" />
         </Link>
       )}
 
