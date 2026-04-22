@@ -93,7 +93,7 @@ const MeetSitter = () => {
             Local, personal care
           </span>
           <h2 className="mt-5 font-display text-4xl leading-[0.95] text-primary sm:text-5xl md:text-6xl">
-            Meet <span className="font-serif italic text-clay">Anneke.</span>
+            Meet <span className="font-serif italic text-clay">AJ.</span>
           </h2>
           <p className="mt-5 max-w-xl text-base leading-relaxed text-foreground/75 sm:text-lg">
             I’m the person behind every Yo Dawg walk, visit, and overnight stay. I keep things small on purpose so I can learn your dog properly, make smart group decisions, and give you care that feels consistent, calm, and personal.
