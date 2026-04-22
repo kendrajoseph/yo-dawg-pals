@@ -14,6 +14,7 @@ import {
   Megaphone,
   MessageSquare,
   Minus,
+  Pencil,
   Plus,
   Send,
   ShieldCheck,
@@ -205,6 +206,27 @@ type AlertDraft = {
   pinToProfile: boolean;
 };
 
+type SnapshotEditor =
+  | {
+      kind: "slot";
+      id: string;
+      weekday: number;
+      start: string;
+      end: string;
+      maxBookings: number;
+      serviceIds: string[];
+    }
+  | {
+      kind: "window";
+      id: string;
+      serviceId: string;
+      weekday: number;
+      label: string;
+      start: string;
+      end: string;
+      maxBookings: number;
+    };
+
 type TabKey = "overview" | "clients" | "schedule" | "care" | "alerts";
 type MessageAudience = "single" | "group";
 
@@ -257,6 +279,7 @@ const SitterDashboard = () => {
   const [messageAudience, setMessageAudience] = useState<MessageAudience>("single");
   const [selectedRecipientIds, setSelectedRecipientIds] = useState<string[]>([]);
   const [activePetProfileId, setActivePetProfileId] = useState<string | null>(null);
+  const [snapshotEditor, setSnapshotEditor] = useState<SnapshotEditor | null>(null);
   const requestCardRefs = useRef<Record<string, HTMLDivElement | null>>({});
 
   const [availability, setAvailability] = useState<Availability[]>([]);
