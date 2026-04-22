@@ -273,6 +273,97 @@ export type Database = {
           },
         ]
       }
+      client_message_reads: {
+        Row: {
+          client_message_id: string
+          created_at: string
+          id: string
+          read_at: string
+          user_id: string
+        }
+        Insert: {
+          client_message_id: string
+          created_at?: string
+          id?: string
+          read_at?: string
+          user_id: string
+        }
+        Update: {
+          client_message_id?: string
+          created_at?: string
+          id?: string
+          read_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "client_message_reads_client_message_id_fkey"
+            columns: ["client_message_id"]
+            isOneToOne: false
+            referencedRelation: "client_messages"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      client_messages: {
+        Row: {
+          booking_id: string | null
+          created_at: string
+          created_by: string
+          customer_id: string
+          delivered_email_at: string | null
+          delivered_sms_at: string | null
+          id: string
+          kind: Database["public"]["Enums"]["client_message_kind"]
+          message: string
+          send_email: boolean
+          send_sms: boolean
+          sitter_id: string
+          subject: string
+          updated_at: string
+        }
+        Insert: {
+          booking_id?: string | null
+          created_at?: string
+          created_by: string
+          customer_id: string
+          delivered_email_at?: string | null
+          delivered_sms_at?: string | null
+          id?: string
+          kind?: Database["public"]["Enums"]["client_message_kind"]
+          message: string
+          send_email?: boolean
+          send_sms?: boolean
+          sitter_id: string
+          subject: string
+          updated_at?: string
+        }
+        Update: {
+          booking_id?: string | null
+          created_at?: string
+          created_by?: string
+          customer_id?: string
+          delivered_email_at?: string | null
+          delivered_sms_at?: string | null
+          id?: string
+          kind?: Database["public"]["Enums"]["client_message_kind"]
+          message?: string
+          send_email?: boolean
+          send_sms?: boolean
+          sitter_id?: string
+          subject?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "client_messages_booking_id_fkey"
+            columns: ["booking_id"]
+            isOneToOne: false
+            referencedRelation: "bookings"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       email_send_log: {
         Row: {
           created_at: string
@@ -500,6 +591,83 @@ export type Database = {
           mobile_phone?: string | null
           phone?: string | null
           sms_opt_in?: boolean
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      service_alert_reads: {
+        Row: {
+          created_at: string
+          id: string
+          read_at: string
+          service_alert_id: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          read_at?: string
+          service_alert_id: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          read_at?: string
+          service_alert_id?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "service_alert_reads_service_alert_id_fkey"
+            columns: ["service_alert_id"]
+            isOneToOne: false
+            referencedRelation: "service_alerts"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      service_alerts: {
+        Row: {
+          created_at: string
+          created_by: string
+          ends_at: string | null
+          id: string
+          is_active: boolean
+          kind: Database["public"]["Enums"]["service_alert_kind"]
+          message: string
+          pin_to_profile: boolean
+          sitter_id: string
+          starts_at: string
+          title: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          created_by: string
+          ends_at?: string | null
+          id?: string
+          is_active?: boolean
+          kind?: Database["public"]["Enums"]["service_alert_kind"]
+          message: string
+          pin_to_profile?: boolean
+          sitter_id: string
+          starts_at?: string
+          title: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          created_by?: string
+          ends_at?: string | null
+          id?: string
+          is_active?: boolean
+          kind?: Database["public"]["Enums"]["service_alert_kind"]
+          message?: string
+          pin_to_profile?: boolean
+          sitter_id?: string
+          starts_at?: string
+          title?: string
           updated_at?: string
         }
         Relationships: []
@@ -824,7 +992,9 @@ export type Database = {
         | "requested"
         | "awaiting_payment"
       booking_update_kind: "pickup" | "dropoff" | "note"
+      client_message_kind: "service_update" | "customer_service" | "offer"
       pet_approval_status: "pending" | "approved" | "declined"
+      service_alert_kind: "hours_update" | "closure" | "announcement" | "promo"
       service_capacity_mode: "single" | "shared"
       service_scheduling_mode: "instant" | "request" | "boarding"
     }
@@ -965,7 +1135,9 @@ export const Constants = {
         "awaiting_payment",
       ],
       booking_update_kind: ["pickup", "dropoff", "note"],
+      client_message_kind: ["service_update", "customer_service", "offer"],
       pet_approval_status: ["pending", "approved", "declined"],
+      service_alert_kind: ["hours_update", "closure", "announcement", "promo"],
       service_capacity_mode: ["single", "shared"],
       service_scheduling_mode: ["instant", "request", "boarding"],
     },
