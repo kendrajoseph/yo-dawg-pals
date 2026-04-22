@@ -98,6 +98,39 @@ export type Database = {
         }
         Relationships: []
       }
+      booking_updates: {
+        Row: {
+          booking_id: string
+          created_at: string
+          created_by: string
+          id: string
+          kind: Database["public"]["Enums"]["booking_update_kind"]
+          message: string | null
+          sent_via_sms: boolean
+          updated_at: string
+        }
+        Insert: {
+          booking_id: string
+          created_at?: string
+          created_by: string
+          id?: string
+          kind: Database["public"]["Enums"]["booking_update_kind"]
+          message?: string | null
+          sent_via_sms?: boolean
+          updated_at?: string
+        }
+        Update: {
+          booking_id?: string
+          created_at?: string
+          created_by?: string
+          id?: string
+          kind?: Database["public"]["Enums"]["booking_update_kind"]
+          message?: string | null
+          sent_via_sms?: boolean
+          updated_at?: string
+        }
+        Relationships: []
+      }
       bookings: {
         Row: {
           approved_at: string | null
@@ -417,7 +450,9 @@ export type Database = {
           created_at: string
           full_name: string | null
           id: string
+          mobile_phone: string | null
           phone: string | null
+          sms_opt_in: boolean
           updated_at: string
         }
         Insert: {
@@ -426,7 +461,9 @@ export type Database = {
           created_at?: string
           full_name?: string | null
           id: string
+          mobile_phone?: string | null
           phone?: string | null
+          sms_opt_in?: boolean
           updated_at?: string
         }
         Update: {
@@ -435,7 +472,9 @@ export type Database = {
           created_at?: string
           full_name?: string | null
           id?: string
+          mobile_phone?: string | null
           phone?: string | null
+          sms_opt_in?: boolean
           updated_at?: string
         }
         Relationships: []
@@ -622,6 +661,7 @@ export type Database = {
         | "refunded"
         | "requested"
         | "awaiting_payment"
+      booking_update_kind: "pickup" | "dropoff" | "note"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -759,6 +799,7 @@ export const Constants = {
         "requested",
         "awaiting_payment",
       ],
+      booking_update_kind: ["pickup", "dropoff", "note"],
     },
   },
 } as const
