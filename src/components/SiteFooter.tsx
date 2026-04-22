@@ -31,8 +31,14 @@ const SiteFooter = () => (
         </ul>
       </div>
     </div>
-    <div className="border-t border-primary-foreground/10 px-5 py-6 text-center text-xs text-primary-foreground/55 sm:px-8">
-      © {new Date().getFullYear()} Yo Dawg
+    <div className="border-t border-primary-foreground/10 px-5 py-6 sm:px-8">
+      <div className="mx-auto flex max-w-6xl flex-col items-center justify-between gap-3 text-center text-xs text-primary-foreground/55 sm:flex-row sm:text-left">
+        <p>© {new Date().getFullYear()} Yo Dawg</p>
+        <div className="flex flex-wrap items-center justify-center gap-x-4 gap-y-2 sm:justify-end">
+          <Link to="/faq" className="transition-colors hover:text-accent">FAQ</Link>
+          <Link to="/terms" className="transition-colors hover:text-accent">Terms &amp; Conditions</Link>
+        </div>
+      </div>
     </div>
   </footer>
 );
