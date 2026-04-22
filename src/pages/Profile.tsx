@@ -186,7 +186,7 @@ const Profile = () => {
   return (
     <main className="min-h-screen bg-background texture-grain">
       <SiteNav />
-      <section className="mx-auto max-w-3xl px-5 py-10 sm:px-6 sm:py-14">
+      <section className="mx-auto max-w-3xl px-5 py-10 sm:px-8 sm:py-14">
         <Link
           to="/account"
           className="inline-flex items-center gap-1 font-display text-sm uppercase text-primary hover:underline"

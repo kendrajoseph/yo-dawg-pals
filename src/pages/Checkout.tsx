@@ -117,7 +117,7 @@ const Checkout = () => {
   return (
     <main className="min-h-screen bg-background texture-grain">
       <SiteNav />
-      <section className="mx-auto max-w-3xl px-5 py-10 sm:px-6 sm:py-14">
+      <section className="mx-auto max-w-3xl px-5 py-10 sm:px-8 sm:py-14">
         <span className="inline-block -rotate-2 font-tag text-2xl text-tag">last step</span>
         <h1 className="font-display text-5xl text-primary sm:text-6xl spray-glow">
           Pay & <span className="text-gradient-sunrise">confirm.</span>

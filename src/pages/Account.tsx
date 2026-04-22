@@ -141,7 +141,7 @@ const Account = () => {
   return (
     <main className="min-h-screen bg-background texture-grain">
       <SiteNav />
-      <section className="mx-auto max-w-5xl px-5 py-10 sm:px-6 sm:py-14">
+      <section className="mx-auto max-w-5xl px-5 py-10 sm:px-8 sm:py-14">
         <div className="flex flex-col items-start justify-between gap-3 sm:flex-row sm:items-end">
           <div>
             <span className="font-tag text-2xl text-clay">your stuff</span>

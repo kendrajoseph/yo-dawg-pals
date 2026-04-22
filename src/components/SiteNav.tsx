@@ -31,7 +31,15 @@ const SiteNav = ({ variant = "light" }: SiteNavProps) => {
   const linkActive = onDark ? "text-primary-foreground" : "text-foreground";
 
   return (
-    <nav className="relative z-20 mx-auto flex max-w-7xl items-center justify-between px-5 py-5 sm:px-8">
+    <nav
+      className={cn(
+        "sticky top-0 z-40 mx-auto flex w-full max-w-7xl items-center justify-between px-5 py-4 backdrop-blur-sm sm:px-8 md:py-5 md:backdrop-blur-0",
+        "md:relative md:top-auto",
+        onDark
+          ? "bg-primary/95 supports-[backdrop-filter]:bg-primary/88 md:bg-transparent"
+          : "bg-background/95 supports-[backdrop-filter]:bg-background/88 md:bg-transparent",
+      )}
+    >
       {isHome ? (
         <div aria-hidden className="h-10 w-[136px] sm:w-[176px]" />
       ) : (
