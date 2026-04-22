@@ -247,6 +247,7 @@ const Book = () => {
     if (isBlockedDay) return [];
 
     const duration = selectedVariant.duration_minutes;
+    const bufferMinutes = Math.max(service.turnaround_buffer_minutes ?? 0, 30);
     const output: number[] = [];
 
     for (const block of dayBlocks) {
@@ -258,8 +259,8 @@ const Book = () => {
         if (slotStart.getTime() < Date.now() + 60 * 60_000) continue;
 
         const overlapping = existing.filter((booking) => {
-          const bookingStart = new Date(booking.scheduled_start_at ?? booking.start_at).getTime();
-          const bookingEnd = new Date(booking.scheduled_end_at ?? booking.end_at).getTime();
+          const bookingStart = new Date(booking.scheduled_start_at ?? booking.start_at).getTime() - bufferMinutes * 60_000;
+          const bookingEnd = new Date(booking.scheduled_end_at ?? booking.end_at).getTime() + bufferMinutes * 60_000;
           return slotStart.getTime() < bookingEnd && slotEnd.getTime() > bookingStart;
         }).length;
 
