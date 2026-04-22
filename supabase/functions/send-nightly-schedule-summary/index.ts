@@ -149,7 +149,7 @@ Deno.serve(async (req) => {
     const [{ data: sitterRoles, error: sitterRoleError }, { data: bookingRows, error: bookingsError }] = await Promise.all([
       admin
         .from("user_roles")
-        .select("user_id, profiles!inner(full_name, mobile_phone, sms_opt_in)")
+        .select("user_id")
         .eq("role", "sitter"),
       admin
         .from("bookings")
@@ -165,13 +165,28 @@ Deno.serve(async (req) => {
       return json({ error: bookingsError.message }, 400);
     }
 
-    const recipients = (sitterRoles ?? [])
-      .map((row: any) => ({
-        userId: row.user_id as string,
-        fullName: row.profiles?.full_name as string | null,
-        mobilePhone: row.profiles?.mobile_phone as string | null,
-        smsOptIn: Boolean(row.profiles?.sms_opt_in),
-      }))
+    const sitterIds = (sitterRoles ?? []).map((row: any) => row.user_id as string);
+
+    const { data: sitterProfiles, error: sitterProfilesError } = sitterIds.length === 0
+      ? { data: [], error: null }
+      : await admin.from("profiles").select("id, full_name, mobile_phone, sms_opt_in").in("id", sitterIds);
+
+    if (sitterProfilesError) {
+      return json({ error: sitterProfilesError.message }, 400);
+    }
+
+    const profileById = new Map((sitterProfiles ?? []).map((profile: any) => [profile.id as string, profile]));
+
+    const recipients = sitterIds
+      .map((userId) => {
+        const profile = profileById.get(userId);
+        return {
+          userId,
+          fullName: (profile?.full_name as string | null) ?? null,
+          mobilePhone: (profile?.mobile_phone as string | null) ?? null,
+          smsOptIn: Boolean(profile?.sms_opt_in),
+        };
+      })
       .filter((row) => row.smsOptIn && row.mobilePhone);
 
     const recipientIds = new Set(recipients.map((row) => row.userId));
