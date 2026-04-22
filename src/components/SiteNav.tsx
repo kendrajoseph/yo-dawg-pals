@@ -1,9 +1,10 @@
-import { Link, NavLink, useNavigate } from "react-router-dom";
+import { Link, NavLink, useLocation, useNavigate } from "react-router-dom";
 import { Menu, LogOut } from "lucide-react";
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/hooks/useAuth";
 import { cn } from "@/lib/utils";
+import wordmark from "@/assets/yodawg-wordmark.svg";
 
 interface SiteNavProps {
   /** "dark" = on hero (light text on navy). "light" = on cream pages. */
@@ -13,6 +14,7 @@ interface SiteNavProps {
 const SiteNav = ({ variant = "light" }: SiteNavProps) => {
   const { user, isSitter, signOut } = useAuth();
   const navigate = useNavigate();
+  const location = useLocation();
   const [open, setOpen] = useState(false);
 
   const handleSignOut = async () => {
@@ -21,6 +23,7 @@ const SiteNav = ({ variant = "light" }: SiteNavProps) => {
   };
 
   const onDark = variant === "dark";
+  const isHome = location.pathname === "/";
 
   const linkBase = onDark
     ? "text-sm font-semibold text-primary-foreground/75 transition-colors hover:text-primary-foreground"
@@ -29,19 +32,13 @@ const SiteNav = ({ variant = "light" }: SiteNavProps) => {
 
   return (
     <nav className="relative z-20 mx-auto flex max-w-7xl items-center justify-between px-5 py-5 sm:px-8">
-      <Link to="/" className="flex items-baseline gap-1" aria-label="Yo Dawg home">
-        <span
-          className={cn(
-            "font-display text-3xl uppercase leading-none tracking-tight sm:text-[2rem]",
-            onDark ? "text-primary-foreground" : "text-secondary",
-          )}
-        >
-          Yo
-        </span>
-        <span className="font-display text-3xl uppercase leading-none tracking-tight text-accent sm:text-[2rem]">
-          Dawg
-        </span>
-      </Link>
+      {isHome ? (
+        <div aria-hidden className="h-10 w-[136px] sm:w-[176px]" />
+      ) : (
+        <Link to="/" className="flex items-center" aria-label="Back to Yo Dawg home">
+          <img src={wordmark} alt="Yo Dawg" className="h-10 w-auto sm:h-12" loading="eager" />
+        </Link>
+      )}
 
       <div className="hidden items-center gap-8 md:flex">
         <NavLink to="/#services" className={linkBase}>Services</NavLink>
