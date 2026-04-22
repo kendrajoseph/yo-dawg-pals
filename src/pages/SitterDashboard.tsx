@@ -23,15 +23,20 @@ import {
   timeToMinutes,
 } from "@/lib/booking";
 import {
+  BellRing,
   CalendarOff,
   Check,
   Clock3,
+  Mail,
   MessageSquare,
+  Megaphone,
   Minus,
   MoonStar,
   Plus,
+  Send,
   ShieldCheck,
   Smartphone,
+  Sparkles,
   Trash2,
   Users,
   X,
@@ -137,6 +142,48 @@ type BookingUpdate = {
   created_at: string;
 };
 type UpdateDraft = { note: string; sendSms: boolean };
+type ClientMessage = {
+  id: string;
+  customer_id: string;
+  booking_id: string | null;
+  kind: "service_update" | "customer_service" | "offer";
+  subject: string;
+  message: string;
+  send_email: boolean;
+  send_sms: boolean;
+  delivered_email_at: string | null;
+  delivered_sms_at: string | null;
+  created_at: string;
+};
+type ServiceAlert = {
+  id: string;
+  kind: "hours_update" | "closure" | "announcement" | "promo";
+  title: string;
+  message: string;
+  starts_at: string;
+  ends_at: string | null;
+  is_active: boolean;
+  pin_to_profile: boolean;
+  created_at: string;
+};
+type ClientMessageDraft = {
+  customerId: string;
+  bookingId: string;
+  kind: ClientMessage["kind"];
+  subject: string;
+  message: string;
+  sendEmail: boolean;
+  sendSms: boolean;
+};
+type AlertDraft = {
+  kind: ServiceAlert["kind"];
+  title: string;
+  message: string;
+  startsAt: string;
+  endsAt: string;
+  isActive: boolean;
+  pinToProfile: boolean;
+};
 
 const WALK_SLUGS = new Set(["solo-walk", "group-walk"]);
 const TIME_PRESETS = [
@@ -172,6 +219,8 @@ const SitterDashboard = () => {
   const [availabilityServices, setAvailabilityServices] = useState<AvailabilityService[]>([]);
   const [walkWindows, setWalkWindows] = useState<WalkWindow[]>([]);
   const [petApprovals, setPetApprovals] = useState<PetApproval[]>([]);
+  const [clientMessages, setClientMessages] = useState<ClientMessage[]>([]);
+  const [serviceAlerts, setServiceAlerts] = useState<ServiceAlert[]>([]);
   const [profileDetails, setProfileDetails] = useState<Record<string, ProfileDetails>>({});
   const [bookingUpdates, setBookingUpdates] = useState<Record<string, BookingUpdate[]>>({});
   const [newAvailability, setNewAvailability] = useState({ weekday: 1, start: "09:00", end: "12:00", maxBookings: 1 });
@@ -181,8 +230,28 @@ const SitterDashboard = () => {
   const [newWindow, setNewWindow] = useState({ serviceId: "", weekday: 1, label: "Morning", start: "09:00", end: "11:00", maxBookings: 4 });
   const [scheduleDrafts, setScheduleDrafts] = useState<Record<string, Draft>>({});
   const [updateDrafts, setUpdateDrafts] = useState<Record<string, UpdateDraft>>({});
+  const [clientMessageDraft, setClientMessageDraft] = useState<ClientMessageDraft>({
+    customerId: "",
+    bookingId: "",
+    kind: "customer_service",
+    subject: "",
+    message: "",
+    sendEmail: true,
+    sendSms: false,
+  });
+  const [alertDraft, setAlertDraft] = useState<AlertDraft>({
+    kind: "announcement",
+    title: "",
+    message: "",
+    startsAt: format(new Date(), "yyyy-MM-dd'T'HH:mm"),
+    endsAt: "",
+    isActive: true,
+    pinToProfile: true,
+  });
   const [savingBookingId, setSavingBookingId] = useState<string | null>(null);
   const [sendingUpdateId, setSendingUpdateId] = useState<string | null>(null);
+  const [sendingClientMessage, setSendingClientMessage] = useState(false);
+  const [savingAlert, setSavingAlert] = useState(false);
 
   const load = async () => {
     if (!user) return;
@@ -195,6 +264,8 @@ const SitterDashboard = () => {
       { data: variantRows },
       { data: walkWindowRows },
       { data: approvalRows },
+      { data: messageRows },
+      { data: alertRows },
     ] = await Promise.all([
       db.from("availability").select("*").eq("sitter_id", user.id).order("weekday").order("start_minute"),
       db.from("blocked_dates").select("*").eq("sitter_id", user.id).order("blocked_date"),
@@ -215,6 +286,8 @@ const SitterDashboard = () => {
         .order("sort_order"),
       db.from("walk_windows").select("id, service_id, weekday, start_minute, end_minute, window_label, sort_order, max_bookings").eq("sitter_id", user.id).order("weekday").order("sort_order"),
       db.from("sitter_pet_approvals").select("id, pet_id, service_id, status, notes, pets(name), services(name)").eq("sitter_id", user.id).order("updated_at", { ascending: false }),
+      db.from("client_messages").select("id, customer_id, booking_id, kind, subject, message, send_email, send_sms, delivered_email_at, delivered_sms_at, created_at").eq("sitter_id", user.id).order("created_at", { ascending: false }).limit(30),
+      db.from("service_alerts").select("id, kind, title, message, starts_at, ends_at, is_active, pin_to_profile, created_at").eq("sitter_id", user.id).order("starts_at", { ascending: false }).limit(20),
     ]);
 
     const nextAvailability = (avail ?? []) as Availability[];
@@ -228,6 +301,8 @@ const SitterDashboard = () => {
     setServiceVariants((variantRows ?? []) as ServiceVariant[]);
     setWalkWindows((walkWindowRows ?? []) as WalkWindow[]);
     setPetApprovals((approvalRows ?? []) as PetApproval[]);
+    setClientMessages((messageRows ?? []) as ClientMessage[]);
+    setServiceAlerts((alertRows ?? []) as ServiceAlert[]);
 
     const customerIds = [...new Set(nextBookings.map((row) => row.customer_id))];
     if (customerIds.length > 0) {
@@ -276,6 +351,15 @@ const SitterDashboard = () => {
     setNewWindow((current) => ({
       ...current,
       serviceId: current.serviceId || nextServices.find((service) => WALK_SLUGS.has(service.slug))?.id || "",
+    }));
+    setClientMessageDraft((current) => ({
+      ...current,
+      customerId: current.customerId || customerIds[0] || "",
+      bookingId:
+        current.bookingId ||
+        nextBookings.find((booking) => booking.customer_id === (current.customerId || customerIds[0]))?.id ||
+        nextBookings[0]?.id ||
+        "",
     }));
   };
 
