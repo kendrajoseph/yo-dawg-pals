@@ -818,6 +818,21 @@ const SitterDashboard = () => {
     }
   };
 
+  const deleteBooking = async (booking: Booking) => {
+    const label = booking.service_variants?.name ?? booking.services?.name ?? "this booking";
+    if (!window.confirm(`Delete ${label}? This removes it from the dashboard permanently.`)) return;
+
+    const { error } = await db.from("bookings").delete().eq("id", booking.id);
+    if (error) {
+      toast({ title: "Couldn't delete booking", description: error.message, variant: "destructive" });
+      return;
+    }
+
+    if (selectedRequestId === booking.id) setSelectedRequestId(null);
+    toast({ title: "Booking deleted" });
+    load();
+  };
+
   const sendOwnerUpdate = async (booking: Booking, kind: "pickup" | "dropoff" | "note") => {
     const draft = getUpdateDraft(booking.id);
     setSendingUpdateId(`${booking.id}-${kind}`);
@@ -888,6 +903,32 @@ const SitterDashboard = () => {
       description: smsWarnings || (messageAudience === "group" ? "Each selected client now has the message in their hub." : "The update is now in the client hub."),
     });
     setClientMessageDraft((current) => ({ ...current, subject: "", message: "" }));
+    load();
+  };
+
+  const deleteClientMessage = async (message: ClientMessage) => {
+    if (!window.confirm(`Delete “${message.subject}”? This removes it from the client's message history.`)) return;
+
+    const { error } = await db.from("client_messages").delete().eq("id", message.id);
+    if (error) {
+      toast({ title: "Couldn't delete message", description: error.message, variant: "destructive" });
+      return;
+    }
+
+    toast({ title: "Message deleted" });
+    load();
+  };
+
+  const deleteServiceAlert = async (alert: ServiceAlert) => {
+    if (!window.confirm(`Delete “${alert.title}”? This notice will disappear for clients.`)) return;
+
+    const { error } = await db.from("service_alerts").delete().eq("id", alert.id);
+    if (error) {
+      toast({ title: "Couldn't delete alert", description: error.message, variant: "destructive" });
+      return;
+    }
+
+    toast({ title: "Alert deleted" });
     load();
   };
 
