@@ -2,7 +2,7 @@ import { ArrowRight, MapPin, Star } from "lucide-react";
 import { Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import SiteNav from "@/components/SiteNav";
-import wordmark from "@/assets/yodawg-logo-transparent.png";
+import wordmark from "@/assets/yodawg-hero-logo.svg";
 import { dog3 } from "@/assets/dogs";
 
 const HeroSection = () => {
