@@ -7,7 +7,7 @@ import { dog3 } from "@/assets/dogs";
 
 const HeroSection = () => {
   return (
-    <header className="relative overflow-hidden bg-gradient-night text-primary-foreground">
+    <header className="relative overflow-hidden bg-primary text-primary-foreground">
       <div aria-hidden className="pointer-events-none absolute inset-0 texture-halftone opacity-60" />
 
       <div
