@@ -41,6 +41,7 @@ import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Textarea } from "@/components/ui/textarea";
+import { ToastAction } from "@/components/ui/toast";
 import { useAuth } from "@/hooks/useAuth";
 import { toast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
@@ -304,6 +305,21 @@ type BookingWorkflowResponse = {
   notificationStatus?: "sent" | "skipped" | "failed";
   notificationType?: "confirmation_email" | "payment_alert";
   notificationMessage?: string;
+  attemptNumber?: number;
+  retryAvailable?: boolean;
+};
+
+type BookingNotificationAttempt = {
+  id: string;
+  booking_id: string;
+  notification_type: "confirmation_email" | "payment_alert";
+  trigger_source: "approval" | "retry";
+  attempt_number: number;
+  status: "sent" | "skipped" | "failed";
+  message: string;
+  error_message: string | null;
+  attempted_by: string | null;
+  created_at: string;
 };
 
 const WALK_SLUGS = new Set(["solo-walk", "group-walk"]);
@@ -407,6 +423,7 @@ const SitterDashboard = () => {
   const [profileDetails, setProfileDetails] = useState<Record<string, ProfileDetails>>({});
   const [clientAdminProfiles, setClientAdminProfiles] = useState<Record<string, ClientAdminProfile>>({});
   const [bookingUpdates, setBookingUpdates] = useState<Record<string, BookingUpdate[]>>({});
+  const [notificationAttempts, setNotificationAttempts] = useState<Record<string, BookingNotificationAttempt[]>>({});
   const [petProfiles, setPetProfiles] = useState<Record<string, PetProfile>>({});
   const [temperamentTags, setTemperamentTags] = useState<TemperamentTag[]>([]);
   const [petTagIdsByPet, setPetTagIdsByPet] = useState<Record<string, string[]>>({});
@@ -441,6 +458,7 @@ const SitterDashboard = () => {
   });
 
   const [savingBookingId, setSavingBookingId] = useState<string | null>(null);
+  const [retryingNotificationKey, setRetryingNotificationKey] = useState<string | null>(null);
   const [sendingUpdateId, setSendingUpdateId] = useState<string | null>(null);
   const [sendingClientMessage, setSendingClientMessage] = useState(false);
   const [savingAlert, setSavingAlert] = useState(false);
@@ -465,6 +483,7 @@ const SitterDashboard = () => {
       { data: messageRows },
       { data: alertRows },
       { data: notificationRows },
+      { data: notificationAttemptRows },
       { data: tagRows },
       { data: fitAlertRows },
     ] = await Promise.all([
@@ -490,6 +509,7 @@ const SitterDashboard = () => {
       db.from("client_messages").select("id, customer_id, booking_id, kind, subject, message, send_email, send_sms, delivered_email_at, delivered_sms_at, created_at").eq("sitter_id", user.id).order("created_at", { ascending: false }).limit(50),
       db.from("service_alerts").select("id, kind, title, message, starts_at, ends_at, is_active, pin_to_profile, created_at").eq("sitter_id", user.id).order("starts_at", { ascending: false }).limit(20),
       db.from("sitter_notifications").select("id, kind, title, message, booking_id, read_at, created_at").eq("user_id", user.id).order("created_at", { ascending: false }).limit(12),
+      db.from("booking_notification_attempts").select("id, booking_id, notification_type, trigger_source, attempt_number, status, message, error_message, attempted_by, created_at").order("created_at", { ascending: false }).limit(200),
       db.from("pet_temperament_tags").select("id, slug, label, description, visibility, risk_services, risk_message").eq("is_active", true).order("sort_order"),
       db.from("pet_fit_alerts").select("id, pet_id, service_id, booking_id, title, message, severity, is_resolved, conflicting_tag_ids, created_at").eq("is_resolved", false).order("created_at", { ascending: false }).limit(20),
     ]);
@@ -508,6 +528,10 @@ const SitterDashboard = () => {
     setClientMessages((messageRows ?? []) as ClientMessage[]);
     setServiceAlerts((alertRows ?? []) as ServiceAlert[]);
     setSitterNotifications((notificationRows ?? []) as SitterNotification[]);
+    setNotificationAttempts(((notificationAttemptRows ?? []) as BookingNotificationAttempt[]).reduce<Record<string, BookingNotificationAttempt[]>>((acc, row) => {
+      acc[row.booking_id] = [...(acc[row.booking_id] ?? []), row];
+      return acc;
+    }, {}));
     setTemperamentTags((tagRows ?? []) as TemperamentTag[]);
     setFitAlerts((fitAlertRows ?? []) as FitAlert[]);
 
@@ -691,6 +715,15 @@ const SitterDashboard = () => {
       }),
     }));
   }, [profileDetails, requestBookings]);
+  const latestNotificationAttemptByBooking = useMemo(
+    () => Object.fromEntries(
+      Object.entries(notificationAttempts).map(([bookingId, attempts]) => [
+        bookingId,
+        [...attempts].sort((a, b) => b.attempt_number - a.attempt_number || new Date(b.created_at).getTime() - new Date(a.created_at).getTime())[0],
+      ]),
+    ) as Record<string, BookingNotificationAttempt | undefined>,
+    [notificationAttempts],
+  );
   const assistantContext = useMemo<AssistantDashboardContext>(
     () => ({
       today: format(new Date(), "yyyy-MM-dd"),
@@ -1345,6 +1378,53 @@ const SitterDashboard = () => {
     }
   };
 
+  const runNotificationRetry = async (booking: Booking) => {
+    const latestAttempt = latestNotificationAttemptByBooking[booking.id];
+    const retryAction = booking.status === "confirmed"
+      ? "retry_confirmation_email"
+      : booking.status === "awaiting_payment"
+        ? "retry_payment_alert"
+        : null;
+
+    if (!retryAction || !latestAttempt) {
+      toast({ title: "Retry unavailable", description: "This booking is not in a retryable notification state.", variant: "destructive" });
+      return;
+    }
+
+    setRetryingNotificationKey(booking.id);
+    const { error: workflowError, data: workflowData } = await supabase.functions.invoke<BookingWorkflowResponse>("booking-workflow", {
+      body: {
+        action: retryAction,
+        bookingId: booking.id,
+        appUrl: window.location.origin,
+      },
+    });
+    setRetryingNotificationKey(null);
+
+    if (workflowError || workflowData?.error) {
+      toast({
+        title: "Retry failed",
+        description: workflowError?.message ?? workflowData?.error ?? "The client notification could not be retried.",
+        variant: "destructive",
+      });
+      await load();
+      return;
+    }
+
+    toast({
+      title: workflowData?.notificationStatus === "failed" ? "Retry failed" : workflowData?.notificationType === "confirmation_email" ? "Confirmation email updated" : "Payment alert updated",
+      description: workflowData?.notificationMessage ?? "Client notification updated.",
+      variant: workflowData?.notificationStatus === "failed" ? "destructive" : "default",
+    });
+    await load();
+  };
+
+  const buildRetryToastAction = (booking: Booking) => (
+    <ToastAction altText={booking.status === "confirmed" ? "Retry confirmation email" : "Retry payment alert"} onClick={() => runNotificationRetry(booking)}>
+      Retry
+    </ToastAction>
+  );
+
   const setPetApproval = async (petId: string, serviceId: string, status: PetApproval["status"], notes?: string) => {
     if (!user) return;
     const { error } = await db.from("sitter_pet_approvals").upsert(
@@ -1471,8 +1551,9 @@ const SitterDashboard = () => {
         title: nextStatus === "confirmed" ? "Request confirmed, but alert failed" : "Payment opened, but alert failed",
         description: workflowError?.message ?? workflowData?.error ?? "The booking was saved, but the client notification did not send.",
         variant: "destructive",
+        action: buildRetryToastAction({ ...booking, status: nextStatus }),
       });
-      load();
+      await load();
       return;
     }
 
@@ -1483,8 +1564,9 @@ const SitterDashboard = () => {
         title: nextStatus === "confirmed" ? "Request confirmed, but alert failed" : "Payment opened, but alert failed",
         description: workflowData.notificationMessage ?? "The booking was saved, but the client notification did not send.",
         variant: "destructive",
+        action: workflowData.retryAvailable ? buildRetryToastAction({ ...booking, status: nextStatus }) : undefined,
       });
-      load();
+      await load();
       return;
     }
 
@@ -1494,7 +1576,7 @@ const SitterDashboard = () => {
         workflowData?.notificationMessage ??
         (nextStatus === "confirmed" ? "Confirmation email sent to the client." : "Payment alert sent to the client."),
     });
-    load();
+    await load();
   };
 
   const declineRequest = async (booking: Booking) => {
@@ -2146,6 +2228,7 @@ const SitterDashboard = () => {
                     const draft = getDraft(booking);
                     const service = serviceMap.get(booking.service_id);
                     const variant = booking.service_variant_id ? variantMap.get(booking.service_variant_id) : null;
+                    const latestAttempt = latestNotificationAttemptByBooking[booking.id];
                     const owner = profileDetails[booking.customer_id];
                     const approval = petApprovals.find((item) => item.pet_id === booking.pet_id && item.service_id === booking.service_id);
                     const isBoarding = service?.slug === "boarding";
@@ -2294,7 +2377,46 @@ const SitterDashboard = () => {
                               <Check className="h-4 w-4" /> Mark done
                             </Button>
                           )}
+                          {latestAttempt?.status === "failed" && (booking.status === "confirmed" || booking.status === "awaiting_payment") && (
+                            <Button
+                              size="sm"
+                              variant="outline"
+                              onClick={() => runNotificationRetry(booking)}
+                              disabled={retryingNotificationKey === booking.id}
+                              className="border-border font-display uppercase"
+                            >
+                              <Mail className="h-4 w-4" />
+                              {retryingNotificationKey === booking.id
+                                ? "Retrying…"
+                                : booking.status === "confirmed"
+                                  ? "Retry confirmation email"
+                                  : "Retry payment alert"}
+                            </Button>
+                          )}
                         </div>
+                        {latestAttempt && (
+                          <div className="mt-3 rounded-md border border-border bg-card px-3 py-2 text-sm">
+                            <div className="flex flex-wrap items-center justify-between gap-2">
+                              <span className="font-tag text-muted-foreground">
+                                Client alert · attempt {latestAttempt.attempt_number}
+                              </span>
+                              <span className={cn(
+                                "px-2 py-0.5 text-[11px] font-tag",
+                                latestAttempt.status === "sent"
+                                  ? "bg-secondary text-secondary-foreground"
+                                  : latestAttempt.status === "skipped"
+                                    ? "bg-muted text-muted-foreground"
+                                    : "bg-destructive/15 text-destructive",
+                              )}>
+                                {latestAttempt.status}
+                              </span>
+                            </div>
+                            <p className="mt-2 text-sm text-foreground/90">{latestAttempt.message}</p>
+                            {latestAttempt.error_message && (
+                              <p className="mt-1 text-xs text-muted-foreground">Reason: {latestAttempt.error_message}</p>
+                            )}
+                          </div>
+                        )}
                       </div>
                     );
                   })}
