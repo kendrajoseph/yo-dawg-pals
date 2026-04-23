@@ -186,7 +186,6 @@ const Book = () => {
   const [step, setStep] = useState(0);
   const [bundleItems, setBundleItems] = useState<BundleItem[]>([]);
   const [activeItemId, setActiveItemId] = useState<string | null>(null);
-  const [bundleLabel, setBundleLabel] = useState("");
   const [bundleNotes, setBundleNotes] = useState("");
   const [acceptedTerms, setAcceptedTerms] = useState(false);
   const [submitting, setSubmitting] = useState(false);
@@ -259,7 +258,7 @@ const Book = () => {
 
     const foundService = presetSlug
       ? services.find((service) => service.slug === presetSlug || service.variants.some((variant) => variant.slug === presetSlug))
-      : services[0];
+      : null;
     const foundVariant = foundService
       ? foundService.variants.find((variant) => variant.slug === presetSlug) ?? foundService.variants[0] ?? null
       : null;
@@ -420,9 +419,7 @@ const Book = () => {
   };
 
   const addBundleItem = () => {
-    const nextService = services[0] ?? null;
-    const nextVariant = nextService?.variants[0] ?? null;
-    const nextItem = createBundleItem({ serviceId: nextService?.id ?? null, variantId: nextVariant?.id ?? null });
+    const nextItem = createBundleItem();
     setBundleItems((current) => [...current, nextItem]);
     setActiveItemId(nextItem.id);
   };
@@ -613,7 +610,7 @@ const Book = () => {
       status: "requested",
       booking_kind: "requested",
       request_group_id: requestGroupId,
-      request_group_label: bundleLabel.trim() || null,
+      request_group_label: null,
       requested_date: item.requestedDate,
       requested_end_date: item.repeatFrequency === "none" ? null : item.requestedEndDate || null,
       requested_window_label: requestedWindowLabel,
@@ -646,7 +643,7 @@ const Book = () => {
       .insert({
         customer_id: user.id,
         sitter_id: sitterId,
-        label: bundleLabel.trim() || null,
+        label: null,
         notes: bundleNotes.trim() || null,
         status: "requested",
       })
@@ -837,10 +834,6 @@ const Book = () => {
               </div>
 
               <div className="space-y-4">
-                <div>
-                  <Label htmlFor="bundle-label">Bundle label (optional)</Label>
-                  <Input id="bundle-label" value={bundleLabel} onChange={(event) => setBundleLabel(event.target.value)} placeholder="Weekly care plan + boarding" />
-                </div>
                 <div>
                   <Label htmlFor="bundle-notes">Request note (optional)</Label>
                   <Textarea id="bundle-notes" rows={6} value={bundleNotes} onChange={(event) => setBundleNotes(event.target.value)} placeholder="Anything that ties these requests together — travel dates, pickup patterns, or care context." />
