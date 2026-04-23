@@ -822,9 +822,6 @@ const Book = () => {
                                   {formatPriceWithDecimals(variant.price_cents)}
                                   <span className="ml-1 text-xs opacity-70">{variant.unit_label}</span>
                                 </div>
-                                <div className={cn("mt-1 text-xs", activeVariantCard ? "text-tag-foreground/80" : "text-muted-foreground")}>
-                                  {variant.duration_minutes >= 1440 ? "Overnight block" : `${variant.duration_minutes} minutes`} · {variant.payment_mode === "free" ? "No payment" : "Payment handled separately"}
-                                </div>
                               </button>
                             );
                           })}
