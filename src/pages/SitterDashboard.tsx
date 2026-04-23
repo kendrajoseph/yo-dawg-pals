@@ -41,6 +41,7 @@ import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Textarea } from "@/components/ui/textarea";
+import { ToastAction } from "@/components/ui/toast";
 import { useAuth } from "@/hooks/useAuth";
 import { toast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
@@ -304,6 +305,21 @@ type BookingWorkflowResponse = {
   notificationStatus?: "sent" | "skipped" | "failed";
   notificationType?: "confirmation_email" | "payment_alert";
   notificationMessage?: string;
+  attemptNumber?: number;
+  retryAvailable?: boolean;
+};
+
+type BookingNotificationAttempt = {
+  id: string;
+  booking_id: string;
+  notification_type: "confirmation_email" | "payment_alert";
+  trigger_source: "approval" | "retry";
+  attempt_number: number;
+  status: "sent" | "skipped" | "failed";
+  message: string;
+  error_message: string | null;
+  attempted_by: string | null;
+  created_at: string;
 };
 
 const WALK_SLUGS = new Set(["solo-walk", "group-walk"]);
