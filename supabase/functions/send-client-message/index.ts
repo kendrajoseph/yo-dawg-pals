@@ -63,7 +63,9 @@ Deno.serve(async (req) => {
     const client = createClient(supabaseUrl, supabaseAnonKey, {
       global: { headers: { Authorization: authHeader } },
     });
-    const admin = createClient(supabaseUrl, supabaseServiceRoleKey);
+    const admin = createClient(supabaseUrl, supabaseServiceRoleKey, {
+      global: { headers: { Authorization: `Bearer ${supabaseServiceRoleKey}` } },
+    });
 
     const {
       data: { user },
@@ -146,6 +148,7 @@ Deno.serve(async (req) => {
           ? `${booking.services?.name ?? "Service"} · ${booking.pets?.name ?? "Pet"}`
           : undefined;
         const emailRes = await admin.functions.invoke("send-transactional-email", {
+          headers: { Authorization: `Bearer ${supabaseServiceRoleKey}` },
           body: {
             templateName: "client-direct-message",
             recipientEmail,
