@@ -6,7 +6,7 @@ const services = [
   {
     icon: Footprints,
     title: "Solo Walk",
-    desc: "A structured one-on-one walk designed for dogs who need extra focus, calmer handling, or support with behavioural challenges. Each outing is tailored to your dog’s pace, triggers, and goals, with training woven in so they get purposeful exercise and better habits at the same time.",
+    desc: "A structured one-on-one walk for dogs who need extra focus, calmer handling, or support with behavioural challenges. Each walk is tailored to your dog’s pace, triggers, and goals, with training built in for purposeful exercise and better habits.",
     price: "$35 / $45",
     unit: "30 or 60 min",
     slug: "solo-walk",
@@ -16,7 +16,7 @@ const services = [
   {
     icon: Users,
     title: "Group Walk",
-    desc: "A thoughtfully managed social walk for dogs who enjoy the company of others and do well in a balanced group setting. Your dog gets dependable exercise, safe pack structure, and positive social exposure in a calm, professional environment.",
+    desc: "A thoughtfully managed social walk for dogs who enjoy the company of others and do well in a balanced group setting. Your dog gets dependable exercise, safe pack structure, and positive social time in a calm, professional environment.",
     price: "$30",
     unit: "/ 60 min",
     slug: "group-walk",
@@ -26,7 +26,7 @@ const services = [
   {
     icon: Home,
     title: "Pet Sitting",
-    desc: "Attentive in-home care that keeps your pet comfortable in their own space and routine. Visits include feeding, potty breaks, companionship, play, and thoughtful check-ins, so your pet feels settled and cared for while you’re away.",
+    desc: "Attentive in-home care that keeps your pet comfortable in their own space and routine. Visits include feeding, potty breaks, companionship, play, and thoughtful check-ins so your pet feels settled while you’re away.",
     price: "$30",
     unit: "/ visit",
     slug: "sitting",
@@ -36,7 +36,7 @@ const services = [
   {
     icon: Bed,
     title: "Boarding",
-    desc: "Overnight care in a calm, home-based setting where your dog receives structure, close attention, and a genuine sense of comfort. It’s a more personal alternative to a standard kennel, with care that feels safe, consistent, and high quality from start to finish.",
+    desc: "Overnight care in a calm, home-based setting where your dog gets structure, close attention, and real comfort. It’s a more personal alternative to a standard kennel, with care that feels safe, consistent, and high quality throughout their stay.",
     price: "$70",
     unit: "/ night",
     slug: "boarding",
