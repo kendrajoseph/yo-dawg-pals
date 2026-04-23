@@ -203,7 +203,7 @@ type ClientAdminProfile = {
 type BookingUpdate = {
   id: string;
   booking_id: string;
-  kind: "pickup" | "dropoff" | "note";
+  kind: "pickup" | "dropoff" | "note" | "approval";
   message: string | null;
   sent_via_sms: boolean;
   created_at: string;
@@ -358,6 +358,47 @@ const updateKindLabel: Record<BookingUpdate["kind"], string> = {
   pickup: "Picked up",
   dropoff: "Dropped off",
   note: "Note sent",
+  approval: "Approval",
+};
+
+const getApproverDisplayName = (user: { email?: string | null; user_metadata?: Record<string, unknown> } | null) => {
+  const metadataName = typeof user?.user_metadata?.full_name === "string" ? user.user_metadata.full_name.trim() : "";
+  if (metadataName) return metadataName;
+
+  const emailName = user?.email?.split("@")[0]?.replace(/[._-]+/g, " ")?.trim();
+  if (emailName) {
+    return emailName
+      .split(" ")
+      .filter(Boolean)
+      .map((part) => part.charAt(0).toUpperCase() + part.slice(1))
+      .join(" ");
+  }
+
+  return "the sitter";
+};
+
+const buildApprovalAuditMessage = ({
+  approverName,
+  notificationType,
+  notificationStatus,
+  notificationMessage,
+}: {
+  approverName: string;
+  notificationType?: BookingWorkflowResponse["notificationType"];
+  notificationStatus?: BookingWorkflowResponse["notificationStatus"];
+  notificationMessage?: string;
+}) => {
+  const notificationLabel = notificationType === "payment_alert" ? "Payment alert" : "Confirmation email";
+
+  if (notificationStatus === "failed") {
+    return `Approved by ${approverName}. ${notificationMessage ?? `${notificationLabel} failed to queue.`}`;
+  }
+
+  if (notificationStatus === "skipped") {
+    return `Approved by ${approverName}. ${notificationMessage ?? `${notificationLabel} was not queued.`}`;
+  }
+
+  return `Approved by ${approverName}. ${notificationMessage ?? `${notificationLabel} was successfully queued for delivery.`}`;
 };
 
 const kindCopy: Record<ClientMessage["kind"], string> = {
@@ -1465,6 +1506,7 @@ const SitterDashboard = () => {
     const draft = getDraft(booking);
     const service = serviceMap.get(booking.service_id);
     const variant = booking.service_variant_id ? variantMap.get(booking.service_variant_id) : null;
+    const approverName = getApproverDisplayName(user);
     if (!service) return toast({ title: "Missing service details", variant: "destructive" });
 
     const petApproval = petApprovals.find((item) => item.pet_id === booking.pet_id && item.service_id === booking.service_id);
@@ -1558,6 +1600,28 @@ const SitterDashboard = () => {
     }
 
     const toastTitle = nextStatus === "confirmed" ? "Request confirmed" : "Payment opened";
+    const approvalAuditMessage = buildApprovalAuditMessage({
+      approverName,
+      notificationType: workflowData?.notificationType,
+      notificationStatus: workflowData?.notificationStatus,
+      notificationMessage: workflowData?.notificationMessage,
+    });
+
+    const { error: auditError } = await db.from("booking_updates").insert({
+      booking_id: booking.id,
+      created_by: user.id,
+      kind: "approval",
+      message: approvalAuditMessage,
+      sent_via_sms: false,
+    });
+
+    if (auditError) {
+      toast({
+        title: "Approval saved, but history entry failed",
+        description: auditError.message,
+        variant: "destructive",
+      });
+    }
 
     if (workflowData?.notificationStatus === "failed") {
       toast({
