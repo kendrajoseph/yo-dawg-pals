@@ -391,14 +391,14 @@ const buildApprovalAuditMessage = ({
   const notificationLabel = notificationType === "payment_alert" ? "Payment alert" : "Confirmation email";
 
   if (notificationStatus === "failed") {
-    return `Approved by ${approverName}. ${notificationLabel} failed to queue: ${notificationMessage ?? "Unknown error."}`;
+    return `Approved by ${approverName}. ${notificationMessage ?? `${notificationLabel} failed to queue.`}`;
   }
 
   if (notificationStatus === "skipped") {
-    return `Approved by ${approverName}. ${notificationLabel} was not queued: ${notificationMessage ?? "No delivery reason was returned."}`;
+    return `Approved by ${approverName}. ${notificationMessage ?? `${notificationLabel} was not queued.`}`;
   }
 
-  return `Approved by ${approverName}. ${notificationLabel} was successfully queued for delivery.`;
+  return `Approved by ${approverName}. ${notificationMessage ?? `${notificationLabel} was successfully queued for delivery.`}`;
 };
 
 const kindCopy: Record<ClientMessage["kind"], string> = {
