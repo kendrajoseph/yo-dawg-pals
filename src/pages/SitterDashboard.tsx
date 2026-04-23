@@ -54,6 +54,14 @@ import {
   STATUS_STYLES,
   timeToMinutes,
 } from "@/lib/booking";
+import {
+  formatMinuteLabel,
+  type AssistantDashboardContext,
+  type AssistantExecutionResponse,
+  type AssistantNotificationPreview,
+  type AssistantPlanResponse,
+  weekdayLabel,
+} from "@/lib/scheduleAssistant";
 import { cn } from "@/lib/utils";
 
 type Availability = { id: string; weekday: number; start_minute: number; end_minute: number; max_bookings: number };
@@ -279,9 +287,16 @@ type SnapshotEditor =
       maxBookings: number;
     };
 
-type TabKey = "overview" | "day" | "playbook" | "clients" | "schedule" | "care" | "alerts";
+type TabKey = "overview" | "day" | "playbook" | "clients" | "schedule" | "care" | "assistant" | "alerts";
 type MessageAudience = "single" | "group";
 type SnapshotRange = "day" | "week";
+type AssistantMessage = {
+  id: string;
+  role: "user" | "assistant";
+  content: string;
+  plan?: AssistantPlanResponse | null;
+  preview?: AssistantNotificationPreview[];
+};
 
 const WALK_SLUGS = new Set(["solo-walk", "group-walk"]);
 const MIN_BUFFER_MINUTES = 30;
@@ -334,6 +349,7 @@ const tabMeta: Array<{ value: TabKey; label: string; icon: typeof LayoutDashboar
   { value: "clients", label: "Clients", icon: UserRound },
   { value: "schedule", label: "Schedule", icon: CalendarDays },
   { value: "care", label: "Care", icon: MessageSquare },
+  { value: "assistant", label: "Assistant", icon: Sparkles },
   { value: "alerts", label: "Alerts", icon: Megaphone },
 ];
 
@@ -420,6 +436,12 @@ const SitterDashboard = () => {
   const [sendingUpdateId, setSendingUpdateId] = useState<string | null>(null);
   const [sendingClientMessage, setSendingClientMessage] = useState(false);
   const [savingAlert, setSavingAlert] = useState(false);
+  const [assistantCommand, setAssistantCommand] = useState("");
+  const [assistantMessages, setAssistantMessages] = useState<AssistantMessage[]>([]);
+  const [assistantPlan, setAssistantPlan] = useState<AssistantPlanResponse | null>(null);
+  const [assistantPreview, setAssistantPreview] = useState<AssistantNotificationPreview[]>([]);
+  const [assistantBusy, setAssistantBusy] = useState(false);
+  const [assistantApplying, setAssistantApplying] = useState(false);
 
   const load = async () => {
     if (!user) return;
@@ -661,6 +683,61 @@ const SitterDashboard = () => {
       }),
     }));
   }, [profileDetails, requestBookings]);
+  const assistantContext = useMemo<AssistantDashboardContext>(
+    () => ({
+      today: format(new Date(), "yyyy-MM-dd"),
+      services: services.map((service) => ({
+        id: service.id,
+        name: service.name,
+        slug: service.slug,
+        duration_minutes: service.duration_minutes,
+        payment_mode: service.payment_mode,
+        scheduling_mode: service.scheduling_mode,
+        requires_pet_approval: service.requires_pet_approval,
+        approval_required: service.approval_required,
+      })),
+      availability: availability.map((slot) => ({
+        id: slot.id,
+        weekday: slot.weekday,
+        start_minute: slot.start_minute,
+        end_minute: slot.end_minute,
+        max_bookings: slot.max_bookings,
+        service_slugs: Array.from(tagsBySlot.get(slot.id) ?? []).map((serviceId) => serviceMap.get(serviceId)?.slug).filter(Boolean) as string[],
+      })),
+      walkWindows: walkWindows.map((window) => ({
+        id: window.id,
+        service_slug: serviceMap.get(window.service_id)?.slug ?? "",
+        weekday: window.weekday,
+        start_minute: window.start_minute,
+        end_minute: window.end_minute,
+        window_label: window.window_label,
+        max_bookings: window.max_bookings,
+      })),
+      blockedDates: blocked.map((entry) => ({ id: entry.id, blocked_date: entry.blocked_date, reason: entry.reason })),
+      requestGroups: groupedRequestBookings.map((group) => ({
+        id: group.id,
+        label: group.label,
+        bookings: group.bookings.map((booking) => ({
+          id: booking.id,
+          status: booking.status,
+          service_slug: booking.services?.slug ?? null,
+          service_name: booking.services?.name ?? booking.service_variants?.name ?? null,
+          pet_name: booking.pets?.name ?? null,
+          customer_name: profileDetails[booking.customer_id]?.full_name ?? "Client",
+          booking_kind: booking.booking_kind ?? null,
+          requested_date: booking.requested_date ?? null,
+          requested_end_date: booking.requested_end_date ?? null,
+          requested_window_label: booking.requested_window_label ?? null,
+          requested_window_start_minute: booking.requested_window_start_minute ?? null,
+          requested_window_end_minute: booking.requested_window_end_minute ?? null,
+          recurrence_label: booking.recurrence_label ?? null,
+          request_group_id: booking.request_group_id ?? null,
+          request_group_label: booking.request_group_label ?? null,
+        })),
+      })),
+    }),
+    [availability, blocked, groupedRequestBookings, profileDetails, serviceMap, services, tagsBySlot, walkWindows],
+  );
   const upcomingExactBookings = useMemo(
     () => bookings.filter((booking) => booking.status === "confirmed" && new Date(booking.scheduled_start_at ?? booking.start_at) > new Date()),
     [bookings],
@@ -1542,6 +1619,132 @@ const SitterDashboard = () => {
     const { error } = await db.from("service_alerts").update({ is_active: next }).eq("id", alert.id);
     if (error) toast({ title: "Couldn't update alert", description: error.message, variant: "destructive" });
     else load();
+  };
+
+  const resetAssistantPlan = () => {
+    setAssistantPlan(null);
+    setAssistantPreview([]);
+  };
+
+  const sendAssistantCommand = async () => {
+    const command = assistantCommand.trim();
+    if (!command) return;
+
+    setAssistantBusy(true);
+    resetAssistantPlan();
+    const userMessage: AssistantMessage = {
+      id: `user-${Date.now()}`,
+      role: "user",
+      content: command,
+    };
+    setAssistantMessages((current) => [...current, userMessage]);
+
+    const { data, error } = await supabase.functions.invoke("assistant-schedule-plan", {
+      body: { command, context: assistantContext },
+    });
+
+    setAssistantBusy(false);
+    if (error || !data?.ok || !data?.plan) {
+      toast({
+        title: "Assistant couldn't build a plan",
+        description: error?.message ?? data?.error ?? "Try rephrasing the command.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    const plan = data.plan as AssistantPlanResponse;
+    setAssistantPlan(plan);
+    setAssistantCommand("");
+    setAssistantMessages((current) => [
+      ...current,
+      {
+        id: `assistant-${Date.now()}`,
+        role: "assistant",
+        content: plan.summary,
+        plan,
+      },
+    ]);
+  };
+
+  const applyAssistantPlan = async () => {
+    if (!assistantPlan) return;
+
+    setAssistantApplying(true);
+    const { data, error } = await supabase.functions.invoke("assistant-schedule-execute", {
+      body: {
+        operations: assistantPlan.operations,
+        appUrl: window.location.origin,
+        previewOnly: false,
+      },
+    });
+    setAssistantApplying(false);
+
+    if (error || !data?.ok) {
+      toast({ title: "Assistant couldn't apply changes", description: error?.message ?? data?.error ?? "Unknown error", variant: "destructive" });
+      return;
+    }
+
+    const result = data as AssistantExecutionResponse;
+    setAssistantPreview(result.notificationPreview ?? []);
+    setAssistantMessages((current) => [
+      ...current,
+      {
+        id: `assistant-apply-${Date.now()}`,
+        role: "assistant",
+        content: result.summary || "Assistant actions applied.",
+        preview: result.notificationPreview ?? [],
+      },
+    ]);
+
+    if (result.warnings.length > 0) {
+      toast({ title: "Assistant applied with warnings", description: result.warnings[0] });
+    } else {
+      toast({ title: "Assistant changes applied" });
+    }
+
+    await load();
+  };
+
+  const sendAssistantNotifications = async () => {
+    if (!assistantPreview.length) return;
+
+    setAssistantApplying(true);
+    const { data, error } = await supabase.functions.invoke("assistant-schedule-execute", {
+      body: {
+        operations: [{
+          type: "send_preview_notifications",
+          summary: "Send the prepared client notifications",
+          bookingIds: assistantPreview.map((item) => item.bookingId),
+        }],
+        appUrl: window.location.origin,
+        previewOnly: false,
+        sendNotifications: true,
+      },
+    });
+    setAssistantApplying(false);
+
+    if (error || !data?.ok) {
+      toast({ title: "Notifications didn't send", description: error?.message ?? data?.error ?? "Unknown error", variant: "destructive" });
+      return;
+    }
+
+    const result = data as AssistantExecutionResponse;
+    if (result.warnings.length > 0) {
+      toast({ title: "Notifications sent with warnings", description: result.warnings[0] });
+    } else {
+      toast({ title: "Client notifications sent" });
+    }
+    setAssistantMessages((current) => [
+      ...current,
+      {
+        id: `assistant-notify-${Date.now()}`,
+        role: "assistant",
+        content: "Client notifications have been sent.",
+      },
+    ]);
+    setAssistantPreview([]);
+    await load();
   };
 
   return (
@@ -2861,6 +3064,191 @@ const SitterDashboard = () => {
                 </ul>
               </Card>
             )}
+          </TabsContent>
+
+          <TabsContent value="assistant" className="mt-6 space-y-6">
+            <div className="grid gap-4 xl:grid-cols-[0.95fr,1.05fr]">
+              <Card className="border border-border p-5 shadow-soft">
+                <div className="flex items-start gap-3">
+                  <div className="grid h-11 w-11 place-items-center rounded-md bg-secondary text-secondary-foreground">
+                    <Sparkles className="h-5 w-5" />
+                  </div>
+                  <div>
+                    <h2 className="font-display text-xl uppercase text-primary">Schedule assistant</h2>
+                    <p className="text-sm text-muted-foreground">Type natural-language commands to build schedule blocks, adjust walk windows, block dates, or queue approvals.</p>
+                  </div>
+                </div>
+
+                <div className="mt-4 rounded-md border border-border bg-muted/40 p-4">
+                  <Label>Command</Label>
+                  <Textarea
+                    value={assistantCommand}
+                    onChange={(event) => setAssistantCommand(event.target.value)}
+                    placeholder="I am available every morning this week from 8am to 10am for solo walks and from 3pm to 5pm for group walks on Monday Wednesday and Friday every week indefinitely."
+                    className="mt-2 min-h-28"
+                  />
+                  <div className="mt-3 flex flex-wrap gap-2">
+                    <Button onClick={sendAssistantCommand} disabled={assistantBusy || !assistantCommand.trim()} className="font-display uppercase">
+                      <Sparkles className="h-4 w-4" />
+                      {assistantBusy ? "Planning…" : "Build plan"}
+                    </Button>
+                    <Button type="button" variant="outline" onClick={() => { setAssistantCommand(""); resetAssistantPlan(); }} className="border-border font-display uppercase">
+                      <X className="h-4 w-4" />
+                      Clear
+                    </Button>
+                  </div>
+                </div>
+
+                <div className="mt-4 space-y-3">
+                  {assistantMessages.length === 0 ? (
+                    <div className="rounded-md border border-dashed border-border bg-muted/20 px-4 py-6 text-sm text-muted-foreground">
+                      The assistant will keep a short session history here.
+                    </div>
+                  ) : (
+                    assistantMessages.slice(-6).map((message) => (
+                      <div key={message.id} className={cn("rounded-md border px-4 py-3 text-sm", message.role === "user" ? "border-border bg-card" : "border-border bg-muted/40")}>
+                        <div className="text-[11px] font-tag uppercase text-muted-foreground">{message.role === "user" ? "You" : "Assistant"}</div>
+                        <p className="mt-2 whitespace-pre-wrap text-foreground/85">{message.content}</p>
+                      </div>
+                    ))
+                  )}
+                </div>
+              </Card>
+
+              <Card className="border border-border p-5 shadow-soft">
+                <div className="flex items-start justify-between gap-3">
+                  <div>
+                    <h2 className="font-display text-xl uppercase text-primary">Action preview</h2>
+                    <p className="text-sm text-muted-foreground">Review the parsed intent, exact operations, and client notifications before anything goes out.</p>
+                  </div>
+                  {assistantPlan ? (
+                    <span className="rounded-md bg-muted px-3 py-1 text-[11px] font-tag uppercase text-muted-foreground">{assistantPlan.confidence} confidence</span>
+                  ) : null}
+                </div>
+
+                {!assistantPlan ? (
+                  <div className="mt-4 rounded-md border border-dashed border-border bg-muted/20 px-4 py-8 text-sm text-muted-foreground">
+                    Ask the assistant to translate a schedule or approval command into a structured plan.
+                  </div>
+                ) : (
+                  <div className="mt-4 space-y-4">
+                    <div className="rounded-md border border-border bg-muted/40 p-4">
+                      <div className="font-display text-base uppercase text-primary">{assistantPlan.intent}</div>
+                      <p className="mt-2 text-sm text-foreground/80">{assistantPlan.summary}</p>
+                    </div>
+
+                    <div className="space-y-3">
+                      {assistantPlan.operations.map((operation, index) => (
+                        <div key={`${operation.type}-${index}`} className="rounded-md border border-border bg-card p-4 text-sm">
+                          <div className="flex items-center justify-between gap-2">
+                            <div className="font-display text-sm uppercase text-primary">{operation.type.replace(/_/g, " ")}</div>
+                            <span className="text-[11px] font-tag uppercase text-muted-foreground">{operation.summary}</span>
+                          </div>
+
+                          {"blocks" in operation ? (
+                            <ul className="mt-3 space-y-2 text-foreground/80">
+                              {operation.blocks.map((block, blockIndex) => (
+                                <li key={blockIndex} className="rounded-md bg-muted/40 px-3 py-2">
+                                  {weekdayLabel(block.weekday)} · {formatMinuteLabel(block.startMinute)}–{formatMinuteLabel(block.endMinute)} · {block.serviceSlugs.join(", ")}
+                                </li>
+                              ))}
+                            </ul>
+                          ) : null}
+
+                          {"windows" in operation ? (
+                            <ul className="mt-3 space-y-2 text-foreground/80">
+                              {operation.windows.map((window, windowIndex) => (
+                                <li key={windowIndex} className="rounded-md bg-muted/40 px-3 py-2">
+                                  {window.mode === "delete" ? "Remove" : "Set"} {window.label} · {weekdayLabel(window.weekday)} · {window.serviceSlug}
+                                  {window.startMinute != null && window.endMinute != null ? ` · ${formatMinuteLabel(window.startMinute)}–${formatMinuteLabel(window.endMinute)}` : ""}
+                                </li>
+                              ))}
+                            </ul>
+                          ) : null}
+
+                          {"entries" in operation ? (
+                            <ul className="mt-3 space-y-2 text-foreground/80">
+                              {operation.entries.map((entry, entryIndex) => (
+                                <li key={entryIndex} className="rounded-md bg-muted/40 px-3 py-2">
+                                  {entry.date}{entry.reason ? ` · ${entry.reason}` : ""}
+                                </li>
+                              ))}
+                            </ul>
+                          ) : null}
+
+                          {"filters" in operation ? (
+                            <div className="mt-3 rounded-md bg-muted/40 px-3 py-2 text-foreground/80">
+                              {operation.decision} requests
+                              {operation.filters.serviceSlugs?.length ? ` · services: ${operation.filters.serviceSlugs.join(", ")}` : ""}
+                              {operation.filters.relativeWindow ? ` · ${operation.filters.relativeWindow}` : ""}
+                              {operation.filters.requestGroupLabel ? ` · group: ${operation.filters.requestGroupLabel}` : ""}
+                            </div>
+                          ) : null}
+                        </div>
+                      ))}
+                    </div>
+
+                    {assistantPlan.warnings.length > 0 ? (
+                      <div className="rounded-md border border-border bg-muted/40 p-4 text-sm">
+                        <div className="font-display text-sm uppercase text-primary">Warnings</div>
+                        <ul className="mt-2 space-y-1 text-foreground/80">
+                          {assistantPlan.warnings.map((warning) => (
+                            <li key={warning}>• {warning}</li>
+                          ))}
+                        </ul>
+                      </div>
+                    ) : null}
+
+                    {assistantPlan.followUpQuestions.length > 0 ? (
+                      <div className="rounded-md border border-border bg-muted/40 p-4 text-sm">
+                        <div className="font-display text-sm uppercase text-primary">Needs follow-up</div>
+                        <ul className="mt-2 space-y-1 text-foreground/80">
+                          {assistantPlan.followUpQuestions.map((question) => (
+                            <li key={question}>• {question}</li>
+                          ))}
+                        </ul>
+                      </div>
+                    ) : null}
+
+                    <div className="flex flex-wrap gap-2">
+                      <Button onClick={applyAssistantPlan} disabled={assistantApplying} className="font-display uppercase">
+                        <Check className="h-4 w-4" />
+                        {assistantApplying ? "Applying…" : "Apply changes"}
+                      </Button>
+                      <Button type="button" variant="outline" onClick={resetAssistantPlan} className="border-border font-display uppercase">
+                        <X className="h-4 w-4" />
+                        Cancel
+                      </Button>
+                    </div>
+                  </div>
+                )}
+
+                {assistantPreview.length > 0 ? (
+                  <div className="mt-5 rounded-md border border-border bg-muted/40 p-4">
+                    <div className="flex flex-wrap items-center justify-between gap-3">
+                      <div>
+                        <div className="font-display text-sm uppercase text-primary">Client notification preview</div>
+                        <p className="mt-1 text-sm text-muted-foreground">Nothing is sent until you confirm below.</p>
+                      </div>
+                      <Button onClick={sendAssistantNotifications} disabled={assistantApplying} className="font-display uppercase">
+                        <Send className="h-4 w-4" />
+                        Send now
+                      </Button>
+                    </div>
+
+                    <div className="mt-3 space-y-2 text-sm">
+                      {assistantPreview.map((item) => (
+                        <div key={item.bookingId} className="rounded-md border border-border bg-card px-3 py-3">
+                          <div className="font-display text-sm uppercase text-primary">{item.recipientName} · {item.serviceName}</div>
+                          <p className="mt-1 text-foreground/80">{item.petName} · {new Date(item.scheduledStartAt).toLocaleString()} · {item.statusAfter}</p>
+                          <p className="mt-1 text-xs uppercase text-muted-foreground">{item.templateName}</p>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                ) : null}
+              </Card>
+            </div>
           </TabsContent>
 
           <TabsContent value="alerts" className="mt-6 space-y-6">
