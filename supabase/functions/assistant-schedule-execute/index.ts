@@ -45,7 +45,7 @@ const operationSchema = z.discriminatedUnion("type", [
 ]);
 
 const bodySchema = z.object({
-  operations: z.array(operationSchema).min(1),
+  operations: z.array(operationSchema),
   appUrl: z.string().url().optional(),
   previewOnly: z.boolean().default(false),
   sendNotifications: z.boolean().default(false),
@@ -73,6 +73,16 @@ Deno.serve(async (req) => {
 
     const parsed = bodySchema.safeParse(await req.json());
     if (!parsed.success) return json({ error: parsed.error.flatten().fieldErrors }, 400);
+    if (parsed.data.operations.length === 0) {
+      return json({
+        ok: false,
+        summary: "No assistant actions to apply.",
+        warnings: ["The assistant didn't produce any actionable changes yet. Try rephrasing the command or answer the follow-up questions first."],
+        followUpQuestions: [],
+        applied: [],
+        notificationPreview: [],
+      });
+    }
 
     const supabaseUrl = Deno.env.get("SUPABASE_URL");
     const supabaseAnonKey = Deno.env.get("SUPABASE_ANON_KEY");
