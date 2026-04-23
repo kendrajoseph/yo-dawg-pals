@@ -2333,9 +2333,12 @@ const SitterDashboard = () => {
                               <span className="text-muted-foreground">·</span>
                               <PetNameLabel name={booking.pets?.name ?? "Pet"} species={booking.pets?.species} />
                             </p>
-                            <p className="mt-1 text-sm text-muted-foreground">Requested: {formatBookingSchedule(booking)}</p>
-                            {booking.recurrence_label && <p className="mt-1 text-xs uppercase text-muted-foreground">Repeat: {booking.recurrence_label}</p>}
-                            {booking.notes && <p className="mt-2 text-xs text-muted-foreground">Client note: “{booking.notes}”</p>}
+                            <div className="mt-3 rounded-md border border-border bg-muted/40 p-3">
+                              <div className="text-[11px] font-tag text-muted-foreground">Requested by client</div>
+                              <p className="mt-2 text-sm text-foreground/80">{formatBookingSchedule(booking)}</p>
+                              {booking.recurrence_label && <p className="mt-2 text-[11px] font-tag text-muted-foreground">Repeat: {booking.recurrence_label}</p>}
+                              {booking.notes && <p className="mt-2 text-sm text-muted-foreground">Client note: “{booking.notes}”</p>}
+                            </div>
                           </div>
                           <div className="rounded-md border border-border bg-card px-4 py-3 text-sm">
                             <div className="font-tag text-muted-foreground">Projected total</div>
@@ -2350,12 +2353,22 @@ const SitterDashboard = () => {
                           </div>
                         </div>
 
-                        <div className="mt-4 grid gap-3 md:grid-cols-2 xl:grid-cols-6 xl:items-end">
+                        <div className="mt-4 rounded-md border border-primary/20 bg-card p-4 shadow-soft">
+                          <div className="flex flex-wrap items-center justify-between gap-3">
+                            <div>
+                              <div className="text-[11px] font-tag text-primary">Final approval details</div>
+                              <p className="mt-1 text-sm text-muted-foreground">These editable fields set the actual booking details Anneke will approve.</p>
+                            </div>
+                            <div className="rounded-md bg-accent/10 px-3 py-2 text-[11px] font-tag text-primary">Admin only</div>
+                          </div>
+
+                          <div className="mt-4 grid gap-3 md:grid-cols-2 xl:grid-cols-6 xl:items-end">
                           {booking.services?.slug === "group-walk" && (
                             <div>
-                              <Label>Pack outing</Label>
+                              <Label className="text-primary">Pack outing</Label>
+                              <p className="mt-1 text-xs text-muted-foreground">Choose the actual outing lane for this request.</p>
                               <Select value={draft.packOutingId} onValueChange={(value) => applyPackOutingToDraft(booking, value)}>
-                                <SelectTrigger>
+                                <SelectTrigger className="mt-2 border-primary/20 bg-background">
                                   <SelectValue placeholder="Choose a backend outing" />
                                 </SelectTrigger>
                                 <SelectContent>
@@ -2369,34 +2382,51 @@ const SitterDashboard = () => {
                             </div>
                           )}
                           <div>
-                            <Label>{isBoarding ? "Check-in day" : "Date"}</Label>
-                            <Input value={draft.date} type="date" onChange={(event) => patchDraft(booking, { date: event.target.value, ...(isBoarding ? { endDate: format(addDays(new Date(`${event.target.value}T00:00:00`), 1), "yyyy-MM-dd") } : {}) })} />
+                            <Label className="text-primary">{isBoarding ? "Check-in day" : "Date"}</Label>
+                            <p className="mt-1 text-xs text-muted-foreground">Set the confirmed service date.</p>
+                            <Input className="mt-2 border-primary/20 bg-background" value={draft.date} type="date" onChange={(event) => patchDraft(booking, { date: event.target.value, ...(isBoarding ? { endDate: format(addDays(new Date(`${event.target.value}T00:00:00`), 1), "yyyy-MM-dd") } : {}) })} />
                           </div>
                           {isBoarding && (
                             <div>
-                              <Label>Checkout day</Label>
-                              <Input value={draft.endDate} type="date" onChange={(event) => patchDraft(booking, { endDate: event.target.value })} />
+                              <Label className="text-primary">Checkout day</Label>
+                              <p className="mt-1 text-xs text-muted-foreground">Confirm the final end date for the stay.</p>
+                              <Input className="mt-2 border-primary/20 bg-background" value={draft.endDate} type="date" onChange={(event) => patchDraft(booking, { endDate: event.target.value })} />
                             </div>
                           )}
                           <div>
-                            <Label>{isBoarding ? "Check-in" : "Start"}</Label>
-                            <Input value={draft.start} type="time" onChange={(event) => patchDraft(booking, { start: event.target.value })} />
+                            <Label className="text-primary">{isBoarding ? "Check-in" : "Start"}</Label>
+                            <p className="mt-1 text-xs text-muted-foreground">Use the actual confirmed start time.</p>
+                            <Input className="mt-2 border-primary/20 bg-background" value={draft.start} type="time" onChange={(event) => patchDraft(booking, { start: event.target.value })} />
                           </div>
                           <div>
-                            <Label>{isBoarding ? "Checkout" : "End"}</Label>
-                            <Input value={draft.end} type="time" onChange={(event) => patchDraft(booking, { end: event.target.value })} />
+                            <Label className="text-primary">{isBoarding ? "Checkout" : "End"}</Label>
+                            <p className="mt-1 text-xs text-muted-foreground">Use the actual confirmed end time.</p>
+                            <Input className="mt-2 border-primary/20 bg-background" value={draft.end} type="time" onChange={(event) => patchDraft(booking, { end: event.target.value })} />
                           </div>
                           <div>
-                            <Label>{booking.services?.slug === "group-walk" ? "Pack label" : "Internal note"}</Label>
+                            <Label className="text-primary">{booking.services?.slug === "group-walk" ? "Pack label" : "Internal note"}</Label>
+                            <p className="mt-1 text-xs text-muted-foreground">
+                              {booking.services?.slug === "group-walk" ? "Name the actual group this pet will join." : "Private admin note for the final handling plan."}
+                            </p>
                             <Input
+                              className={cn(
+                                "mt-2 border-primary/20",
+                                booking.services?.slug === "group-walk"
+                                  ? "bg-background"
+                                  : draft.internalNotes.trim().length > 0
+                                    ? "bg-accent/10 text-foreground shadow-soft"
+                                    : "bg-muted/40 text-muted-foreground placeholder:text-muted-foreground",
+                              )}
                               value={booking.services?.slug === "group-walk" ? draft.groupLabel : draft.internalNotes}
                               onChange={(event) => patchDraft(booking, booking.services?.slug === "group-walk" ? { groupLabel: event.target.value, packOutingId: "" } : { internalNotes: event.target.value })}
                               placeholder={booking.services?.slug === "group-walk" ? "Afternoon adrenaline junkies" : "Handled by back gate"}
                             />
                           </div>
                           <div>
-                            <Label>Approved price</Label>
+                            <Label className="text-primary">Approved price</Label>
+                            <p className="mt-1 text-xs text-muted-foreground">Override the requested amount with the final approved base price.</p>
                             <Input
+                              className="mt-2 border-primary/20 bg-accent/10 text-foreground shadow-soft"
                               type="number"
                               min={0}
                               step="0.01"
@@ -2405,9 +2435,11 @@ const SitterDashboard = () => {
                             />
                           </div>
                           <div>
-                            <Label>Extra time (min)</Label>
-                            <Input type="number" min={0} step={15} value={draft.extraTimeMinutes} onChange={(event) => patchDraft(booking, { extraTimeMinutes: Number(event.target.value) || 0 })} />
+                            <Label className="text-primary">Extra time (min)</Label>
+                            <p className="mt-1 text-xs text-muted-foreground">Add only approved overage for this visit.</p>
+                            <Input className="mt-2 border-primary/20 bg-background" type="number" min={0} step={15} value={draft.extraTimeMinutes} onChange={(event) => patchDraft(booking, { extraTimeMinutes: Number(event.target.value) || 0 })} />
                           </div>
+                        </div>
                         </div>
 
                         {service?.late_pickup_fee_cents ? (
@@ -2773,13 +2805,19 @@ const SitterDashboard = () => {
                           </div>
 
                           <div>
-                            <Label>Internal notes</Label>
+                            <Label className="text-primary">Internal notes</Label>
+                            <p className="mt-1 text-xs text-muted-foreground">Private admin context for future bookings and support decisions.</p>
                             <Textarea
                               defaultValue={clientAdminDraft.internal_notes}
                               key={`${selectedClientId}-${selectedClientAdminProfile?.internal_notes ?? ""}`}
                               maxLength={1500}
                               placeholder="Anything only the admin team should know about working with this client…"
-                              className="mt-2 min-h-28"
+                              className={cn(
+                                "mt-2 min-h-28 border-primary/20",
+                                clientAdminDraft.internal_notes?.trim()
+                                  ? "bg-accent/10 text-foreground shadow-soft"
+                                  : "bg-muted/40 text-muted-foreground placeholder:text-muted-foreground",
+                              )}
                               onBlur={(event) => {
                                 const nextNotes = event.target.value;
                                 if (nextNotes === clientAdminDraft.internal_notes) return;
