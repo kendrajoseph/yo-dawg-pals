@@ -1,46 +1,77 @@
 
-Goal: make admin-entered values visually distinct from the existing/suggested request details so “internal notes” and approved values no longer blend in.
+Goal: verify whether client SMS delivery is working end-to-end and identify any remaining breakpoints.
 
-1. Update the request approval card styling in `src/pages/SitterDashboard.tsx`
-- Keep the existing request summary (“Requested”, client note, projected total) as read-only muted text.
-- Restyle editable approval fields so they look clearly interactive and separate from the request summary.
-- Give the “Internal note” field a softer muted/placeholder presentation when empty and a stronger approved/admin style once populated.
+What is already in place
+- The app does have active SMS wiring in the backend:
+  - `send-booking-update` sends client SMS for pickup/dropoff/note updates.
+  - `send-client-message` can send direct client SMS from the dashboard.
+  - `notify-new-booking-request` sends SMS to the sitter for new requests.
+- Required backend secrets already exist for SMS:
+  - `LOVABLE_API_KEY`
+  - `TWILIO_API_KEY`
+  - `TWILIO_FROM_NUMBER`
+- Client SMS is intentionally gated by profile settings:
+  - the client must have `profiles.mobile_phone`
+  - the client must have `profiles.sms_opt_in = true`
 
-2. Create a clear “requested vs actual” visual hierarchy
-- Add lightweight labels or helper text around the editable approval controls so it’s obvious which values are:
-  - requested/suggested by the client
-  - actual/final values set by Anneke
-- Apply this especially to:
-  - Internal note
-  - Approved price
-  - timing fields in the request approval editor
-- Use existing theme tokens (`primary`, `muted`, `accent`, `border`) rather than hardcoded black text.
+What cannot be confirmed in read-only mode
+- I can confirm the code path is present, but I cannot confirm real delivery from code alone.
+- To truly confirm SMS works, runtime testing is needed against the live backend and function logs.
 
-3. Improve the internal notes field specifically
-- Override the default input styling on the approval “Internal note” input so it doesn’t render as plain dark text with no distinction.
-- Use a dedicated input treatment such as:
-  - tinted background
-  - stronger border/ring
-  - admin-only label styling
-  - muted helper copy
-- Preserve current behavior and save logic; this is a visual clarity change, not a data-model change.
+Verification plan
+1. Test the sitter-to-client SMS path from the dashboard
+- Trigger `send-booking-update` using a booking tied to a client who has:
+  - a valid mobile number
+  - text updates enabled
+- Confirm the function returns:
+  - `ok: true`
+  - `smsSent: true`
+  - no `smsError`
 
-4. Keep admin-only client notes consistent
-- Review the separate “Admin-only client notes” textarea in the same dashboard and align its text color / field treatment with the updated approval-note styling.
-- Ensure both internal note surfaces feel intentionally private/admin-facing.
+2. Test the direct client message SMS path
+- Trigger `send-client-message` from the admin dashboard with `sendSms: true`.
+- Confirm the response includes:
+  - `ok: true`
+  - `smsSent: true`
+  - `delivered_sms_at` written on the related `client_messages` row
 
-5. Validation pass
-- Confirm the request cards still read clearly in the existing theme.
-- Ensure requested information remains readable but secondary, while final/admin-entered values stand out as the actionable state.
-- Do not change booking logic, approvals, notifications, or database structure.
+3. Inspect backend logs for Twilio gateway responses
+- Check logs for:
+  - `send-booking-update`
+  - `send-client-message`
+  - `notify-new-booking-request`
+- Look specifically for any `Twilio API error [...]` messages, invalid-number failures, or auth/gateway errors.
+
+4. Verify data prerequisites for affected clients
+- Confirm the target client records actually satisfy the SMS conditions:
+  - `profiles.mobile_phone` is populated
+  - `profiles.sms_opt_in` is true
+- If SMS appears to “not send,” this is the first likely cause based on current code.
+
+5. Verify dashboard feedback matches actual delivery
+- Confirm the sitter dashboard toast messages reflect the function response correctly:
+  - success when `smsSent: true`
+  - warning/fallback when SMS is skipped or fails
+- If needed, tighten the UI copy so skipped texts are unmistakable.
+
+Likely outcomes
+- If logs show successful Twilio responses and `smsSent: true`, SMS is working.
+- If the function returns success but `smsSent: false`, the most likely reason is missing client opt-in or missing mobile number.
+- If logs show Twilio errors, the issue is likely phone formatting, sending-number restrictions, or connector-side delivery failure.
 
 Technical details
-- Primary file: `src/pages/SitterDashboard.tsx`
-- Reference UI primitives:
-  - `src/components/ui/input.tsx`
-  - `src/components/ui/textarea.tsx`
-  - `src/components/ui/label.tsx`
-- Likely implementation approach:
-  - add contextual wrappers, helper text, and Tailwind utility classes on the approval fields
-  - avoid changing shared input primitives globally unless the issue affects the whole app
-  - use semantic theme classes instead of hardcoded text colors
+- Relevant files already supporting SMS:
+  - `supabase/functions/send-booking-update/index.ts`
+  - `supabase/functions/send-client-message/index.ts`
+  - `supabase/functions/notify-new-booking-request/index.ts`
+  - `src/pages/SitterDashboard.tsx`
+  - `src/pages/Profile.tsx`
+- Important behavioral detail:
+  - `send-booking-update` only sends when `sendSms && profile.sms_opt_in && profile.mobile_phone`
+  - `send-client-message` only sends when `sendSms && profile.sms_opt_in && profile.mobile_phone && LOVABLE_API_KEY && TWILIO_API_KEY && TWILIO_FROM_NUMBER`
+- Current code already normalizes numbers to E.164 format before sending.
+
+Implementation if you approve
+- Run live function tests and inspect backend logs.
+- Confirm one real SMS flow end-to-end.
+- If anything fails, patch either the backend error handling or the dashboard messaging so the failure reason is explicit.
