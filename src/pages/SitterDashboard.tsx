@@ -203,7 +203,7 @@ type ClientAdminProfile = {
 type BookingUpdate = {
   id: string;
   booking_id: string;
-  kind: "pickup" | "dropoff" | "note";
+  kind: "pickup" | "dropoff" | "note" | "approval";
   message: string | null;
   sent_via_sms: boolean;
   created_at: string;
@@ -358,6 +358,47 @@ const updateKindLabel: Record<BookingUpdate["kind"], string> = {
   pickup: "Picked up",
   dropoff: "Dropped off",
   note: "Note sent",
+  approval: "Approval",
+};
+
+const getApproverDisplayName = (user: { email?: string | null; user_metadata?: Record<string, unknown> } | null) => {
+  const metadataName = typeof user?.user_metadata?.full_name === "string" ? user.user_metadata.full_name.trim() : "";
+  if (metadataName) return metadataName;
+
+  const emailName = user?.email?.split("@")[0]?.replace(/[._-]+/g, " ")?.trim();
+  if (emailName) {
+    return emailName
+      .split(" ")
+      .filter(Boolean)
+      .map((part) => part.charAt(0).toUpperCase() + part.slice(1))
+      .join(" ");
+  }
+
+  return "the sitter";
+};
+
+const buildApprovalAuditMessage = ({
+  approverName,
+  notificationType,
+  notificationStatus,
+  notificationMessage,
+}: {
+  approverName: string;
+  notificationType?: BookingWorkflowResponse["notificationType"];
+  notificationStatus?: BookingWorkflowResponse["notificationStatus"];
+  notificationMessage?: string;
+}) => {
+  const notificationLabel = notificationType === "payment_alert" ? "Payment alert" : "Confirmation email";
+
+  if (notificationStatus === "failed") {
+    return `Approved by ${approverName}. ${notificationLabel} failed to queue: ${notificationMessage ?? "Unknown error."}`;
+  }
+
+  if (notificationStatus === "skipped") {
+    return `Approved by ${approverName}. ${notificationLabel} was not queued: ${notificationMessage ?? "No delivery reason was returned."}`;
+  }
+
+  return `Approved by ${approverName}. ${notificationLabel} was successfully queued for delivery.`;
 };
 
 const kindCopy: Record<ClientMessage["kind"], string> = {
