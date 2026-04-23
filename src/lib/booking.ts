@@ -35,9 +35,12 @@ export const formatRequestedDate = (date: string) =>
 export const formatBookingSchedule = (booking: {
   booking_kind?: string | null;
   requested_date?: string | null;
+  requested_end_date?: string | null;
   requested_window_label?: string | null;
   requested_window_start_minute?: number | null;
   requested_window_end_minute?: number | null;
+  recurrence_label?: string | null;
+  request_group_label?: string | null;
   scheduled_start_at?: string | null;
   start_at?: string | null;
 }) => {
@@ -49,11 +52,16 @@ export const formatBookingSchedule = (booking: {
 
     const parts = [
       booking.requested_date ? formatRequestedDate(booking.requested_date) : null,
+      booking.requested_end_date && booking.requested_end_date !== booking.requested_date
+        ? `to ${formatRequestedDate(booking.requested_end_date)}`
+        : null,
       booking.requested_window_label
         ? requestedTimeSlot
           ? `${booking.requested_window_label} · ${requestedTimeSlot}`
           : booking.requested_window_label
         : requestedTimeSlot,
+      booking.recurrence_label,
+      booking.request_group_label,
     ].filter(Boolean);
 
     return parts.length ? parts.join(" · ") : "Scheduling in progress";

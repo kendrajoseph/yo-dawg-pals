@@ -9,11 +9,13 @@ import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Calendar } from "@/components/ui/calendar";
 import { Checkbox } from "@/components/ui/checkbox";
+import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Label } from "@/components/ui/label";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { toast } from "@/hooks/use-toast";
-import { ArrowLeft, ArrowRight, CalendarDays, Check, Clock, MoonStar, PawPrint, ShieldCheck, Sparkles } from "lucide-react";
+import { ArrowLeft, ArrowRight, CalendarDays, Check, Clock, MoonStar, PawPrint, Plus, ShieldCheck, Sparkles, Trash2 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { DAYS, formatPriceWithDecimals, minutesToTime } from "@/lib/booking";
 
@@ -74,9 +76,95 @@ type WalkWindow = {
   max_bookings: number;
 };
 
-const STEPS = ["Service", "Schedule", "Pet", "Review"] as const;
+type RepeatFrequency = "none" | "daily" | "weekly" | "biweekly" | "monthly";
+
+type BundleItem = {
+  id: string;
+  serviceId: string | null;
+  variantId: string | null;
+  requestedDate: string;
+  requestedEndDate: string;
+  slot: number | null;
+  windowId: string | null;
+  petId: string | null;
+  notes: string;
+  repeatFrequency: RepeatFrequency;
+  repeatDays: number[];
+  repeatInterval: number;
+};
+
+const STEPS = ["Services", "Schedule", "Pet", "Review"] as const;
 const WALK_REQUEST_SLUGS = new Set(["solo-walk", "group-walk"]);
 const TERMS_VERSION = "2026-04-22";
+
+const createBundleItem = (seed?: Partial<BundleItem>): BundleItem => ({
+  id: crypto.randomUUID(),
+  serviceId: null,
+  variantId: null,
+  requestedDate: "",
+  requestedEndDate: "",
+  slot: null,
+  windowId: null,
+  petId: null,
+  notes: "",
+  repeatFrequency: "none",
+  repeatDays: [],
+  repeatInterval: 1,
+  ...seed,
+});
+
+const repeatLabelMap: Record<Exclude<RepeatFrequency, "none">, string> = {
+  daily: "Daily",
+  weekly: "Weekly",
+  biweekly: "Biweekly",
+  monthly: "Monthly",
+};
+
+const getRepeatSummary = (item: BundleItem) => {
+  if (item.repeatFrequency === "none") return null;
+
+  if (item.repeatFrequency === "daily") {
+    return item.repeatInterval > 1 ? `Every ${item.repeatInterval} days` : "Daily";
+  }
+
+  if (item.repeatFrequency === "monthly") {
+    const day = item.requestedDate ? new Date(`${item.requestedDate}T12:00:00`).getDate() : null;
+    return day ? `Monthly on day ${day}` : "Monthly";
+  }
+
+  const activeDays = item.repeatDays.length > 0 ? item.repeatDays : (item.requestedDate ? [new Date(`${item.requestedDate}T12:00:00`).getDay()] : []);
+  const dayLabel = activeDays.length > 0 ? activeDays.map((day) => DAYS[day]).join(", ") : "selected days";
+  return `${repeatLabelMap[item.repeatFrequency]} on ${dayLabel}`;
+};
+
+const getBundleSummary = ({
+  item,
+  service,
+  variant,
+  pet,
+  selectedWindow,
+}: {
+  item: BundleItem;
+  service: Service | null;
+  variant: ServiceVariant | null;
+  pet: Pet | undefined;
+  selectedWindow: WalkWindow | null;
+}) => {
+  if (!service || !variant) return "Choose a service";
+  if (!item.requestedDate) return `${variant.name} · no schedule yet`;
+
+  const dayLabel = format(new Date(`${item.requestedDate}T12:00:00`), "EEE, MMM d");
+  const timing = service.slug === "boarding"
+    ? `${dayLabel} · ${minutesToTime(service.boarding_checkin_minute ?? 12 * 60)}`
+    : WALK_REQUEST_SLUGS.has(service.slug) && selectedWindow
+      ? `${dayLabel} · ${selectedWindow.window_label}`
+      : item.slot != null
+        ? `${dayLabel} · ${minutesToTime(item.slot)}`
+        : `${dayLabel} · flexible`;
+
+  const repeatSummary = getRepeatSummary(item);
+  return [variant.name, timing, repeatSummary, pet?.name ? `for ${pet.name}` : null].filter(Boolean).join(" · ");
+};
 
 const Book = () => {
   const db = supabase as any;
@@ -96,13 +184,10 @@ const Book = () => {
   const [sitterId, setSitterId] = useState<string | null>(null);
 
   const [step, setStep] = useState(0);
-  const [serviceId, setServiceId] = useState<string | null>(null);
-  const [variantId, setVariantId] = useState<string | null>(null);
-  const [date, setDate] = useState<Date | undefined>(undefined);
-  const [slot, setSlot] = useState<number | null>(null);
-  const [windowId, setWindowId] = useState<string | null>(null);
-  const [petId, setPetId] = useState<string | null>(null);
-  const [notes, setNotes] = useState("");
+  const [bundleItems, setBundleItems] = useState<BundleItem[]>([]);
+  const [activeItemId, setActiveItemId] = useState<string | null>(null);
+  const [bundleLabel, setBundleLabel] = useState("");
+  const [bundleNotes, setBundleNotes] = useState("");
   const [acceptedTerms, setAcceptedTerms] = useState(false);
   const [submitting, setSubmitting] = useState(false);
 
@@ -158,23 +243,8 @@ const Book = () => {
           .in("status", ["pending_payment", "awaiting_payment", "confirmed", "requested"]);
         setExisting((bk ?? []) as Booking[]);
       }
-
-      if (presetSlug && nextServices.length > 0) {
-        const foundService = nextServices.find((service) => service.slug === presetSlug || service.variants.some((variant) => variant.slug === presetSlug));
-        if (foundService) {
-          setServiceId(foundService.id);
-          const foundVariant = foundService.variants.find((variant) => variant.slug === presetSlug) ?? foundService.variants[0] ?? null;
-          setVariantId(foundVariant?.id ?? null);
-          return;
-        }
-      }
-
-      if (!serviceId && nextServices.length > 0) {
-        setServiceId(nextServices[0].id);
-        setVariantId(nextServices[0].variants[0]?.id ?? null);
-      }
     })();
-  }, [db, presetSlug]);
+  }, [db]);
 
   useEffect(() => {
     if (!user) return;
@@ -184,23 +254,44 @@ const Book = () => {
     })();
   }, [user]);
 
-  const service = useMemo(() => services.find((item) => item.id === serviceId) ?? null, [serviceId, services]);
-  const selectedVariant = useMemo(() => service?.variants.find((item) => item.id === variantId) ?? service?.variants[0] ?? null, [service, variantId]);
-  const isWalkWindowRequest = !!service && WALK_REQUEST_SLUGS.has(service.slug);
-  const isBoarding = service?.scheduling_mode === "boarding" || service?.slug === "boarding";
-  const isRequestFlow = Boolean(service && (service.scheduling_mode === "request" || service.scheduling_mode === "boarding" || service.approval_required));
-  const usesExactSlots = Boolean(service && !isWalkWindowRequest && !isBoarding);
+  useEffect(() => {
+    if (services.length === 0 || bundleItems.length > 0) return;
+
+    const foundService = presetSlug
+      ? services.find((service) => service.slug === presetSlug || service.variants.some((variant) => variant.slug === presetSlug))
+      : services[0];
+    const foundVariant = foundService
+      ? foundService.variants.find((variant) => variant.slug === presetSlug) ?? foundService.variants[0] ?? null
+      : null;
+
+    const initialItem = createBundleItem({
+      serviceId: foundService?.id ?? null,
+      variantId: foundVariant?.id ?? null,
+    });
+
+    setBundleItems([initialItem]);
+    setActiveItemId(initialItem.id);
+  }, [bundleItems.length, presetSlug, services]);
 
   useEffect(() => {
-    if (!service) return;
-    if (!selectedVariant) {
-      setVariantId(service.variants[0]?.id ?? null);
-      return;
+    if (!activeItemId && bundleItems[0]) setActiveItemId(bundleItems[0].id);
+    if (activeItemId && !bundleItems.some((item) => item.id === activeItemId)) {
+      setActiveItemId(bundleItems[0]?.id ?? null);
     }
-    if (!service.variants.some((item) => item.id === selectedVariant.id)) {
-      setVariantId(service.variants[0]?.id ?? null);
+  }, [activeItemId, bundleItems]);
+
+  useEffect(() => {
+    if (!authLoading && !user && step >= 2) {
+      navigate("/auth", { state: { from: `${location.pathname}${location.search}` } });
     }
-  }, [selectedVariant, service]);
+  }, [authLoading, location.pathname, location.search, navigate, step, user]);
+
+  const bundleItemMap = useMemo(() => new Map(bundleItems.map((item) => [item.id, item])), [bundleItems]);
+  const serviceMap = useMemo(() => new Map(services.map((service) => [service.id, service])), [services]);
+  const variantMap = useMemo(() => {
+    const allVariants = services.flatMap((service) => service.variants);
+    return new Map(allVariants.map((variant) => [variant.id, variant]));
+  }, [services]);
 
   const slotServiceMap = useMemo(() => {
     const map = new Map<string, Set<string>>();
@@ -211,24 +302,32 @@ const Book = () => {
     return map;
   }, [availServices]);
 
-  const availabilityForService = useMemo(() => {
-    if (!service) return availability;
-    return availability.filter((row) => slotServiceMap.get(row.id)?.has(service.id));
-  }, [availability, service, slotServiceMap]);
+  const activeItem = activeItemId ? bundleItemMap.get(activeItemId) ?? null : bundleItems[0] ?? null;
+  const activeService = activeItem?.serviceId ? serviceMap.get(activeItem.serviceId) ?? null : null;
+  const activeVariant = activeItem?.variantId ? variantMap.get(activeItem.variantId) ?? null : activeService?.variants[0] ?? null;
+  const activeDate = activeItem?.requestedDate ? new Date(`${activeItem.requestedDate}T12:00:00`) : undefined;
+  const isActiveWalkWindowRequest = !!activeService && WALK_REQUEST_SLUGS.has(activeService.slug);
+  const isActiveBoarding = activeService?.scheduling_mode === "boarding" || activeService?.slug === "boarding";
+  const activeUsesExactSlots = Boolean(activeService && !isActiveWalkWindowRequest && !isActiveBoarding);
 
-  const walkWindowsForService = useMemo(() => {
-    if (!service) return [];
+  const availabilityForActiveService = useMemo(() => {
+    if (!activeService) return availability;
+    return availability.filter((row) => slotServiceMap.get(row.id)?.has(activeService.id));
+  }, [activeService, availability, slotServiceMap]);
+
+  const walkWindowsForActiveService = useMemo(() => {
+    if (!activeService) return [];
     return walkWindows
-      .filter((row) => row.service_id === service.id)
+      .filter((row) => row.service_id === activeService.id)
       .sort((a, b) => a.sort_order - b.sort_order || a.start_minute - b.start_minute);
-  }, [service, walkWindows]);
+  }, [activeService, walkWindows]);
 
-  const windowOptions = useMemo(() => {
-    if (!date || !service || !isWalkWindowRequest || !sitterId) return [];
-    return walkWindowsForService.filter((row) => row.sitter_id === sitterId && row.weekday === date.getDay());
-  }, [date, isWalkWindowRequest, service, sitterId, walkWindowsForService]);
+  const activeWindowOptions = useMemo(() => {
+    if (!activeDate || !activeService || !isActiveWalkWindowRequest || !sitterId) return [];
+    return walkWindowsForActiveService.filter((row) => row.sitter_id === sitterId && row.weekday === activeDate.getDay());
+  }, [activeDate, activeService, isActiveWalkWindowRequest, sitterId, walkWindowsForActiveService]);
 
-  const selectedWindow = useMemo(() => windowOptions.find((row) => row.id === windowId) ?? null, [windowId, windowOptions]);
+  const activeSelectedWindow = useMemo(() => activeWindowOptions.find((row) => row.id === activeItem?.windowId) ?? null, [activeItem?.windowId, activeWindowOptions]);
 
   const requestCountByWindow = useMemo(() => {
     const map = new Map<string, number>();
@@ -240,22 +339,22 @@ const Book = () => {
     return map;
   }, [existing]);
 
-  const slots = useMemo<number[]>(() => {
-    if (!date || !service || !selectedVariant || !sitterId || !usesExactSlots) return [];
-    const weekday = date.getDay();
-    const dayBlocks = availabilityForService.filter((row) => row.sitter_id === sitterId && row.weekday === weekday);
+  const activeSlots = useMemo<number[]>(() => {
+    if (!activeDate || !activeService || !activeVariant || !sitterId || !activeUsesExactSlots) return [];
+    const weekday = activeDate.getDay();
+    const dayBlocks = availabilityForActiveService.filter((row) => row.sitter_id === sitterId && row.weekday === weekday);
     if (dayBlocks.length === 0) return [];
 
-    const isBlockedDay = blocked.some((row) => row.sitter_id === sitterId && isSameDay(new Date(`${row.blocked_date}T12:00:00`), date));
+    const isBlockedDay = blocked.some((row) => row.sitter_id === sitterId && isSameDay(new Date(`${row.blocked_date}T12:00:00`), activeDate));
     if (isBlockedDay) return [];
 
-    const duration = selectedVariant.duration_minutes;
-    const bufferMinutes = Math.max(service.turnaround_buffer_minutes ?? 0, 30);
+    const duration = activeVariant.duration_minutes;
+    const bufferMinutes = Math.max(activeService.turnaround_buffer_minutes ?? 0, 30);
     const output: number[] = [];
 
     for (const block of dayBlocks) {
       for (let minute = block.start_minute; minute + duration <= block.end_minute; minute += 30) {
-        const start = new Date(date);
+        const start = new Date(activeDate);
         start.setHours(0, 0, 0, 0);
         const slotStart = new Date(start.getTime() + minute * 60_000);
         const slotEnd = new Date(slotStart.getTime() + duration * 60_000);
@@ -272,222 +371,331 @@ const Book = () => {
     }
 
     return output;
-  }, [availabilityForService, blocked, date, existing, selectedVariant, service, sitterId, usesExactSlots]);
+  }, [activeDate, activeService, activeUsesExactSlots, activeVariant, availabilityForActiveService, blocked, existing, sitterId]);
 
-  const computePaymentAmount = (priceCents: number, paymentMode: ServiceVariant["payment_mode"]) => {
-    if (paymentMode === "free") return 0;
-    if (paymentMode === "full") return priceCents;
-    return Math.round(priceCents * 0.25);
+  const bundleSummaries = useMemo(
+    () =>
+      bundleItems.map((item) => {
+        const service = item.serviceId ? serviceMap.get(item.serviceId) ?? null : null;
+        const variant = item.variantId ? variantMap.get(item.variantId) ?? null : null;
+        const pet = pets.find((candidate) => candidate.id === item.petId);
+        const selectedWindow = walkWindows.find((window) => window.id === item.windowId) ?? null;
+        return {
+          item,
+          service,
+          variant,
+          pet,
+          selectedWindow,
+          summary: getBundleSummary({ item, service, variant, pet, selectedWindow }),
+        };
+      }),
+    [bundleItems, pets, serviceMap, variantMap, walkWindows],
+  );
+
+  const patchBundleItem = (itemId: string, patch: Partial<BundleItem>) => {
+    setBundleItems((current) => current.map((item) => (item.id === itemId ? { ...item, ...patch } : item)));
+  };
+
+  const setServiceForItem = (itemId: string, nextServiceId: string) => {
+    const nextService = serviceMap.get(nextServiceId);
+    patchBundleItem(itemId, {
+      serviceId: nextServiceId,
+      variantId: nextService?.variants[0]?.id ?? null,
+      requestedDate: "",
+      requestedEndDate: "",
+      slot: null,
+      windowId: null,
+      repeatFrequency: "none",
+      repeatDays: [],
+      repeatInterval: 1,
+    });
+  };
+
+  const setVariantForItem = (itemId: string, nextVariantId: string) => {
+    patchBundleItem(itemId, {
+      variantId: nextVariantId,
+      slot: null,
+      windowId: null,
+    });
+  };
+
+  const addBundleItem = () => {
+    const nextService = services[0] ?? null;
+    const nextVariant = nextService?.variants[0] ?? null;
+    const nextItem = createBundleItem({ serviceId: nextService?.id ?? null, variantId: nextVariant?.id ?? null });
+    setBundleItems((current) => [...current, nextItem]);
+    setActiveItemId(nextItem.id);
+  };
+
+  const removeBundleItem = (itemId: string) => {
+    if (bundleItems.length === 1) return;
+    const nextItems = bundleItems.filter((item) => item.id !== itemId);
+    setBundleItems(nextItems);
+    if (activeItemId === itemId) setActiveItemId(nextItems[0]?.id ?? null);
+  };
+
+  const setRequestedDate = (itemId: string, nextDate?: Date) => {
+    const dateValue = nextDate ? format(nextDate, "yyyy-MM-dd") : "";
+    const weekday = nextDate?.getDay();
+    const item = bundleItemMap.get(itemId);
+    const nextRepeatDays = item?.repeatFrequency === "weekly" || item?.repeatFrequency === "biweekly"
+      ? item.repeatDays.length > 0
+        ? item.repeatDays
+        : typeof weekday === "number"
+          ? [weekday]
+          : []
+      : item?.repeatDays ?? [];
+
+    patchBundleItem(itemId, {
+      requestedDate: dateValue,
+      requestedEndDate: item?.repeatFrequency === "none" ? "" : item?.requestedEndDate ?? "",
+      repeatDays: nextRepeatDays,
+      slot: null,
+      windowId: null,
+    });
+  };
+
+  const toggleRepeatDay = (itemId: string, weekday: number) => {
+    const item = bundleItemMap.get(itemId);
+    if (!item) return;
+    const hasDay = item.repeatDays.includes(weekday);
+    const nextDays = hasDay ? item.repeatDays.filter((day) => day !== weekday) : [...item.repeatDays, weekday].sort((a, b) => a - b);
+    patchBundleItem(itemId, { repeatDays: nextDays });
+  };
+
+  const setRepeatFrequency = (itemId: string, value: RepeatFrequency) => {
+    const item = bundleItemMap.get(itemId);
+    if (!item) return;
+    const dateWeekday = item.requestedDate ? new Date(`${item.requestedDate}T12:00:00`).getDay() : undefined;
+    patchBundleItem(itemId, {
+      repeatFrequency: value,
+      repeatInterval: 1,
+      requestedEndDate: value === "none" ? "" : item.requestedEndDate,
+      repeatDays:
+        value === "weekly" || value === "biweekly"
+          ? item.repeatDays.length > 0
+            ? item.repeatDays
+            : typeof dateWeekday === "number"
+              ? [dateWeekday]
+              : []
+          : [],
+    });
   };
 
   const getDayDisabled = (day: Date) => {
     const today = startOfDay(new Date());
     if (day < today) return true;
-    if (day > addDays(today, 60)) return true;
-    if (!sitterId || !service) return true;
+    if (day > addDays(today, 120)) return true;
+    if (!sitterId || !activeService) return true;
 
     const isBlockedDay = blocked.some((row) => row.sitter_id === sitterId && isSameDay(new Date(`${row.blocked_date}T12:00:00`), day));
     if (isBlockedDay) return true;
 
-    if (isBoarding) return false;
-    if (isWalkWindowRequest) {
-      return !walkWindowsForService.some((row) => row.sitter_id === sitterId && row.weekday === day.getDay());
+    if (isActiveBoarding) return false;
+    if (isActiveWalkWindowRequest) {
+      return !walkWindowsForActiveService.some((row) => row.sitter_id === sitterId && row.weekday === day.getDay());
     }
-    return !availabilityForService.some((row) => row.sitter_id === sitterId && row.weekday === day.getDay());
+    return !availabilityForActiveService.some((row) => row.sitter_id === sitterId && row.weekday === day.getDay());
+  };
+
+  const validateServiceStep = () => {
+    if (bundleItems.length === 0) return "Add at least one service request";
+    const incomplete = bundleItems.some((item) => !item.serviceId || !item.variantId);
+    return incomplete ? "Choose a service and option for each request" : null;
+  };
+
+  const validateScheduleStep = () => {
+    for (const item of bundleItems) {
+      const service = item.serviceId ? serviceMap.get(item.serviceId) ?? null : null;
+      if (!service) return "Choose a service for each request first";
+      if (!item.requestedDate) return `Add a date for ${service.name}`;
+      if (service.slug !== "boarding" && WALK_REQUEST_SLUGS.has(service.slug) && !item.windowId) return `Choose a preferred window for ${service.name}`;
+      if (service.slug !== "boarding" && !WALK_REQUEST_SLUGS.has(service.slug) && item.slot == null) return `Choose a time for ${service.name}`;
+      if ((item.repeatFrequency === "weekly" || item.repeatFrequency === "biweekly") && item.repeatDays.length === 0) return `Pick repeat days for ${service.name}`;
+      if (item.requestedEndDate && item.requestedEndDate < item.requestedDate) return `Repeat end date must be after the first date for ${service.name}`;
+      if (service.slug === "boarding" && item.repeatFrequency !== "none") return "Boarding requests are one-off for now";
+    }
+    return null;
+  };
+
+  const validatePetStep = () => {
+    for (const item of bundleItems) {
+      const service = item.serviceId ? serviceMap.get(item.serviceId) ?? null : null;
+      if (!item.petId) return `Choose a pet for ${service?.name ?? "each request"}`;
+    }
+    return null;
   };
 
   const next = () => {
-    if (step === 0 && (!serviceId || !selectedVariant)) return toast({ title: "Pick a service option", variant: "destructive" });
-    if (step === 1 && !date) return toast({ title: "Pick a date", variant: "destructive" });
-    if (step === 1 && isWalkWindowRequest && !selectedWindow) return toast({ title: "Choose a preferred window", variant: "destructive" });
-    if (step === 1 && usesExactSlots && slot === null) return toast({ title: "Pick a time", variant: "destructive" });
-    if (step === 2 && !petId) return toast({ title: "Pick a pet", variant: "destructive" });
+    const message = step === 0 ? validateServiceStep() : step === 1 ? validateScheduleStep() : step === 2 ? validatePetStep() : null;
+    if (message) return toast({ title: message, variant: "destructive" });
     setStep((current) => Math.min(current + 1, STEPS.length - 1));
   };
 
   const back = () => setStep((current) => Math.max(current - 1, 0));
 
+  const buildBookingPayload = (item: BundleItem, position: number, requestGroupId: string) => {
+    const service = item.serviceId ? serviceMap.get(item.serviceId) ?? null : null;
+    const variant = item.variantId ? variantMap.get(item.variantId) ?? null : null;
+    const selectedWindow = item.windowId ? walkWindows.find((window) => window.id === item.windowId) ?? null : null;
+    if (!user || !service || !variant || !item.petId || !item.requestedDate || !sitterId) return null;
+
+    const totalCents = variant.price_cents;
+    const paymentAmountCents = variant.payment_mode === "free" ? 0 : variant.payment_mode === "deposit" ? Math.round(totalCents * 0.25) : totalCents;
+    const depositCents = variant.payment_mode === "deposit" ? paymentAmountCents : variant.payment_mode === "full" ? totalCents : 0;
+
+    let startAt: string;
+    let endAt: string;
+    let requestedWindowLabel: string;
+    let requestedWindowStartMinute: number | null;
+    let requestedWindowEndMinute: number | null;
+
+    if (service.slug === "boarding") {
+      const checkinMinute = service.boarding_checkin_minute ?? 12 * 60;
+      const checkoutMinute = service.boarding_checkout_minute ?? 12 * 60;
+      const startDate = new Date(`${item.requestedDate}T00:00:00`);
+      startDate.setMinutes(checkinMinute);
+      const endDate = new Date(addDays(new Date(`${item.requestedDate}T00:00:00`), 1));
+      endDate.setHours(0, 0, 0, 0);
+      endDate.setMinutes(checkoutMinute);
+      startAt = startDate.toISOString();
+      endAt = endDate.toISOString();
+      requestedWindowLabel = "Noon to noon";
+      requestedWindowStartMinute = checkinMinute;
+      requestedWindowEndMinute = checkoutMinute;
+    } else if (WALK_REQUEST_SLUGS.has(service.slug) && selectedWindow) {
+      const requestStart = new Date(`${item.requestedDate}T00:00:00`);
+      const requestEnd = new Date(`${item.requestedDate}T00:00:00`);
+      requestStart.setMinutes(selectedWindow.start_minute);
+      requestEnd.setMinutes(selectedWindow.end_minute);
+      startAt = requestStart.toISOString();
+      endAt = requestEnd.toISOString();
+      requestedWindowLabel = selectedWindow.window_label;
+      requestedWindowStartMinute = selectedWindow.start_minute;
+      requestedWindowEndMinute = selectedWindow.end_minute;
+    } else {
+      const slot = item.slot ?? 0;
+      const requestStart = new Date(`${item.requestedDate}T00:00:00`);
+      const requestEnd = new Date(`${item.requestedDate}T00:00:00`);
+      requestStart.setMinutes(slot);
+      requestEnd.setMinutes(slot + variant.duration_minutes);
+      startAt = requestStart.toISOString();
+      endAt = requestEnd.toISOString();
+      requestedWindowLabel = `${minutesToTime(slot)}–${minutesToTime(slot + variant.duration_minutes)}`;
+      requestedWindowStartMinute = slot;
+      requestedWindowEndMinute = slot + variant.duration_minutes;
+    }
+
+    const recurrenceLabel = getRepeatSummary(item);
+    const recurrencePattern = item.repeatFrequency === "none"
+      ? null
+      : {
+          frequency: item.repeatFrequency,
+          interval: item.repeatInterval,
+          weekdays: item.repeatDays,
+        };
+
+    return {
+      customer_id: user.id,
+      sitter_id: sitterId,
+      pet_id: item.petId,
+      service_id: service.id,
+      service_variant_id: variant.id,
+      start_at: startAt,
+      end_at: endAt,
+      total_cents: totalCents,
+      base_price_cents: totalCents,
+      deposit_cents: depositCents,
+      payment_amount_cents: paymentAmountCents,
+      notes: item.notes || null,
+      terms_accepted_at: new Date().toISOString(),
+      terms_version: TERMS_VERSION,
+      status: "requested",
+      booking_kind: "requested",
+      request_group_id: requestGroupId,
+      request_group_label: bundleLabel.trim() || null,
+      requested_date: item.requestedDate,
+      requested_end_date: item.repeatFrequency === "none" ? null : item.requestedEndDate || null,
+      requested_window_label: requestedWindowLabel,
+      requested_window_start_minute: requestedWindowStartMinute,
+      requested_window_end_minute: requestedWindowEndMinute,
+      recurrence_label: recurrenceLabel,
+      recurrence_pattern: recurrencePattern,
+      bundle_position: position,
+    };
+  };
+
   const submit = async () => {
-    if (!user || !service || !selectedVariant || !date || !sitterId || !petId) return;
-    if (isWalkWindowRequest && !selectedWindow) return;
-    if (usesExactSlots && slot === null) return;
+    if (!user || !sitterId) return;
+    const serviceError = validateServiceStep();
+    const scheduleError = validateScheduleStep();
+    const petError = validatePetStep();
+    if (serviceError || scheduleError || petError) {
+      toast({ title: serviceError ?? scheduleError ?? petError ?? "Please finish the request", variant: "destructive" });
+      return;
+    }
     if (!acceptedTerms) {
-      return toast({ title: "Accept the Terms & Conditions to continue", variant: "destructive" });
+      toast({ title: "Accept the Terms & Conditions to continue", variant: "destructive" });
+      return;
     }
 
     setSubmitting(true);
 
-    const totalCents = selectedVariant.price_cents;
-    const dueNow = computePaymentAmount(totalCents, selectedVariant.payment_mode);
-    const depositCents = selectedVariant.payment_mode === "deposit" ? dueNow : selectedVariant.payment_mode === "full" ? totalCents : 0;
-
-    let bookingPayload: Record<string, unknown>;
-
-    if (isWalkWindowRequest && selectedWindow) {
-      const requestStart = new Date(date);
-      requestStart.setHours(0, 0, 0, 0);
-
-      const startAt = new Date(requestStart.getTime() + selectedWindow.start_minute * 60_000).toISOString();
-      const endAt = new Date(requestStart.getTime() + selectedWindow.end_minute * 60_000).toISOString();
-      const requestCountKey = `${format(date, "yyyy-MM-dd")}-${selectedWindow.window_label}`;
-      if ((requestCountByWindow.get(requestCountKey) ?? 0) >= Math.max(selectedWindow.max_bookings ?? 1, 1)) {
-        setSubmitting(false);
-        toast({ title: "That window just filled up", description: "Choose another window and try again.", variant: "destructive" });
-        return;
-      }
-
-      bookingPayload = {
+    const { data: groupData, error: groupError } = await db
+      .from("booking_request_groups")
+      .insert({
         customer_id: user.id,
         sitter_id: sitterId,
-        pet_id: petId,
-        service_id: service.id,
-        service_variant_id: selectedVariant.id,
-        start_at: startAt,
-        end_at: endAt,
-        total_cents: totalCents,
-        base_price_cents: totalCents,
-        deposit_cents: depositCents,
-        payment_amount_cents: dueNow,
-        notes: notes || null,
-        terms_accepted_at: new Date().toISOString(),
-        terms_version: TERMS_VERSION,
+        label: bundleLabel.trim() || null,
+        notes: bundleNotes.trim() || null,
         status: "requested",
-        booking_kind: "requested",
-        requested_date: format(date, "yyyy-MM-dd"),
-        requested_window_label: selectedWindow.window_label,
-        requested_window_start_minute: selectedWindow.start_minute,
-        requested_window_end_minute: selectedWindow.end_minute,
-      };
-    } else if (isBoarding) {
-      const checkinMinute = service.boarding_checkin_minute ?? 12 * 60;
-      const checkoutMinute = service.boarding_checkout_minute ?? 12 * 60;
-      const startAt = new Date(date);
-      startAt.setHours(0, 0, 0, 0);
-      startAt.setMinutes(checkinMinute);
-      const endAt = new Date(addDays(date, 1));
-      endAt.setHours(0, 0, 0, 0);
-      endAt.setMinutes(checkoutMinute);
+      })
+      .select("id")
+      .single();
 
-      bookingPayload = {
-        customer_id: user.id,
-        sitter_id: sitterId,
-        pet_id: petId,
-        service_id: service.id,
-        service_variant_id: selectedVariant.id,
-        start_at: startAt.toISOString(),
-        end_at: endAt.toISOString(),
-        total_cents: totalCents,
-        base_price_cents: totalCents,
-        deposit_cents: depositCents,
-        payment_amount_cents: dueNow,
-        notes: notes || null,
-        terms_accepted_at: new Date().toISOString(),
-        terms_version: TERMS_VERSION,
-        status: "requested",
-        booking_kind: "requested",
-        requested_date: format(date, "yyyy-MM-dd"),
-        requested_window_label: "Noon to noon",
-        requested_window_start_minute: checkinMinute,
-        requested_window_end_minute: checkoutMinute,
-      };
-    } else {
-      const dayStart = new Date(date);
-      dayStart.setHours(0, 0, 0, 0);
-      const startAt = new Date(dayStart.getTime() + (slot ?? 0) * 60_000).toISOString();
-      const endAt = new Date(dayStart.getTime() + ((slot ?? 0) + selectedVariant.duration_minutes) * 60_000).toISOString();
-      const basePayload = {
-        customer_id: user.id,
-        sitter_id: sitterId,
-        pet_id: petId,
-        service_id: service.id,
-        service_variant_id: selectedVariant.id,
-        start_at: startAt,
-        end_at: endAt,
-        total_cents: totalCents,
-        base_price_cents: totalCents,
-        deposit_cents: depositCents,
-        payment_amount_cents: dueNow,
-        notes: notes || null,
-        terms_accepted_at: new Date().toISOString(),
-        terms_version: TERMS_VERSION,
-      };
-
-      bookingPayload = {
-        ...basePayload,
-        status: "requested",
-        booking_kind: "requested",
-        requested_date: format(date, "yyyy-MM-dd"),
-        requested_window_label: `${minutesToTime(slot ?? 0)}–${minutesToTime((slot ?? 0) + selectedVariant.duration_minutes)}`,
-        requested_window_start_minute: slot,
-        requested_window_end_minute: (slot ?? 0) + selectedVariant.duration_minutes,
-      };
-    }
-
-    const { data, error } = await db.from("bookings").insert(bookingPayload).select("id").single();
-    setSubmitting(false);
-
-    if (error || !data?.id) {
-      toast({ title: "Couldn't book", description: error?.message ?? "Please try again.", variant: "destructive" });
+    if (groupError || !groupData?.id) {
+      setSubmitting(false);
+      toast({ title: "Couldn't save request", description: groupError?.message ?? "Please try again.", variant: "destructive" });
       return;
     }
 
-    const { error: notifyError } = await supabase.functions.invoke("notify-new-booking-request", {
-      body: { bookingId: data.id },
-    });
+    const bookingPayloads = bundleItems
+      .map((item, index) => buildBookingPayload(item, index, groupData.id))
+      .filter(Boolean);
 
-    if (notifyError) {
-      console.warn("notify-new-booking-request failed", notifyError);
+    const { data, error } = await db.from("bookings").insert(bookingPayloads).select("id");
+    setSubmitting(false);
+
+    if (error || !data?.length) {
+      toast({ title: "Couldn't save request", description: error?.message ?? "Please try again.", variant: "destructive" });
+      return;
     }
 
-    navigate(`/booking/${data.id}/success`);
+    await Promise.all(
+      data.map((booking: { id: string }) =>
+        supabase.functions.invoke("notify-new-booking-request", {
+          body: { bookingId: booking.id },
+        }),
+      ),
+    );
+
+    navigate(`/booking/${data[0].id}/success${data.length > 1 ? "?bundle=1" : ""}`);
   };
 
-  useEffect(() => {
-    if (!authLoading && !user && step >= 2) {
-      navigate("/auth", { state: { from: `${location.pathname}${location.search}` } });
-    }
-  }, [authLoading, location.pathname, location.search, navigate, step, user]);
-
-  useEffect(() => {
-    setSlot(null);
-    setWindowId(null);
-    setDate(undefined);
-    setVariantId(service?.variants[0]?.id ?? null);
-  }, [serviceId]);
-
-  const reviewCopy = (() => {
-    if (!service || !selectedVariant) return "";
-    if (isBoarding) return "Boarding requests are confirmed before your stay is finalized.";
-    if (isWalkWindowRequest || isRequestFlow) return "Your request will be reviewed before it is confirmed.";
-    if (selectedVariant.payment_mode === "free") return "Your booking will be confirmed before it is finalized.";
-    return "Your booking will be confirmed before payment is requested.";
-  })();
-
-  const submitLabel = !service || !selectedVariant ? "Continue" : "Send request";
-
-  const feeSummary = service && selectedVariant ? [
-    service.extra_time_fee_cents && service.extra_time_increment_minutes
-      ? `${formatPriceWithDecimals(service.extra_time_fee_cents)} / ${service.extra_time_increment_minutes} min add-on`
-      : null,
-    service.late_pickup_fee_cents ? `${formatPriceWithDecimals(service.late_pickup_fee_cents)} late pickup fee` : null,
-  ].filter(Boolean).join(" · ") : "";
-
-  const serviceSubtitle = service && selectedVariant
-    ? isBoarding
-      ? `Check-in ${minutesToTime(service.boarding_checkin_minute ?? 12 * 60)} · checkout ${minutesToTime(service.boarding_checkout_minute ?? 12 * 60)} next day`
-      : `${selectedVariant.duration_minutes} min${feeSummary ? ` · ${feeSummary}` : ""}`
-    : "";
+  const reviewCopy = bundleItems.length > 1
+    ? "Each service in this request will be reviewed on its own, but you only have to submit once."
+    : "Your request will be reviewed before it becomes payable.";
 
   return (
     <main className="min-h-screen bg-background texture-grain">
       <SiteNav />
-      <section className="mx-auto max-w-4xl px-5 py-10 sm:px-8 sm:py-14">
+      <section className="mx-auto max-w-6xl px-5 py-10 sm:px-8 sm:py-14">
         <span className="inline-block -rotate-2 font-tag text-2xl text-tag">lock it in</span>
         <h1 className="font-display text-5xl text-primary sm:text-6xl spray-glow">
-          Book a <span className="text-gradient-sunrise">service.</span>
+          Build a <span className="text-gradient-sunrise">service request.</span>
         </h1>
-        <p className="mt-3 max-w-2xl text-sm leading-relaxed text-foreground/75 sm:text-base">
-          Each service follows its own timing rules, approval flow, and pricing so bookings stay clear, realistic, and easy to manage.
+        <p className="mt-3 max-w-3xl text-sm leading-relaxed text-foreground/75 sm:text-base">
+          Mix repeat services and one-off care in one submission. Each service gets reviewed and approved on its own, but you only send one request.
         </p>
 
         <ol className="mt-6 grid grid-cols-4 gap-2">
@@ -499,8 +707,8 @@ const Book = () => {
                 index < step
                   ? "bg-secondary text-secondary-foreground shadow-pop"
                   : index === step
-                  ? "-rotate-1 bg-accent text-accent-foreground shadow-pop-sm"
-                  : "bg-card text-muted-foreground",
+                    ? "-rotate-1 bg-accent text-accent-foreground shadow-pop-sm"
+                    : "bg-card text-muted-foreground",
               )}
             >
               <span className="hidden sm:inline">{index + 1}. </span>
@@ -509,136 +717,186 @@ const Book = () => {
           ))}
         </ol>
 
-        {service && selectedVariant && isRequestFlow && (
-          <div className="mt-6 border-2 border-primary bg-highlight px-4 py-3 text-sm text-highlight-foreground shadow-pop-sm">
-            <div className="flex items-start gap-3">
-              <Sparkles className="mt-0.5 h-4 w-4 shrink-0" />
-              <p>
-                {isBoarding
-                  ? "Boarding requests are reviewed manually, confirmed for fit, and finalized before payment opens."
-                  : isWalkWindowRequest
-                  ? "Request the window that fits best and the final timing will be confirmed before payment opens."
-                  : "Pick the date and preferred slot you want — the request is reviewed before it becomes payable."}
+        <Card className="mt-6 border-4 border-primary p-5 shadow-pop-lg sm:p-6">
+          <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
+            <div>
+              <h2 className="font-display text-2xl uppercase text-primary">Bundle builder</h2>
+              <p className="mt-1 text-sm text-muted-foreground">
+                Use one card per service pattern — for example Monday walks, Wednesday walks, Friday visits, and next month&apos;s boarding stay.
               </p>
             </div>
+            <Button type="button" onClick={addBundleItem} variant="outline" className="border-2 border-primary font-display uppercase">
+              <Plus className="h-4 w-4" /> Add another service
+            </Button>
           </div>
-        )}
 
-        <Card className="mt-6 border-4 border-primary p-5 shadow-pop-lg sm:p-6">
-          {step === 0 && (
-            <div>
-              <h2 className="font-display text-2xl uppercase">Pick a service</h2>
-              <div className="mt-4 grid gap-4">
-                {services.map((svc) => {
-                  const activeService = serviceId === svc.id;
-                  return (
-                    <div key={svc.id} className={cn("border-2 border-primary p-4 transition-colors", activeService ? "bg-highlight" : "bg-card")}>
-                      <label className="flex cursor-pointer items-start gap-3">
-                        <RadioGroup value={serviceId ?? ""} onValueChange={setServiceId} className="w-full">
-                          <div className="flex items-start gap-3">
-                            <RadioGroupItem value={svc.id} className="mt-1" />
-                            <div className="flex-1">
-                              <div className="flex flex-wrap items-baseline justify-between gap-2">
-                                <span className="font-display text-2xl uppercase">{svc.name}</span>
-                                <span className="text-xs uppercase text-muted-foreground">
-                                  {svc.approval_required ? "Manual review" : "Instant booking"}
-                                </span>
-                              </div>
-                              <p className="mt-2 text-sm text-foreground/75">{svc.description}</p>
-                              <div className="mt-3 flex flex-wrap gap-2 text-xs text-muted-foreground">
-                                {svc.requires_pet_approval && <span className="inline-flex items-center gap-1"><ShieldCheck className="h-3.5 w-3.5" /> Pet approval</span>}
-                                {svc.scheduling_mode === "boarding" && <span className="inline-flex items-center gap-1"><MoonStar className="h-3.5 w-3.5" /> Noon to noon</span>}
-                                 {svc.turnaround_buffer_minutes > 0 && <span>Protected scheduling window</span>}
+          <div className="mt-5 grid gap-3 lg:grid-cols-2">
+            {bundleSummaries.map(({ item, service, summary }) => (
+              <button
+                key={item.id}
+                type="button"
+                onClick={() => setActiveItemId(item.id)}
+                className={cn(
+                  "border-2 p-4 text-left transition-all",
+                  activeItemId === item.id ? "border-primary bg-highlight shadow-pop-sm" : "border-primary bg-card hover:-translate-y-0.5 hover:bg-muted",
+                )}
+              >
+                <div className="flex items-start justify-between gap-3">
+                  <div>
+                    <div className="font-display text-base uppercase text-primary">{service?.name ?? `Service ${bundleItems.findIndex((candidate) => candidate.id === item.id) + 1}`}</div>
+                    <p className="mt-1 text-sm text-foreground/75">{summary}</p>
+                  </div>
+                  {bundleItems.length > 1 && (
+                    <span
+                      role="button"
+                      tabIndex={0}
+                      onClick={(event) => {
+                        event.stopPropagation();
+                        removeBundleItem(item.id);
+                      }}
+                      onKeyDown={(event) => {
+                        if (event.key === "Enter" || event.key === " ") {
+                          event.preventDefault();
+                          removeBundleItem(item.id);
+                        }
+                      }}
+                      className="text-muted-foreground transition-colors hover:text-destructive"
+                      aria-label="Remove request"
+                    >
+                      <Trash2 className="h-4 w-4" />
+                    </span>
+                  )}
+                </div>
+              </button>
+            ))}
+          </div>
+
+          {step === 0 && activeItem && (
+            <div className="mt-6 grid gap-6 xl:grid-cols-[1.1fr,0.9fr]">
+              <div>
+                <h3 className="font-display text-xl uppercase">Pick a service</h3>
+                <div className="mt-4 grid gap-4">
+                  {services.map((svc) => {
+                    const activeServiceCard = activeItem.serviceId === svc.id;
+                    return (
+                      <div key={svc.id} className={cn("border-2 border-primary p-4 transition-colors", activeServiceCard ? "bg-highlight" : "bg-card")}>
+                        <label className="flex cursor-pointer items-start gap-3">
+                          <RadioGroup value={activeItem.serviceId ?? ""} onValueChange={(value) => setServiceForItem(activeItem.id, value)} className="w-full">
+                            <div className="flex items-start gap-3">
+                              <RadioGroupItem value={svc.id} className="mt-1" />
+                              <div className="flex-1">
+                                <div className="flex flex-wrap items-baseline justify-between gap-2">
+                                  <span className="font-display text-2xl uppercase">{svc.name}</span>
+                                  <span className="text-xs uppercase text-muted-foreground">
+                                    {svc.approval_required ? "Manual review" : "Instant booking"}
+                                  </span>
+                                </div>
+                                <p className="mt-2 text-sm text-foreground/75">{svc.description}</p>
+                                <div className="mt-3 flex flex-wrap gap-2 text-xs text-muted-foreground">
+                                  {svc.requires_pet_approval && <span className="inline-flex items-center gap-1"><ShieldCheck className="h-3.5 w-3.5" /> Pet approval</span>}
+                                  {svc.scheduling_mode === "boarding" && <span className="inline-flex items-center gap-1"><MoonStar className="h-3.5 w-3.5" /> Noon to noon</span>}
+                                  {svc.turnaround_buffer_minutes > 0 && <span>Protected scheduling window</span>}
+                                </div>
                               </div>
                             </div>
-                          </div>
-                        </RadioGroup>
-                      </label>
+                          </RadioGroup>
+                        </label>
 
-                      <div className="mt-4 grid gap-2 sm:grid-cols-2 lg:grid-cols-3">
-                        {svc.variants.map((variant) => {
-                          const activeVariant = variantId === variant.id;
-                          return (
-                            <button
-                              key={variant.id}
-                              type="button"
-                              onClick={() => {
-                                setServiceId(svc.id);
-                                setVariantId(variant.id);
-                              }}
-                              className={cn(
-                                "border-2 border-primary p-3 text-left transition-all",
-                                activeVariant ? "bg-tag text-tag-foreground shadow-pop-accent" : "bg-card hover:-translate-y-0.5 hover:bg-muted",
-                              )}
-                            >
-                              <div className="font-display text-base uppercase">{variant.name}</div>
-                              <div className={cn("mt-1 text-sm", activeVariant ? "text-tag-foreground/80" : "text-foreground/75")}>
-                                {formatPriceWithDecimals(variant.price_cents)}
-                                <span className="ml-1 text-xs opacity-70">{variant.unit_label}</span>
-                              </div>
-                              <div className={cn("mt-1 text-xs", activeVariant ? "text-tag-foreground/80" : "text-muted-foreground")}>
-                                 {variant.duration_minutes >= 1440 ? "Overnight block" : `${variant.duration_minutes} minutes`} · {variant.payment_mode === "free" ? "No payment" : "Payment opens after approval"}
-                              </div>
-                            </button>
-                          );
-                        })}
+                        <div className="mt-4 grid gap-2 sm:grid-cols-2 lg:grid-cols-3">
+                          {svc.variants.map((variant) => {
+                            const activeVariantCard = activeItem.variantId === variant.id;
+                            return (
+                              <button
+                                key={variant.id}
+                                type="button"
+                                onClick={() => {
+                                  setServiceForItem(activeItem.id, svc.id);
+                                  setVariantForItem(activeItem.id, variant.id);
+                                }}
+                                className={cn(
+                                  "border-2 border-primary p-3 text-left transition-all",
+                                  activeVariantCard ? "bg-tag text-tag-foreground shadow-pop-accent" : "bg-card hover:-translate-y-0.5 hover:bg-muted",
+                                )}
+                              >
+                                <div className="font-display text-base uppercase">{variant.name}</div>
+                                <div className={cn("mt-1 text-sm", activeVariantCard ? "text-tag-foreground/80" : "text-foreground/75")}>
+                                  {formatPriceWithDecimals(variant.price_cents)}
+                                  <span className="ml-1 text-xs opacity-70">{variant.unit_label}</span>
+                                </div>
+                                <div className={cn("mt-1 text-xs", activeVariantCard ? "text-tag-foreground/80" : "text-muted-foreground")}>
+                                  {variant.duration_minutes >= 1440 ? "Overnight block" : `${variant.duration_minutes} minutes`} · {variant.payment_mode === "free" ? "No payment" : "Payment opens after approval"}
+                                </div>
+                              </button>
+                            );
+                          })}
+                        </div>
                       </div>
-                    </div>
-                  );
-                })}
+                    );
+                  })}
+                </div>
+              </div>
+
+              <div className="space-y-4">
+                <div>
+                  <Label htmlFor="bundle-label">Bundle label (optional)</Label>
+                  <Input id="bundle-label" value={bundleLabel} onChange={(event) => setBundleLabel(event.target.value)} placeholder="Weekly care plan + boarding" />
+                </div>
+                <div>
+                  <Label htmlFor="bundle-notes">Request note (optional)</Label>
+                  <Textarea id="bundle-notes" rows={6} value={bundleNotes} onChange={(event) => setBundleNotes(event.target.value)} placeholder="Anything that ties these requests together — travel dates, pickup patterns, or care context." />
+                </div>
               </div>
             </div>
           )}
 
-          {step === 1 && service && selectedVariant && (
-            <div>
-              <h2 className="font-display text-2xl uppercase">
-                {isBoarding ? "Pick your drop-off day" : isWalkWindowRequest ? "Pick a day & preferred window" : "Pick a day & time"}
-              </h2>
+          {step === 1 && activeItem && activeService && activeVariant && (
+            <div className="mt-6">
+              <h3 className="font-display text-2xl uppercase">
+                {isActiveBoarding ? "Pick your drop-off day" : isActiveWalkWindowRequest ? "Pick a day & preferred window" : "Pick a day & time"}
+              </h3>
               {!sitterId && <p className="mt-3 text-sm text-clay">No availability is set yet — check back soon.</p>}
-              <div className="mt-4 grid gap-6 md:grid-cols-[auto,1fr]">
+              <div className="mt-4 grid gap-6 xl:grid-cols-[auto,1fr]">
                 <div className="border-2 border-primary bg-card">
                   <Calendar
                     mode="single"
-                    selected={date}
-                    onSelect={(nextDate) => {
-                      setDate(nextDate);
-                      setSlot(null);
-                      setWindowId(null);
-                    }}
+                    selected={activeDate}
+                    onSelect={(nextDate) => setRequestedDate(activeItem.id, nextDate)}
                     disabled={getDayDisabled}
                     className={cn("pointer-events-auto p-3")}
                   />
                 </div>
                 <div>
                   <p className="font-display text-sm uppercase text-muted-foreground">
-                    {date ? format(date, "EEEE, MMM d") : "Select a date"}
+                    {activeDate ? format(activeDate, "EEEE, MMM d") : "Select a date"}
                   </p>
-                  {serviceSubtitle && <p className="mt-2 max-w-xl text-sm text-foreground/75">{serviceSubtitle}</p>}
+                  <p className="mt-2 max-w-xl text-sm text-foreground/75">
+                    {isActiveBoarding
+                      ? `Check-in ${minutesToTime(activeService.boarding_checkin_minute ?? 12 * 60)} · checkout ${minutesToTime(activeService.boarding_checkout_minute ?? 12 * 60)} next day`
+                      : `${activeVariant.duration_minutes} min${activeService.extra_time_fee_cents && activeService.extra_time_increment_minutes ? ` · ${formatPriceWithDecimals(activeService.extra_time_fee_cents)} / ${activeService.extra_time_increment_minutes} min add-on` : ""}`}
+                  </p>
 
-                  {isBoarding ? (
+                  {isActiveBoarding ? (
                     <div className="mt-4 border-2 border-primary bg-card p-4">
                       <div className="font-display text-lg uppercase text-primary">Boarding timing</div>
                       <p className="mt-2 text-sm text-foreground/75">
-                        {date
-                          ? `${format(date, "EEE, MMM d")} at ${minutesToTime(service.boarding_checkin_minute ?? 12 * 60)} → ${format(addDays(date, 1), "EEE, MMM d")} at ${minutesToTime(service.boarding_checkout_minute ?? 12 * 60)}`
+                        {activeDate
+                          ? `${format(activeDate, "EEE, MMM d")} at ${minutesToTime(activeService.boarding_checkin_minute ?? 12 * 60)} → ${format(addDays(activeDate, 1), "EEE, MMM d")} at ${minutesToTime(activeService.boarding_checkout_minute ?? 12 * 60)}`
                           : "Select a day to preview the noon-to-noon stay."}
                       </p>
-                      <p className="mt-3 text-xs text-muted-foreground">Extended hours need prior approval. Approved extra time or late pickup is added afterward.</p>
                     </div>
-                  ) : isWalkWindowRequest ? (
+                  ) : isActiveWalkWindowRequest ? (
                     <>
-                      {date && windowOptions.length === 0 && <p className="mt-3 text-sm text-clay">No request windows are open for this day.</p>}
+                      {activeDate && activeWindowOptions.length === 0 && <p className="mt-3 text-sm text-clay">No request windows are open for this day.</p>}
                       <div className="mt-3 grid gap-2 sm:grid-cols-2">
-                        {windowOptions.map((window) => {
-                          const active = windowId === window.id;
-                          const requestCount = requestCountByWindow.get(`${format(date ?? new Date(), "yyyy-MM-dd")}-${window.window_label}`) ?? 0;
+                        {activeWindowOptions.map((window) => {
+                          const active = activeItem.windowId === window.id;
+                          const requestCount = requestCountByWindow.get(`${format(activeDate ?? new Date(), "yyyy-MM-dd")}-${window.window_label}`) ?? 0;
                           const remaining = Math.max((window.max_bookings ?? 1) - requestCount, 0);
                           return (
                             <button
                               key={window.id}
                               type="button"
-                              onClick={() => setWindowId(window.id)}
+                              onClick={() => patchBundleItem(activeItem.id, { windowId: window.id })}
                               className={cn(
                                 "border-2 border-primary p-3 text-left transition-all",
                                 active ? "bg-tag text-tag-foreground shadow-pop-accent" : "bg-card hover:-translate-y-0.5 hover:bg-muted",
@@ -658,16 +916,16 @@ const Book = () => {
                     </>
                   ) : (
                     <>
-                      {date && slots.length === 0 && <p className="mt-3 text-sm text-clay">No times open this day.</p>}
+                      {activeDate && activeSlots.length === 0 && <p className="mt-3 text-sm text-clay">No times open this day.</p>}
                       <div className="mt-3 grid grid-cols-3 gap-2 sm:grid-cols-4">
-                        {slots.map((minute) => (
+                        {activeSlots.map((minute) => (
                           <button
                             key={minute}
                             type="button"
-                            onClick={() => setSlot(minute)}
+                            onClick={() => patchBundleItem(activeItem.id, { slot: minute })}
                             className={cn(
                               "border-2 border-primary px-2 py-2 font-display text-xs uppercase transition-all",
-                              slot === minute
+                              activeItem.slot === minute
                                 ? "-translate-y-0.5 bg-tag text-tag-foreground shadow-pop-accent"
                                 : "bg-card hover:-translate-y-0.5 hover:bg-accent hover:text-accent-foreground",
                             )}
@@ -678,15 +936,81 @@ const Book = () => {
                       </div>
                     </>
                   )}
+
+                  {!isActiveBoarding && (
+                    <div className="mt-6 space-y-4 border-2 border-primary bg-muted/40 p-4">
+                      <div className="flex flex-col gap-4 md:flex-row md:items-end md:justify-between">
+                        <div className="flex-1">
+                          <Label>Repeat schedule</Label>
+                          <Select value={activeItem.repeatFrequency} onValueChange={(value: RepeatFrequency) => setRepeatFrequency(activeItem.id, value)}>
+                            <SelectTrigger>
+                              <SelectValue />
+                            </SelectTrigger>
+                            <SelectContent>
+                              <SelectItem value="none">One-off request</SelectItem>
+                              <SelectItem value="daily">Daily</SelectItem>
+                              <SelectItem value="weekly">Weekly</SelectItem>
+                              <SelectItem value="biweekly">Biweekly</SelectItem>
+                              <SelectItem value="monthly">Monthly</SelectItem>
+                            </SelectContent>
+                          </Select>
+                        </div>
+                        {activeItem.repeatFrequency !== "none" && (
+                          <div className="w-full md:w-48">
+                            <Label>Until (optional)</Label>
+                            <Input type="date" value={activeItem.requestedEndDate} min={activeItem.requestedDate || undefined} onChange={(event) => patchBundleItem(activeItem.id, { requestedEndDate: event.target.value })} />
+                          </div>
+                        )}
+                      </div>
+
+                      {activeItem.repeatFrequency === "daily" && (
+                        <div className="max-w-xs">
+                          <Label>Repeat every</Label>
+                          <Input type="number" min={1} max={30} value={activeItem.repeatInterval} onChange={(event) => patchBundleItem(activeItem.id, { repeatInterval: Math.max(1, Number(event.target.value) || 1) })} />
+                        </div>
+                      )}
+
+                      {(activeItem.repeatFrequency === "weekly" || activeItem.repeatFrequency === "biweekly") && (
+                        <div>
+                          <Label>Repeat on</Label>
+                          <div className="mt-2 grid grid-cols-4 gap-2 sm:grid-cols-7">
+                            {DAYS.map((dayLabel, weekday) => {
+                              const checked = activeItem.repeatDays.includes(weekday);
+                              return (
+                                <button
+                                  key={dayLabel}
+                                  type="button"
+                                  onClick={() => toggleRepeatDay(activeItem.id, weekday)}
+                                  className={cn(
+                                    "border-2 border-primary px-2 py-2 text-xs font-display uppercase transition-all",
+                                    checked ? "bg-tag text-tag-foreground shadow-pop-accent" : "bg-card hover:bg-muted",
+                                  )}
+                                >
+                                  {dayLabel}
+                                </button>
+                              );
+                            })}
+                          </div>
+                          <p className="mt-2 text-xs text-muted-foreground">
+                            {activeItem.repeatFrequency === "biweekly" ? "This request repeats every other week on the selected days." : "This request repeats weekly on the selected days."}
+                          </p>
+                        </div>
+                      )}
+
+                      {activeItem.repeatFrequency === "monthly" && activeItem.requestedDate && (
+                        <p className="text-xs text-muted-foreground">Monthly repeats use day {new Date(`${activeItem.requestedDate}T12:00:00`).getDate()} of each month.</p>
+                      )}
+                    </div>
+                  )}
                 </div>
               </div>
             </div>
           )}
 
-          {step === 2 && service && (
-            <div>
-              <h2 className="font-display text-2xl uppercase">Who's coming?</h2>
-              {service.requires_pet_approval && (
+          {step === 2 && activeItem && activeService && (
+            <div className="mt-6">
+              <h3 className="font-display text-2xl uppercase">Who&apos;s coming?</h3>
+              {activeService.requires_pet_approval && (
                 <div className="mt-3 border-2 border-primary bg-muted px-4 py-3 text-sm text-foreground/75">
                   Pet fit is reviewed for this service before the booking is confirmed.
                 </div>
@@ -700,13 +1024,13 @@ const Book = () => {
                   </Button>
                 </Card>
               ) : (
-                <RadioGroup value={petId ?? ""} onValueChange={setPetId} className="mt-4 grid gap-3 sm:grid-cols-2">
+                <RadioGroup value={activeItem.petId ?? ""} onValueChange={(value) => patchBundleItem(activeItem.id, { petId: value })} className="mt-4 grid gap-3 sm:grid-cols-2">
                   {pets.map((pet) => (
                     <label
                       key={pet.id}
                       className={cn(
                         "flex cursor-pointer items-center gap-3 border-2 border-primary p-3",
-                        petId === pet.id ? "bg-highlight" : "bg-card hover:bg-muted",
+                        activeItem.petId === pet.id ? "bg-highlight" : "bg-card hover:bg-muted",
                       )}
                     >
                       <RadioGroupItem value={pet.id} />
@@ -730,54 +1054,65 @@ const Book = () => {
               <div className="mt-5">
                 <Label>Care notes (optional)</Label>
                 <Textarea
-                  rows={3}
+                  rows={4}
                   maxLength={500}
-                  value={notes}
-                  onChange={(event) => setNotes(event.target.value)}
+                  value={activeItem.notes}
+                  onChange={(event) => patchBundleItem(activeItem.id, { notes: event.target.value })}
                   placeholder="Anything important to know — leash habits, meds, feeding rhythm, pickups, building access, or social fit."
                 />
               </div>
             </div>
           )}
 
-          {step === 3 && service && selectedVariant && date && petId && (isBoarding || isWalkWindowRequest ? !!selectedWindow || isBoarding : slot !== null) && (
-            <div>
-              <h2 className="font-display text-2xl uppercase">Review</h2>
-              <dl className="mt-4 divide-y-2 divide-primary/15 border-2 border-primary bg-card text-sm">
-                <Row label="Service" value={selectedVariant.name} />
-                <Row
-                  label={isRequestFlow ? "Requested timing" : "When"}
-                  value={
-                    isBoarding
-                      ? `${format(date, "EEE, MMM d")} ${minutesToTime(service.boarding_checkin_minute ?? 12 * 60)} → ${format(addDays(date, 1), "EEE, MMM d")} ${minutesToTime(service.boarding_checkout_minute ?? 12 * 60)}`
-                      : isWalkWindowRequest && selectedWindow
-                      ? `${format(date, "EEE, MMM d")} · ${selectedWindow.window_label}`
-                      : `${format(date, "EEE, MMM d")} · ${minutesToTime(slot ?? 0)}`
-                  }
-                />
-                <Row
-                  label={isWalkWindowRequest ? "Window range" : "Duration"}
-                  value={
-                    isBoarding
-                      ? "Noon to noon"
-                      : isWalkWindowRequest && selectedWindow
-                      ? `${minutesToTime(selectedWindow.start_minute)}–${minutesToTime(selectedWindow.end_minute)}`
-                      : `${selectedVariant.duration_minutes} min`
-                  }
-                />
-                <Row label="Pet" value={pets.find((pet) => pet.id === petId)?.name ?? ""} />
-                <Row label="Base price" value={formatPriceWithDecimals(selectedVariant.price_cents)} />
-                {feeSummary && <Row label="Fee rules" value={feeSummary} />}
-                {isRequestFlow ? (
-                  <Row label="Due now" value="Nothing until Anneke approves" accent />
-                ) : selectedVariant.payment_mode === "deposit" ? (
-                  <Row label="Due now (25% deposit)" value={formatPriceWithDecimals(computePaymentAmount(selectedVariant.price_cents, selectedVariant.payment_mode))} accent />
-                ) : selectedVariant.payment_mode === "full" ? (
-                  <Row label="Due now" value={formatPriceWithDecimals(computePaymentAmount(selectedVariant.price_cents, selectedVariant.payment_mode))} accent />
-                ) : (
-                  <Row label="Due now" value="Free" accent />
-                )}
-              </dl>
+          {step === 3 && (
+            <div className="mt-6">
+              <h3 className="font-display text-2xl uppercase">Review</h3>
+              <div className="mt-4 space-y-4">
+                {bundleSummaries.map(({ item, service, variant, pet, selectedWindow }) => (
+                  <div key={item.id} className="border-2 border-primary bg-card p-4">
+                    <div className="flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between">
+                      <div>
+                        <div className="font-display text-xl uppercase text-primary">{variant?.name ?? service?.name ?? "Service"}</div>
+                        <p className="mt-1 text-sm text-foreground/80">{pet?.name ? `For ${pet.name}` : "Pet not selected yet"}</p>
+                      </div>
+                      <div className="text-left sm:text-right">
+                        <div className="font-display text-lg uppercase">{variant ? formatPriceWithDecimals(variant.price_cents) : ""}</div>
+                        <div className="text-xs text-muted-foreground">Nothing due until approval</div>
+                      </div>
+                    </div>
+                    <dl className="mt-4 divide-y-2 divide-primary/15 border-2 border-primary bg-muted/40 text-sm">
+                      <div className="flex items-center justify-between gap-4 p-3">
+                        <dt className="font-display text-xs uppercase tracking-wide text-muted-foreground">Requested timing</dt>
+                        <dd className="text-right font-display text-base uppercase">
+                          {service?.slug === "boarding"
+                            ? `${format(new Date(`${item.requestedDate}T12:00:00`), "EEE, MMM d")} · ${minutesToTime(service.boarding_checkin_minute ?? 12 * 60)}`
+                            : WALK_REQUEST_SLUGS.has(service?.slug ?? "") && selectedWindow
+                              ? `${format(new Date(`${item.requestedDate}T12:00:00`), "EEE, MMM d")} · ${selectedWindow.window_label}`
+                              : item.slot != null
+                                ? `${format(new Date(`${item.requestedDate}T12:00:00`), "EEE, MMM d")} · ${minutesToTime(item.slot)}`
+                                : "Pending schedule"}
+                        </dd>
+                      </div>
+                      <div className="flex items-center justify-between gap-4 p-3">
+                        <dt className="font-display text-xs uppercase tracking-wide text-muted-foreground">Repeat</dt>
+                        <dd className="text-right font-display text-base uppercase">{getRepeatSummary(item) ?? "One-off"}</dd>
+                      </div>
+                      {item.requestedEndDate && (
+                        <div className="flex items-center justify-between gap-4 p-3">
+                          <dt className="font-display text-xs uppercase tracking-wide text-muted-foreground">Through</dt>
+                          <dd className="text-right font-display text-base uppercase">{format(new Date(`${item.requestedEndDate}T12:00:00`), "EEE, MMM d")}</dd>
+                        </div>
+                      )}
+                      {item.notes && (
+                        <div className="flex items-center justify-between gap-4 p-3">
+                          <dt className="font-display text-xs uppercase tracking-wide text-muted-foreground">Notes</dt>
+                          <dd className="max-w-[70%] text-right text-sm text-foreground/80">{item.notes}</dd>
+                        </div>
+                      )}
+                    </dl>
+                  </div>
+                ))}
+              </div>
               <p className="mt-4 text-xs text-muted-foreground">{reviewCopy}</p>
               <div className="mt-5 rounded-md border border-border bg-muted/40 p-4">
                 <label className="flex items-start gap-3 text-sm text-foreground/85">
@@ -800,26 +1135,20 @@ const Book = () => {
               </Button>
             ) : (
               <Button onClick={submit} disabled={submitting || !acceptedTerms} className="bg-tag font-display uppercase text-tag-foreground shadow-pop-accent transition-transform hover:-translate-y-0.5">
-                {submitting ? "Saving…" : <>{submitLabel} <Check className="h-4 w-4" /></>}
+                {submitting ? "Saving…" : <>Send request <Check className="h-4 w-4" /></>}
               </Button>
             )}
           </div>
         </Card>
 
         <p className="mt-6 inline-flex -rotate-1 items-center gap-2 font-tag text-lg text-tag">
-          <CalendarDays className="h-4 w-4" /> showing the next 60 days · live booking calendar
+          <CalendarDays className="h-4 w-4" /> showing the next 120 days · live booking calendar
         </p>
+        <p className="mt-2 text-xs text-muted-foreground">Weekly, biweekly, daily, and monthly repeats are supported for walks and visits. Boarding stays stay one-off for now.</p>
       </section>
       <SiteFooter />
     </main>
   );
 };
-
-const Row = ({ label, value, accent }: { label: string; value: string; accent?: boolean }) => (
-  <div className={cn("flex items-center justify-between gap-4 p-3", accent && "bg-highlight")}>
-    <dt className="font-display text-xs uppercase tracking-wide text-muted-foreground">{label}</dt>
-    <dd className={cn("text-right font-display text-base uppercase", accent && "text-clay text-lg")}>{value}</dd>
-  </div>
-);
 
 export default Book;
