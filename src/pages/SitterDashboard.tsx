@@ -436,6 +436,12 @@ const SitterDashboard = () => {
   const [sendingUpdateId, setSendingUpdateId] = useState<string | null>(null);
   const [sendingClientMessage, setSendingClientMessage] = useState(false);
   const [savingAlert, setSavingAlert] = useState(false);
+  const [assistantCommand, setAssistantCommand] = useState("");
+  const [assistantMessages, setAssistantMessages] = useState<AssistantMessage[]>([]);
+  const [assistantPlan, setAssistantPlan] = useState<AssistantPlanResponse | null>(null);
+  const [assistantPreview, setAssistantPreview] = useState<AssistantNotificationPreview[]>([]);
+  const [assistantBusy, setAssistantBusy] = useState(false);
+  const [assistantApplying, setAssistantApplying] = useState(false);
 
   const load = async () => {
     if (!user) return;
@@ -635,6 +641,61 @@ const SitterDashboard = () => {
   const variantMap = useMemo(() => new Map(serviceVariants.map((variant) => [variant.id, variant])), [serviceVariants]);
   const walkServices = useMemo(() => services.filter((service) => WALK_SLUGS.has(service.slug)), [services]);
   const exactSlotServices = useMemo(() => services, [services]);
+  const assistantContext = useMemo<AssistantDashboardContext>(
+    () => ({
+      today: format(new Date(), "yyyy-MM-dd"),
+      services: services.map((service) => ({
+        id: service.id,
+        name: service.name,
+        slug: service.slug,
+        duration_minutes: service.duration_minutes,
+        payment_mode: service.payment_mode,
+        scheduling_mode: service.scheduling_mode,
+        requires_pet_approval: service.requires_pet_approval,
+        approval_required: service.approval_required,
+      })),
+      availability: availability.map((slot) => ({
+        id: slot.id,
+        weekday: slot.weekday,
+        start_minute: slot.start_minute,
+        end_minute: slot.end_minute,
+        max_bookings: slot.max_bookings,
+        service_slugs: Array.from(tagsBySlot.get(slot.id) ?? []).map((serviceId) => serviceMap.get(serviceId)?.slug).filter(Boolean) as string[],
+      })),
+      walkWindows: walkWindows.map((window) => ({
+        id: window.id,
+        service_slug: serviceMap.get(window.service_id)?.slug ?? "",
+        weekday: window.weekday,
+        start_minute: window.start_minute,
+        end_minute: window.end_minute,
+        window_label: window.window_label,
+        max_bookings: window.max_bookings,
+      })),
+      blockedDates: blocked.map((entry) => ({ id: entry.id, blocked_date: entry.blocked_date, reason: entry.reason })),
+      requestGroups: groupedRequestBookings.map((group) => ({
+        id: group.id,
+        label: group.label,
+        bookings: group.bookings.map((booking) => ({
+          id: booking.id,
+          status: booking.status,
+          service_slug: booking.services?.slug ?? null,
+          service_name: booking.services?.name ?? booking.service_variants?.name ?? null,
+          pet_name: booking.pets?.name ?? null,
+          customer_name: profileDetails[booking.customer_id]?.full_name ?? "Client",
+          booking_kind: booking.booking_kind ?? null,
+          requested_date: booking.requested_date ?? null,
+          requested_end_date: booking.requested_end_date ?? null,
+          requested_window_label: booking.requested_window_label ?? null,
+          requested_window_start_minute: booking.requested_window_start_minute ?? null,
+          requested_window_end_minute: booking.requested_window_end_minute ?? null,
+          recurrence_label: booking.recurrence_label ?? null,
+          request_group_id: booking.request_group_id ?? null,
+          request_group_label: booking.request_group_label ?? null,
+        })),
+      })),
+    }),
+    [availability, blocked, groupedRequestBookings, profileDetails, serviceMap, services, tagsBySlot, walkWindows],
+  );
 
   const tagsBySlot = useMemo(() => {
     const map = new Map<string, Set<string>>();
