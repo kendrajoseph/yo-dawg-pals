@@ -641,6 +641,48 @@ const SitterDashboard = () => {
   const variantMap = useMemo(() => new Map(serviceVariants.map((variant) => [variant.id, variant])), [serviceVariants]);
   const walkServices = useMemo(() => services.filter((service) => WALK_SLUGS.has(service.slug)), [services]);
   const exactSlotServices = useMemo(() => services, [services]);
+
+  const tagsBySlot = useMemo(() => {
+    const map = new Map<string, Set<string>>();
+    for (const row of availabilityServices) {
+      if (!map.has(row.availability_id)) map.set(row.availability_id, new Set());
+      map.get(row.availability_id)?.add(row.service_id);
+    }
+    return map;
+  }, [availabilityServices]);
+
+  const requestBookings = useMemo(
+    () => bookings.filter((booking) => ["requested", "awaiting_payment", "pending_payment", "confirmed"].includes(booking.status)),
+    [bookings],
+  );
+  const groupedRequestBookings = useMemo(() => {
+    const groups = new Map<string, { id: string; label: string; bookings: Booking[] }>();
+
+    requestBookings.forEach((booking) => {
+      const owner = profileDetails[booking.customer_id];
+      const fallbackLabel = booking.request_group_label ?? owner?.full_name ?? "Request bundle";
+      const key = booking.request_group_id ?? `single-${booking.id}`;
+
+      if (!groups.has(key)) {
+        groups.set(key, {
+          id: key,
+          label: fallbackLabel,
+          bookings: [],
+        });
+      }
+
+      groups.get(key)?.bookings.push(booking);
+    });
+
+    return Array.from(groups.values()).map((group) => ({
+      ...group,
+      bookings: group.bookings.sort((a, b) => {
+        const aDate = a.requested_date ?? format(new Date(a.start_at), "yyyy-MM-dd");
+        const bDate = b.requested_date ?? format(new Date(b.start_at), "yyyy-MM-dd");
+        return `${aDate}-${a.bundle_position ?? 0}`.localeCompare(`${bDate}-${b.bundle_position ?? 0}`);
+      }),
+    }));
+  }, [profileDetails, requestBookings]);
   const assistantContext = useMemo<AssistantDashboardContext>(
     () => ({
       today: format(new Date(), "yyyy-MM-dd"),
@@ -696,48 +738,6 @@ const SitterDashboard = () => {
     }),
     [availability, blocked, groupedRequestBookings, profileDetails, serviceMap, services, tagsBySlot, walkWindows],
   );
-
-  const tagsBySlot = useMemo(() => {
-    const map = new Map<string, Set<string>>();
-    for (const row of availabilityServices) {
-      if (!map.has(row.availability_id)) map.set(row.availability_id, new Set());
-      map.get(row.availability_id)?.add(row.service_id);
-    }
-    return map;
-  }, [availabilityServices]);
-
-  const requestBookings = useMemo(
-    () => bookings.filter((booking) => ["requested", "awaiting_payment", "pending_payment", "confirmed"].includes(booking.status)),
-    [bookings],
-  );
-  const groupedRequestBookings = useMemo(() => {
-    const groups = new Map<string, { id: string; label: string; bookings: Booking[] }>();
-
-    requestBookings.forEach((booking) => {
-      const owner = profileDetails[booking.customer_id];
-      const fallbackLabel = booking.request_group_label ?? owner?.full_name ?? "Request bundle";
-      const key = booking.request_group_id ?? `single-${booking.id}`;
-
-      if (!groups.has(key)) {
-        groups.set(key, {
-          id: key,
-          label: fallbackLabel,
-          bookings: [],
-        });
-      }
-
-      groups.get(key)?.bookings.push(booking);
-    });
-
-    return Array.from(groups.values()).map((group) => ({
-      ...group,
-      bookings: group.bookings.sort((a, b) => {
-        const aDate = a.requested_date ?? format(new Date(a.start_at), "yyyy-MM-dd");
-        const bDate = b.requested_date ?? format(new Date(b.start_at), "yyyy-MM-dd");
-        return `${aDate}-${a.bundle_position ?? 0}`.localeCompare(`${bDate}-${b.bundle_position ?? 0}`);
-      }),
-    }));
-  }, [profileDetails, requestBookings]);
   const upcomingExactBookings = useMemo(
     () => bookings.filter((booking) => booking.status === "confirmed" && new Date(booking.scheduled_start_at ?? booking.start_at) > new Date()),
     [bookings],
