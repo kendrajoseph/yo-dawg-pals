@@ -101,6 +101,39 @@ export type Database = {
         }
         Relationships: []
       }
+      booking_request_groups: {
+        Row: {
+          created_at: string
+          customer_id: string
+          id: string
+          label: string | null
+          notes: string | null
+          sitter_id: string
+          status: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          customer_id: string
+          id?: string
+          label?: string | null
+          notes?: string | null
+          sitter_id: string
+          status?: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          customer_id?: string
+          id?: string
+          label?: string | null
+          notes?: string | null
+          sitter_id?: string
+          status?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       booking_updates: {
         Row: {
           booking_id: string
@@ -140,6 +173,7 @@ export type Database = {
           approved_by: string | null
           base_price_cents: number | null
           booking_kind: string
+          bundle_position: number
           cancelled_at: string | null
           created_at: string
           customer_id: string
@@ -155,8 +189,13 @@ export type Database = {
           paid_at: string | null
           payment_amount_cents: number | null
           pet_id: string
+          recurrence_label: string | null
+          recurrence_pattern: Json | null
           refund_id: string | null
+          request_group_id: string | null
+          request_group_label: string | null
           requested_date: string | null
+          requested_end_date: string | null
           requested_window_end_minute: number | null
           requested_window_label: string | null
           requested_window_start_minute: number | null
@@ -180,6 +219,7 @@ export type Database = {
           approved_by?: string | null
           base_price_cents?: number | null
           booking_kind?: string
+          bundle_position?: number
           cancelled_at?: string | null
           created_at?: string
           customer_id: string
@@ -195,8 +235,13 @@ export type Database = {
           paid_at?: string | null
           payment_amount_cents?: number | null
           pet_id: string
+          recurrence_label?: string | null
+          recurrence_pattern?: Json | null
           refund_id?: string | null
+          request_group_id?: string | null
+          request_group_label?: string | null
           requested_date?: string | null
+          requested_end_date?: string | null
           requested_window_end_minute?: number | null
           requested_window_label?: string | null
           requested_window_start_minute?: number | null
@@ -220,6 +265,7 @@ export type Database = {
           approved_by?: string | null
           base_price_cents?: number | null
           booking_kind?: string
+          bundle_position?: number
           cancelled_at?: string | null
           created_at?: string
           customer_id?: string
@@ -235,8 +281,13 @@ export type Database = {
           paid_at?: string | null
           payment_amount_cents?: number | null
           pet_id?: string
+          recurrence_label?: string | null
+          recurrence_pattern?: Json | null
           refund_id?: string | null
+          request_group_id?: string | null
+          request_group_label?: string | null
           requested_date?: string | null
+          requested_end_date?: string | null
           requested_window_end_minute?: number | null
           requested_window_label?: string | null
           requested_window_start_minute?: number | null
@@ -261,6 +312,13 @@ export type Database = {
             columns: ["pet_id"]
             isOneToOne: false
             referencedRelation: "pets"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "bookings_request_group_id_fkey"
+            columns: ["request_group_id"]
+            isOneToOne: false
+            referencedRelation: "booking_request_groups"
             referencedColumns: ["id"]
           },
           {
