@@ -1551,8 +1551,9 @@ const SitterDashboard = () => {
         title: nextStatus === "confirmed" ? "Request confirmed, but alert failed" : "Payment opened, but alert failed",
         description: workflowError?.message ?? workflowData?.error ?? "The booking was saved, but the client notification did not send.",
         variant: "destructive",
+        action: buildRetryToastAction({ ...booking, status: nextStatus }),
       });
-      load();
+      await load();
       return;
     }
 
@@ -1563,8 +1564,9 @@ const SitterDashboard = () => {
         title: nextStatus === "confirmed" ? "Request confirmed, but alert failed" : "Payment opened, but alert failed",
         description: workflowData.notificationMessage ?? "The booking was saved, but the client notification did not send.",
         variant: "destructive",
+        action: workflowData.retryAvailable ? buildRetryToastAction({ ...booking, status: nextStatus }) : undefined,
       });
-      load();
+      await load();
       return;
     }
 
@@ -1574,7 +1576,7 @@ const SitterDashboard = () => {
         workflowData?.notificationMessage ??
         (nextStatus === "confirmed" ? "Confirmation email sent to the client." : "Payment alert sent to the client."),
     });
-    load();
+    await load();
   };
 
   const declineRequest = async (booking: Booking) => {
@@ -2226,6 +2228,7 @@ const SitterDashboard = () => {
                     const draft = getDraft(booking);
                     const service = serviceMap.get(booking.service_id);
                     const variant = booking.service_variant_id ? variantMap.get(booking.service_variant_id) : null;
+                    const latestAttempt = latestNotificationAttemptByBooking[booking.id];
                     const owner = profileDetails[booking.customer_id];
                     const approval = petApprovals.find((item) => item.pet_id === booking.pet_id && item.service_id === booking.service_id);
                     const isBoarding = service?.slug === "boarding";
@@ -2374,7 +2377,46 @@ const SitterDashboard = () => {
                               <Check className="h-4 w-4" /> Mark done
                             </Button>
                           )}
+                          {latestAttempt?.status === "failed" && (booking.status === "confirmed" || booking.status === "awaiting_payment") && (
+                            <Button
+                              size="sm"
+                              variant="outline"
+                              onClick={() => runNotificationRetry(booking)}
+                              disabled={retryingNotificationKey === booking.id}
+                              className="border-border font-display uppercase"
+                            >
+                              <Mail className="h-4 w-4" />
+                              {retryingNotificationKey === booking.id
+                                ? "Retrying…"
+                                : booking.status === "confirmed"
+                                  ? "Retry confirmation email"
+                                  : "Retry payment alert"}
+                            </Button>
+                          )}
                         </div>
+                        {latestAttempt && (
+                          <div className="mt-3 rounded-md border border-border bg-card px-3 py-2 text-sm">
+                            <div className="flex flex-wrap items-center justify-between gap-2">
+                              <span className="font-tag text-muted-foreground">
+                                Client alert · attempt {latestAttempt.attempt_number}
+                              </span>
+                              <span className={cn(
+                                "px-2 py-0.5 text-[11px] font-tag",
+                                latestAttempt.status === "sent"
+                                  ? "bg-secondary text-secondary-foreground"
+                                  : latestAttempt.status === "skipped"
+                                    ? "bg-muted text-muted-foreground"
+                                    : "bg-destructive/15 text-destructive",
+                              )}>
+                                {latestAttempt.status}
+                              </span>
+                            </div>
+                            <p className="mt-2 text-sm text-foreground/90">{latestAttempt.message}</p>
+                            {latestAttempt.error_message && (
+                              <p className="mt-1 text-xs text-muted-foreground">Reason: {latestAttempt.error_message}</p>
+                            )}
+                          </div>
+                        )}
                       </div>
                     );
                   })}
