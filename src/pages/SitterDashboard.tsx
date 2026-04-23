@@ -2805,13 +2805,19 @@ const SitterDashboard = () => {
                           </div>
 
                           <div>
-                            <Label>Internal notes</Label>
+                            <Label className="text-primary">Internal notes</Label>
+                            <p className="mt-1 text-xs text-muted-foreground">Private admin context for future bookings and support decisions.</p>
                             <Textarea
                               defaultValue={clientAdminDraft.internal_notes}
                               key={`${selectedClientId}-${selectedClientAdminProfile?.internal_notes ?? ""}`}
                               maxLength={1500}
                               placeholder="Anything only the admin team should know about working with this client…"
-                              className="mt-2 min-h-28"
+                              className={cn(
+                                "mt-2 min-h-28 border-primary/20",
+                                clientAdminDraft.internal_notes?.trim()
+                                  ? "bg-accent/10 text-foreground shadow-soft"
+                                  : "bg-muted/40 text-muted-foreground placeholder:text-muted-foreground",
+                              )}
                               onBlur={(event) => {
                                 const nextNotes = event.target.value;
                                 if (nextNotes === clientAdminDraft.internal_notes) return;
