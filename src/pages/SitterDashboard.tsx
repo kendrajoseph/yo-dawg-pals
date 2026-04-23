@@ -298,6 +298,14 @@ type AssistantMessage = {
   preview?: AssistantNotificationPreview[];
 };
 
+type BookingWorkflowResponse = {
+  ok?: boolean;
+  error?: string;
+  notificationStatus?: "sent" | "skipped" | "failed";
+  notificationType?: "confirmation_email" | "payment_alert";
+  notificationMessage?: string;
+};
+
 const WALK_SLUGS = new Set(["solo-walk", "group-walk"]);
 const MIN_BUFFER_MINUTES = 30;
 const TIME_PRESETS = [
@@ -1446,7 +1454,7 @@ const SitterDashboard = () => {
     }
 
     const workflowAction = nextStatus === "confirmed" ? "schedule_solo_walk" : "approve_group_walk";
-    const { error: workflowError, data: workflowData } = await supabase.functions.invoke("booking-workflow", {
+    const { error: workflowError, data: workflowData } = await supabase.functions.invoke<BookingWorkflowResponse>("booking-workflow", {
       body: {
         action: workflowAction,
         bookingId: booking.id,
@@ -1468,7 +1476,24 @@ const SitterDashboard = () => {
       return;
     }
 
-    toast({ title: nextStatus === "confirmed" ? "Request confirmed" : "Payment opened" });
+    const toastTitle = nextStatus === "confirmed" ? "Request confirmed" : "Payment opened";
+
+    if (workflowData?.notificationStatus === "failed") {
+      toast({
+        title: nextStatus === "confirmed" ? "Request confirmed, but alert failed" : "Payment opened, but alert failed",
+        description: workflowData.notificationMessage ?? "The booking was saved, but the client notification did not send.",
+        variant: "destructive",
+      });
+      load();
+      return;
+    }
+
+    toast({
+      title: toastTitle,
+      description:
+        workflowData?.notificationMessage ??
+        (nextStatus === "confirmed" ? "Confirmation email sent to the client." : "Payment alert sent to the client."),
+    });
     load();
   };
 
