@@ -70,7 +70,7 @@ const getNotificationConfig = (
       templateName: "walk-schedule-confirmed",
       recipientEmail: customerEmail,
       idempotencyKeyPrefix: "solo-confirmed",
-      defaultMissingEmailMessage: "Client email was skipped because no email address is on file.",
+      defaultMissingEmailMessage: "no email address is on file.",
       defaultSuccessMessage: "Confirmation email sent to the client.",
       defaultFailureTitle: "confirmation_email" as const,
       templateData: {
@@ -86,7 +86,7 @@ const getNotificationConfig = (
     templateName: "group-walk-payment-request",
     recipientEmail: customerEmail,
     idempotencyKeyPrefix: "group-payment",
-    defaultMissingEmailMessage: "Client payment alert was skipped because no email address is on file.",
+      defaultMissingEmailMessage: "no email address is on file.",
     defaultSuccessMessage: "Payment alert sent to the client.",
     defaultFailureTitle: "payment_alert" as const,
     templateData: {
@@ -207,9 +207,7 @@ const sendClientNotification = async ({
   });
 
   if (emailResult.error) {
-    const message = notificationType === "confirmation_email"
-      ? `Request confirmed, but the confirmation email failed to send: ${emailResult.error.message}`
-      : `Payment opened, but the client payment alert failed to send: ${emailResult.error.message}`;
+    const message = emailResult.error.message;
     const attemptNumber = await recordNotificationAttempt({
       bookingId: booking.id,
       notificationType,
@@ -233,8 +231,8 @@ const sendClientNotification = async ({
   const emailData = emailResult.data as { success?: boolean; reason?: string } | null;
   if (emailData?.success === false) {
     const message = emailData.reason === "email_suppressed"
-      ? "This client email was skipped because the address is unsubscribed or suppressed."
-      : "The client notification was skipped and no email was sent.";
+      ? "the address is unsubscribed or suppressed."
+      : "the notification was skipped and no email was sent.";
     const attemptNumber = await recordNotificationAttempt({
       bookingId: booking.id,
       notificationType,
