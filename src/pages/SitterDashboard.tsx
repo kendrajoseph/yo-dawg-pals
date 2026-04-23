@@ -1445,6 +1445,29 @@ const SitterDashboard = () => {
       return;
     }
 
+    const workflowAction = nextStatus === "confirmed" ? "schedule_solo_walk" : "approve_group_walk";
+    const { error: workflowError, data: workflowData } = await supabase.functions.invoke("booking-workflow", {
+      body: {
+        action: workflowAction,
+        bookingId: booking.id,
+        scheduledStartAt: startAt.toISOString(),
+        scheduledEndAt: endAt.toISOString(),
+        groupLabel: draft.groupLabel || null,
+        internalNotes: draft.internalNotes || null,
+        appUrl: window.location.origin,
+      },
+    });
+
+    if (workflowError || workflowData?.error) {
+      toast({
+        title: nextStatus === "confirmed" ? "Request confirmed, but alert failed" : "Payment opened, but alert failed",
+        description: workflowError?.message ?? workflowData?.error ?? "The booking was saved, but the client notification did not send.",
+        variant: "destructive",
+      });
+      load();
+      return;
+    }
+
     toast({ title: nextStatus === "confirmed" ? "Request confirmed" : "Payment opened" });
     load();
   };
