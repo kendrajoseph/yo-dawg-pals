@@ -109,7 +109,7 @@ const BookingSuccess = () => {
   const getBodyCopy = () => {
     if (!booking) return "";
     if (waitingForWebhook) return "Hang tight while payment finalises.";
-    if (booking.status === "requested") return "Anneke will review the match, confirm the final time, and only then open payment.";
+    if (booking.status === "requested") return "Thank you for your request — we’ll be in touch soon.";
     if (booking.status === "awaiting_payment" || booking.status === "pending_payment") return "Anneke has approved the match and confirmed the final time. Payment is the last step before it is fully locked in.";
     if (booking.status === "confirmed") return "Everything is locked in and ready to go.";
     return `Status: ${STATUS_LABELS[booking.status] ?? booking.status}.`;
