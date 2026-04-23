@@ -1621,6 +1621,132 @@ const SitterDashboard = () => {
     else load();
   };
 
+  const resetAssistantPlan = () => {
+    setAssistantPlan(null);
+    setAssistantPreview([]);
+  };
+
+  const sendAssistantCommand = async () => {
+    const command = assistantCommand.trim();
+    if (!command) return;
+
+    setAssistantBusy(true);
+    resetAssistantPlan();
+    const userMessage: AssistantMessage = {
+      id: `user-${Date.now()}`,
+      role: "user",
+      content: command,
+    };
+    setAssistantMessages((current) => [...current, userMessage]);
+
+    const { data, error } = await supabase.functions.invoke("assistant-schedule-plan", {
+      body: { command, context: assistantContext },
+    });
+
+    setAssistantBusy(false);
+    if (error || !data?.ok || !data?.plan) {
+      toast({
+        title: "Assistant couldn't build a plan",
+        description: error?.message ?? data?.error ?? "Try rephrasing the command.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    const plan = data.plan as AssistantPlanResponse;
+    setAssistantPlan(plan);
+    setAssistantCommand("");
+    setAssistantMessages((current) => [
+      ...current,
+      {
+        id: `assistant-${Date.now()}`,
+        role: "assistant",
+        content: plan.summary,
+        plan,
+      },
+    ]);
+  };
+
+  const applyAssistantPlan = async () => {
+    if (!assistantPlan) return;
+
+    setAssistantApplying(true);
+    const { data, error } = await supabase.functions.invoke("assistant-schedule-execute", {
+      body: {
+        operations: assistantPlan.operations,
+        appUrl: window.location.origin,
+        previewOnly: false,
+      },
+    });
+    setAssistantApplying(false);
+
+    if (error || !data?.ok) {
+      toast({ title: "Assistant couldn't apply changes", description: error?.message ?? data?.error ?? "Unknown error", variant: "destructive" });
+      return;
+    }
+
+    const result = data as AssistantExecutionResponse;
+    setAssistantPreview(result.notificationPreview ?? []);
+    setAssistantMessages((current) => [
+      ...current,
+      {
+        id: `assistant-apply-${Date.now()}`,
+        role: "assistant",
+        content: result.summary || "Assistant actions applied.",
+        preview: result.notificationPreview ?? [],
+      },
+    ]);
+
+    if (result.warnings.length > 0) {
+      toast({ title: "Assistant applied with warnings", description: result.warnings[0] });
+    } else {
+      toast({ title: "Assistant changes applied" });
+    }
+
+    await load();
+  };
+
+  const sendAssistantNotifications = async () => {
+    if (!assistantPreview.length) return;
+
+    setAssistantApplying(true);
+    const { data, error } = await supabase.functions.invoke("assistant-schedule-execute", {
+      body: {
+        operations: [{
+          type: "send_preview_notifications",
+          summary: "Send the prepared client notifications",
+          bookingIds: assistantPreview.map((item) => item.bookingId),
+        }],
+        appUrl: window.location.origin,
+        previewOnly: false,
+        sendNotifications: true,
+      },
+    });
+    setAssistantApplying(false);
+
+    if (error || !data?.ok) {
+      toast({ title: "Notifications didn't send", description: error?.message ?? data?.error ?? "Unknown error", variant: "destructive" });
+      return;
+    }
+
+    const result = data as AssistantExecutionResponse;
+    if (result.warnings.length > 0) {
+      toast({ title: "Notifications sent with warnings", description: result.warnings[0] });
+    } else {
+      toast({ title: "Client notifications sent" });
+    }
+    setAssistantMessages((current) => [
+      ...current,
+      {
+        id: `assistant-notify-${Date.now()}`,
+        role: "assistant",
+        content: "Client notifications have been sent.",
+      },
+    ]);
+    setAssistantPreview([]);
+    await load();
+  };
+
   return (
     <main className="min-h-screen bg-background texture-grain">
       <SiteNav />
