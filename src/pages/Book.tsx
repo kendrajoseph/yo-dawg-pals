@@ -723,9 +723,6 @@ const Book = () => {
           <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
             <div>
               <h2 className="font-display text-2xl uppercase text-primary">Bundle builder</h2>
-              <p className="mt-1 text-sm text-muted-foreground">
-                Use one card per service pattern — for example Monday walks, Wednesday walks, Friday visits, and next month&apos;s boarding stay.
-              </p>
             </div>
             <Button type="button" onClick={addBundleItem} variant="outline" className="border-2 border-primary font-display uppercase">
               <Plus className="h-4 w-4" /> Add another service
