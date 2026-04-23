@@ -48,6 +48,7 @@ const bodySchema = z.object({
   operations: z.array(operationSchema).min(1),
   appUrl: z.string().url().optional(),
   previewOnly: z.boolean().default(false),
+  sendNotifications: z.boolean().default(false),
 });
 
 const MIN_BUFFER_MINUTES = 30;
@@ -399,8 +400,67 @@ Deno.serve(async (req) => {
 
       if (operation.type === "send_preview_notifications") {
         const idSet = new Set(operation.bookingIds);
-        const matching = notificationPreview.filter((item) => idSet.has(item.bookingId));
-        if (matching.length === 0) warnings.push("No notification previews were ready for the selected bookings yet.");
+        let matching = notificationPreview.filter((item) => idSet.has(item.bookingId));
+
+        if (matching.length === 0) {
+          const fallbackBookings = bookings.filter((booking) => idSet.has(booking.id));
+          matching = await Promise.all(
+            fallbackBookings.map(async (booking) => {
+              const service = servicesById.get(booking.service_id) ?? booking.services;
+              const authUser = await admin.auth.admin.getUserById(booking.customer_id);
+              const nextStatus = booking.status === "confirmed" ? "confirmed" : "awaiting_payment";
+              return {
+                bookingId: booking.id,
+                recipientName: profiles.get(booking.customer_id) ?? "Client",
+                recipientEmail: authUser.data.user?.email ?? "",
+                serviceName: service?.name ?? booking.services?.name ?? "Service",
+                petName: booking.pets?.name ?? "your dog",
+                templateName: nextStatus === "confirmed" ? "walk-schedule-confirmed" : "group-walk-payment-request",
+                statusAfter: nextStatus,
+                scheduledStartAt: booking.scheduled_start_at ?? booking.start_at,
+                groupLabel: booking.group_assignment_label ?? booking.requested_window_label ?? null,
+                payUrl: nextStatus === "awaiting_payment" ? `${parsed.data.appUrl ?? req.headers.get("origin")}/booking/${booking.id}/checkout` : null,
+              };
+            }),
+          );
+        }
+
+        if (matching.length === 0) {
+          warnings.push("No notification previews were ready for the selected bookings yet.");
+          applied.push({ type: operation.type, count: 0 });
+          continue;
+        }
+
+        if (parsed.data.sendNotifications && !parsed.data.previewOnly) {
+          for (const preview of matching) {
+            if (!preview.recipientEmail) {
+              warnings.push(`Skipped notification for ${preview.bookingId} because the client email is missing.`);
+              continue;
+            }
+
+            const emailResult = await admin.functions.invoke("send-transactional-email", {
+              body: {
+                templateName: preview.templateName,
+                recipientEmail: preview.recipientEmail,
+                idempotencyKey: `assistant-${preview.templateName}-${preview.bookingId}`,
+                templateData: {
+                  customerName: preview.recipientName,
+                  serviceName: preview.serviceName,
+                  petName: preview.petName,
+                  scheduledStartAt: preview.scheduledStartAt,
+                  groupLabel: preview.groupLabel,
+                  payUrl: preview.payUrl,
+                },
+              },
+            });
+
+            if (emailResult.error) {
+              warnings.push(`Notification failed for ${preview.bookingId}: ${emailResult.error.message}`);
+            }
+          }
+        }
+
+        notificationPreview.splice(0, notificationPreview.length, ...matching);
         applied.push({ type: operation.type, count: matching.length });
       }
     }
