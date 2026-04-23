@@ -715,6 +715,15 @@ const SitterDashboard = () => {
       }),
     }));
   }, [profileDetails, requestBookings]);
+  const latestNotificationAttemptByBooking = useMemo(
+    () => Object.fromEntries(
+      Object.entries(notificationAttempts).map(([bookingId, attempts]) => [
+        bookingId,
+        [...attempts].sort((a, b) => b.attempt_number - a.attempt_number || new Date(b.created_at).getTime() - new Date(a.created_at).getTime())[0],
+      ]),
+    ) as Record<string, BookingNotificationAttempt | undefined>,
+    [notificationAttempts],
+  );
   const assistantContext = useMemo<AssistantDashboardContext>(
     () => ({
       today: format(new Date(), "yyyy-MM-dd"),
@@ -1368,6 +1377,53 @@ const SitterDashboard = () => {
       toast({ title: "Alert could not be saved", description: error.message, variant: "destructive" });
     }
   };
+
+  const runNotificationRetry = async (booking: Booking) => {
+    const latestAttempt = latestNotificationAttemptByBooking[booking.id];
+    const retryAction = booking.status === "confirmed"
+      ? "retry_confirmation_email"
+      : booking.status === "awaiting_payment"
+        ? "retry_payment_alert"
+        : null;
+
+    if (!retryAction || !latestAttempt) {
+      toast({ title: "Retry unavailable", description: "This booking is not in a retryable notification state.", variant: "destructive" });
+      return;
+    }
+
+    setRetryingNotificationKey(booking.id);
+    const { error: workflowError, data: workflowData } = await supabase.functions.invoke<BookingWorkflowResponse>("booking-workflow", {
+      body: {
+        action: retryAction,
+        bookingId: booking.id,
+        appUrl: window.location.origin,
+      },
+    });
+    setRetryingNotificationKey(null);
+
+    if (workflowError || workflowData?.error) {
+      toast({
+        title: "Retry failed",
+        description: workflowError?.message ?? workflowData?.error ?? "The client notification could not be retried.",
+        variant: "destructive",
+      });
+      await load();
+      return;
+    }
+
+    toast({
+      title: workflowData?.notificationStatus === "failed" ? "Retry failed" : workflowData?.notificationType === "confirmation_email" ? "Confirmation email updated" : "Payment alert updated",
+      description: workflowData?.notificationMessage ?? "Client notification updated.",
+      variant: workflowData?.notificationStatus === "failed" ? "destructive" : "default",
+    });
+    await load();
+  };
+
+  const buildRetryToastAction = (booking: Booking) => (
+    <ToastAction altText={booking.status === "confirmed" ? "Retry confirmation email" : "Retry payment alert"} onClick={() => runNotificationRetry(booking)}>
+      Retry
+    </ToastAction>
+  );
 
   const setPetApproval = async (petId: string, serviceId: string, status: PetApproval["status"], notes?: string) => {
     if (!user) return;
