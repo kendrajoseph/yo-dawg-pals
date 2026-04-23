@@ -680,8 +680,8 @@ const Book = () => {
   };
 
   const reviewCopy = bundleItems.length > 1
-    ? "Each service in this request will be reviewed on its own, but you only have to submit once."
-    : "Your request will be reviewed before it becomes payable.";
+    ? "Each service in this request is included in one submission."
+    : "Your request details are included below.";
 
   return (
     <main className="min-h-screen bg-background texture-grain">
@@ -692,7 +692,7 @@ const Book = () => {
           Build a <span className="text-gradient-sunrise">service request.</span>
         </h1>
         <p className="mt-3 max-w-3xl text-sm leading-relaxed text-foreground/75 sm:text-base">
-          Mix repeat services and one-off care in one submission. Each service gets reviewed and approved on its own, but you only send one request.
+          Mix repeat services and one-off care in one submission, with all your request details gathered in one place.
         </p>
 
         <ol className="mt-6 grid grid-cols-4 gap-2">
@@ -821,7 +821,7 @@ const Book = () => {
                                   <span className="ml-1 text-xs opacity-70">{variant.unit_label}</span>
                                 </div>
                                 <div className={cn("mt-1 text-xs", activeVariantCard ? "text-tag-foreground/80" : "text-muted-foreground")}>
-                                  {variant.duration_minutes >= 1440 ? "Overnight block" : `${variant.duration_minutes} minutes`} · {variant.payment_mode === "free" ? "No payment" : "Payment opens after approval"}
+                                  {variant.duration_minutes >= 1440 ? "Overnight block" : `${variant.duration_minutes} minutes`} · {variant.payment_mode === "free" ? "No payment" : "Payment handled separately"}
                                 </div>
                               </button>
                             );
@@ -1070,7 +1070,7 @@ const Book = () => {
                       </div>
                       <div className="text-left sm:text-right">
                         <div className="font-display text-lg uppercase">{variant ? formatPriceWithDecimals(variant.price_cents) : ""}</div>
-                        <div className="text-xs text-muted-foreground">Nothing due until approval</div>
+                        <div className="text-xs text-muted-foreground">Payment handled separately</div>
                       </div>
                     </div>
                     <dl className="mt-4 divide-y-2 divide-primary/15 border-2 border-primary bg-muted/40 text-sm">
