@@ -243,7 +243,7 @@ serve(async (req) => {
 
     const { data: booking, error: bookingError } = await supabase
       .from("bookings")
-      .select("id, customer_id, sitter_id, status, payment_amount_cents, services(name, slug), pets(name)")
+      .select("id, customer_id, sitter_id, status, payment_amount_cents, scheduled_start_at, group_assignment_label, services(name, slug), pets(name)")
       .eq("id", bookingId)
       .single();
 
