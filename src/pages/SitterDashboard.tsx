@@ -1669,6 +1669,13 @@ const SitterDashboard = () => {
 
   const applyAssistantPlan = async () => {
     if (!assistantPlan) return;
+    if (assistantPlan.operations.length === 0) {
+      toast({
+        title: "Nothing to apply",
+        description: assistantPlan.followUpQuestions[0] ?? "The assistant needs more detail before it can make changes.",
+      });
+      return;
+    }
 
     setAssistantApplying(true);
     const { data, error } = await supabase.functions.invoke("assistant-schedule-execute", {
@@ -3211,7 +3218,7 @@ const SitterDashboard = () => {
                     ) : null}
 
                     <div className="flex flex-wrap gap-2">
-                      <Button onClick={applyAssistantPlan} disabled={assistantApplying} className="font-display uppercase">
+                      <Button onClick={applyAssistantPlan} disabled={assistantApplying || assistantPlan.operations.length === 0} className="font-display uppercase">
                         <Check className="h-4 w-4" />
                         {assistantApplying ? "Applying…" : "Apply changes"}
                       </Button>
