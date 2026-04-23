@@ -1,31 +1,46 @@
 
-Goal: update the Solo Walk prices so the booking experience and service card stay consistent.
+Goal: make admin-entered values visually distinct from the existing/suggested request details so “internal notes” and approved values no longer blend in.
 
-1. Update the Solo Walk marketing card
-- Edit `src/components/ServicesSection.tsx`.
-- Change the Solo Walk card pricing text to the new values the user wants shown.
-- Keep the existing “30 or 60 min” style aligned with the displayed pricing.
+1. Update the request approval card styling in `src/pages/SitterDashboard.tsx`
+- Keep the existing request summary (“Requested”, client note, projected total) as read-only muted text.
+- Restyle editable approval fields so they look clearly interactive and separate from the request summary.
+- Give the “Internal note” field a softer muted/placeholder presentation when empty and a stronger approved/admin style once populated.
 
-2. Update the actual booking price source
-- Add or adjust a database migration that updates the active Solo Walk service variant records in Lovable Cloud so the booking flow uses the correct amount.
-- Target the `service_variants` rows for Solo Walk rather than changing generated types or hardcoded frontend-only pricing.
-- If there are separate 30-minute and 60-minute Solo Walk variants, update both amounts.
-- If the current data model only has one Solo Walk variant, expand the seed/update logic so Solo Walk can correctly represent both 30-minute and 60-minute options.
+2. Create a clear “requested vs actual” visual hierarchy
+- Add lightweight labels or helper text around the editable approval controls so it’s obvious which values are:
+  - requested/suggested by the client
+  - actual/final values set by Anneke
+- Apply this especially to:
+  - Internal note
+  - Approved price
+  - timing fields in the request approval editor
+- Use existing theme tokens (`primary`, `muted`, `accent`, `border`) rather than hardcoded black text.
 
-3. Keep booking and dashboard displays in sync
-- Verify the updated variant prices flow through the existing reads in:
-  - `src/pages/Book.tsx`
-  - `src/pages/SitterDashboard.tsx`
-  - any related booking summary/checkout displays that read `service_variants.price_cents`
-- No manual edits to generated Supabase type files.
+3. Improve the internal notes field specifically
+- Override the default input styling on the approval “Internal note” input so it doesn’t render as plain dark text with no distinction.
+- Use a dedicated input treatment such as:
+  - tinted background
+  - stronger border/ring
+  - admin-only label styling
+  - muted helper copy
+- Preserve current behavior and save logic; this is a visual clarity change, not a data-model change.
 
-4. Validate copy and display consistency
-- Ensure the homepage service card, service selection cards in booking, and any booking summary all reflect the same Solo Walk pricing structure.
-- Preserve all existing Group Walk, Pet Sitting, and Boarding pricing.
+4. Keep admin-only client notes consistent
+- Review the separate “Admin-only client notes” textarea in the same dashboard and align its text color / field treatment with the updated approval-note styling.
+- Ensure both internal note surfaces feel intentionally private/admin-facing.
+
+5. Validation pass
+- Confirm the request cards still read clearly in the existing theme.
+- Ensure requested information remains readable but secondary, while final/admin-entered values stand out as the actionable state.
+- Do not change booking logic, approvals, notifications, or database structure.
 
 Technical details
-- Likely files:
-  - `src/components/ServicesSection.tsx`
-  - `supabase/migrations/<new_migration>.sql`
-- Important note:
-  - the homepage service card is currently hardcoded, but the booking flow reads from `services`/`service_variants`, so both layers should be updated together to avoid mismatched prices.
+- Primary file: `src/pages/SitterDashboard.tsx`
+- Reference UI primitives:
+  - `src/components/ui/input.tsx`
+  - `src/components/ui/textarea.tsx`
+  - `src/components/ui/label.tsx`
+- Likely implementation approach:
+  - add contextual wrappers, helper text, and Tailwind utility classes on the approval fields
+  - avoid changing shared input primitives globally unless the issue affects the whole app
+  - use semantic theme classes instead of hardcoded text colors
