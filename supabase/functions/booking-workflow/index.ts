@@ -13,6 +13,23 @@ const json = (body: unknown, status = 200) =>
     headers: { ...corsHeaders, "Content-Type": "application/json" },
   });
 
+const notificationResponse = (
+  ok: boolean,
+  notificationStatus: "sent" | "skipped" | "failed",
+  notificationType: "confirmation_email" | "payment_alert",
+  notificationMessage: string,
+  status = 200,
+) =>
+  json(
+    {
+      ok,
+      notificationStatus,
+      notificationType,
+      notificationMessage,
+    },
+    status,
+  );
+
 serve(async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
 
@@ -84,9 +101,12 @@ serve(async (req) => {
         .update({ ...commonPatch, status: "confirmed" })
         .eq("id", bookingId);
       if (error) return json({ error: error.message }, 400);
-      if (!customerEmail) return json({ ok: true });
 
-      await supabase.functions.invoke("send-transactional-email", {
+      if (!customerEmail) {
+        return notificationResponse(true, "skipped", "confirmation_email", "Client email was skipped because no email address is on file.");
+      }
+
+      const emailResult = await supabase.functions.invoke("send-transactional-email", {
         body: {
           templateName: "walk-schedule-confirmed",
           recipientEmail: customerEmail,
@@ -99,7 +119,17 @@ serve(async (req) => {
           },
         },
       });
-      return json({ ok: true });
+
+      if (emailResult.error) {
+        return notificationResponse(
+          true,
+          "failed",
+          "confirmation_email",
+          `Request confirmed, but the confirmation email failed to send: ${emailResult.error.message}`,
+        );
+      }
+
+      return notificationResponse(true, "sent", "confirmation_email", "Confirmation email sent to the client.");
     }
 
     if (action === "approve_group_walk") {
@@ -108,9 +138,12 @@ serve(async (req) => {
         .update({ ...commonPatch, status: "awaiting_payment" })
         .eq("id", bookingId);
       if (error) return json({ error: error.message }, 400);
-      if (!customerEmail) return json({ ok: true });
 
-      await supabase.functions.invoke("send-transactional-email", {
+      if (!customerEmail) {
+        return notificationResponse(true, "skipped", "payment_alert", "Client payment alert was skipped because no email address is on file.");
+      }
+
+      const emailResult = await supabase.functions.invoke("send-transactional-email", {
         body: {
           templateName: "group-walk-payment-request",
           recipientEmail: customerEmail,
@@ -125,7 +158,17 @@ serve(async (req) => {
           },
         },
       });
-      return json({ ok: true });
+
+      if (emailResult.error) {
+        return notificationResponse(
+          true,
+          "failed",
+          "payment_alert",
+          `Payment opened, but the client payment alert failed to send: ${emailResult.error.message}`,
+        );
+      }
+
+      return notificationResponse(true, "sent", "payment_alert", "Payment alert sent to the client.");
     }
 
     return json({ error: "Unknown action" }, 400);
