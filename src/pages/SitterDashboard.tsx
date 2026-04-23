@@ -1735,10 +1735,13 @@ const SitterDashboard = () => {
       return;
     }
 
-    const smsWarnings = results.map((result) => result.data?.smsError).filter(Boolean).join(" ");
+    const deliveryWarnings = results
+      .flatMap((result) => [result.data?.emailError, result.data?.smsError])
+      .filter(Boolean)
+      .join(" ");
     toast({
       title: messageAudience === "group" ? `Message sent to ${recipientIds.length} clients` : "Client message saved",
-      description: smsWarnings || (messageAudience === "group" ? "Each selected client now has the message in their hub." : "The update is now in the client hub."),
+      description: deliveryWarnings || (messageAudience === "group" ? "Each selected client now has the message in their hub." : "The update is now in the client hub."),
     });
     setClientMessageDraft((current) => ({ ...current, subject: "", message: "" }));
     load();

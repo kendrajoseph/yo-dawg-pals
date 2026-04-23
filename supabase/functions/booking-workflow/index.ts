@@ -2,9 +2,13 @@ import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { corsHeaders } from "npm:@supabase/supabase-js@2/cors";
 import { createClient } from "npm:@supabase/supabase-js@2";
 
+const serviceRoleKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
 const supabase = createClient(
   Deno.env.get("SUPABASE_URL")!,
-  Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!,
+  serviceRoleKey,
+  {
+    global: { headers: { Authorization: `Bearer ${serviceRoleKey}` } },
+  },
 );
 
 const json = (body: unknown, status = 200) =>
@@ -198,6 +202,7 @@ const sendClientNotification = async ({
   }
 
   const emailResult = await supabase.functions.invoke("send-transactional-email", {
+    headers: { Authorization: `Bearer ${serviceRoleKey}` },
     body: {
       templateName: config.templateName,
       recipientEmail: config.recipientEmail,
@@ -313,6 +318,7 @@ serve(async (req) => {
       if (!customerEmail) return json({ error: "Missing customer email" }, 400);
 
       await supabase.functions.invoke("send-transactional-email", {
+        headers: { Authorization: `Bearer ${serviceRoleKey}` },
         body: {
           templateName: "walk-request-received",
           recipientEmail: customerEmail,

@@ -11,7 +11,9 @@ export async function notifyAnnekeOfPaidBooking(bookingId: string) {
   try {
     const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
     const serviceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
-    const supabase = createClient(supabaseUrl, serviceKey);
+    const supabase = createClient(supabaseUrl, serviceKey, {
+      global: { headers: { Authorization: `Bearer ${serviceKey}` } },
+    });
 
     const { data: booking, error } = await supabase
       .from("bookings")
@@ -67,6 +69,7 @@ export async function notifyAnnekeOfPaidBooking(bookingId: string) {
     };
 
     const res = await supabase.functions.invoke("send-transactional-email", {
+      headers: { Authorization: `Bearer ${serviceKey}` },
       body: {
         templateName: "booking-paid-notification",
         recipientEmail: "anneke@yodawg.ca",
