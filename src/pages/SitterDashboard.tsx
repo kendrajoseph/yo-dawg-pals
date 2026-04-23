@@ -103,10 +103,14 @@ type Booking = {
   pet_id: string;
   service_id: string;
   service_variant_id: string | null;
+  request_group_id?: string | null;
+  request_group_label?: string | null;
   status: string;
   notes: string | null;
   booking_kind?: string | null;
   requested_date?: string | null;
+  requested_end_date?: string | null;
+  recurrence_label?: string | null;
   requested_window_label?: string | null;
   requested_window_start_minute?: number | null;
   requested_window_end_minute?: number | null;
@@ -437,7 +441,7 @@ const SitterDashboard = () => {
       db.from("blocked_dates").select("*").eq("sitter_id", user.id).order("blocked_date"),
       db
         .from("bookings")
-        .select("id, customer_id, pet_id, service_id, service_variant_id, start_at, end_at, total_cents, payment_amount_cents, base_price_cents, extra_time_minutes, extra_time_fee_cents, late_pickup_fee_cents, status, notes, booking_kind, requested_date, requested_window_label, requested_window_start_minute, requested_window_end_minute, scheduled_start_at, scheduled_end_at, paid_at, group_assignment_label, internal_notes, services(name, slug, payment_mode), service_variants(name, duration_minutes, price_cents, payment_mode), pets(id, name, species)")
+        .select("id, customer_id, pet_id, service_id, service_variant_id, request_group_id, request_group_label, start_at, end_at, total_cents, payment_amount_cents, base_price_cents, extra_time_minutes, extra_time_fee_cents, late_pickup_fee_cents, status, notes, booking_kind, requested_date, requested_end_date, recurrence_label, requested_window_label, requested_window_start_minute, requested_window_end_minute, scheduled_start_at, scheduled_end_at, paid_at, group_assignment_label, internal_notes, services(name, slug, payment_mode), service_variants(name, duration_minutes, price_cents, payment_mode), pets(id, name, species)")
         .eq("sitter_id", user.id)
         .order("created_at", { ascending: false }),
       db
@@ -628,6 +632,34 @@ const SitterDashboard = () => {
     () => bookings.filter((booking) => ["requested", "awaiting_payment", "pending_payment", "confirmed"].includes(booking.status)),
     [bookings],
   );
+  const groupedRequestBookings = useMemo(() => {
+    const groups = new Map<string, { id: string; label: string; bookings: Booking[] }>();
+
+    requestBookings.forEach((booking) => {
+      const owner = profileDetails[booking.customer_id];
+      const fallbackLabel = booking.request_group_label ?? owner?.full_name ?? "Request bundle";
+      const key = booking.request_group_id ?? `single-${booking.id}`;
+
+      if (!groups.has(key)) {
+        groups.set(key, {
+          id: key,
+          label: fallbackLabel,
+          bookings: [],
+        });
+      }
+
+      groups.get(key)?.bookings.push(booking);
+    });
+
+    return Array.from(groups.values()).map((group) => ({
+      ...group,
+      bookings: group.bookings.sort((a, b) => {
+        const aDate = a.requested_date ?? format(new Date(a.start_at), "yyyy-MM-dd");
+        const bDate = b.requested_date ?? format(new Date(b.start_at), "yyyy-MM-dd");
+        return `${aDate}-${a.bundle_position ?? 0}`.localeCompare(`${bDate}-${b.bundle_position ?? 0}`);
+      }),
+    }));
+  }, [profileDetails, requestBookings]);
   const upcomingExactBookings = useMemo(
     () => bookings.filter((booking) => booking.status === "confirmed" && new Date(booking.scheduled_start_at ?? booking.start_at) > new Date()),
     [bookings],
