@@ -101,6 +101,53 @@ export type Database = {
         }
         Relationships: []
       }
+      booking_notification_attempts: {
+        Row: {
+          attempt_number: number
+          attempted_by: string | null
+          booking_id: string
+          created_at: string
+          error_message: string | null
+          id: string
+          message: string
+          notification_type: string
+          status: string
+          trigger_source: string
+        }
+        Insert: {
+          attempt_number: number
+          attempted_by?: string | null
+          booking_id: string
+          created_at?: string
+          error_message?: string | null
+          id?: string
+          message: string
+          notification_type: string
+          status: string
+          trigger_source: string
+        }
+        Update: {
+          attempt_number?: number
+          attempted_by?: string | null
+          booking_id?: string
+          created_at?: string
+          error_message?: string | null
+          id?: string
+          message?: string
+          notification_type?: string
+          status?: string
+          trigger_source?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "booking_notification_attempts_booking_id_fkey"
+            columns: ["booking_id"]
+            isOneToOne: false
+            referencedRelation: "bookings"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       booking_request_groups: {
         Row: {
           created_at: string
