@@ -1069,7 +1069,6 @@ const Book = () => {
                       </div>
                       <div className="text-left sm:text-right">
                         <div className="font-display text-lg uppercase">{variant ? formatPriceWithDecimals(variant.price_cents) : ""}</div>
-                        <div className="text-xs text-muted-foreground">Payment handled separately</div>
                       </div>
                     </div>
                     <dl className="mt-4 divide-y-2 divide-primary/15 border-2 border-primary bg-muted/40 text-sm">
