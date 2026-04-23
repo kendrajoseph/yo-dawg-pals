@@ -45,7 +45,7 @@ type BookingRow = {
 type BookingUpdateRow = {
   id: string;
   booking_id: string;
-  kind: "pickup" | "dropoff" | "note";
+  kind: "pickup" | "dropoff" | "note" | "approval";
   message: string | null;
   sent_via_sms: boolean;
   created_at: string;
@@ -83,6 +83,7 @@ const kindLabel: Record<BookingUpdateRow["kind"], string> = {
   pickup: "Picked up",
   dropoff: "Dropped off",
   note: "Care note",
+  approval: "Approval",
 };
 
 const formatUpdateTime = (iso: string) =>
