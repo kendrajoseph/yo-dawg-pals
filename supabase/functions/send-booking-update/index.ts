@@ -11,9 +11,9 @@ const bodySchema = z.object({
   sendSms: z.boolean().default(true),
 });
 
-const json = (body: unknown, _status = 200) =>
+const json = (body: unknown, status = 200) =>
   new Response(JSON.stringify(body), {
-    status: 200,
+    status,
     headers: { ...corsHeaders, "Content-Type": "application/json" },
   });
 

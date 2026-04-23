@@ -14,9 +14,9 @@ const bodySchema = z.object({
   sendSms: z.boolean().default(false),
 });
 
-const json = (body: unknown, _status = 200) =>
+const json = (body: unknown, status = 200) =>
   new Response(JSON.stringify(body), {
-    status: 200,
+    status,
     headers: { ...corsHeaders, "Content-Type": "application/json" },
   });
 
@@ -135,6 +135,7 @@ Deno.serve(async (req) => {
     if (insertError || !insertRow) return json({ error: insertError?.message ?? "Failed to save message" }, 400);
 
     let emailSent = false;
+    let emailError: string | null = null;
     let smsSent = false;
     let smsError: string | null = null;
 
@@ -160,10 +161,21 @@ Deno.serve(async (req) => {
           },
         });
 
-        if (!emailRes.error) {
+        const emailData = emailRes.data as { success?: boolean; queued?: boolean; reason?: string; error?: string } | null;
+        if (emailRes.error) {
+          emailError = emailRes.error.message;
+        } else if (emailData?.success === false) {
+          emailError = emailData.reason === "email_suppressed"
+            ? "Email skipped because this address is unsubscribed or suppressed."
+            : emailData.error ?? "Email could not be queued.";
+        } else if (emailData?.success === true || emailData?.queued === true) {
           emailSent = true;
           await admin.from("client_messages").update({ delivered_email_at: new Date().toISOString() }).eq("id", insertRow.id);
+        } else {
+          emailError = "Email could not be queued.";
         }
+      } else {
+        emailError = "No email address is on file for this client.";
       }
     }
 
@@ -197,13 +209,15 @@ Deno.serve(async (req) => {
       ok: true,
       id: insertRow.id,
       emailSent,
+      emailError,
       smsSent,
       smsError,
-      message: smsError
-        ? "Client message saved, but SMS could not be sent."
-        : emailSent || smsSent
-          ? "Client message sent."
-          : "Client message saved in the app.",
+      message: [
+        emailError,
+        smsError,
+      ].filter(Boolean).join(" ") || (emailSent || smsSent
+        ? "Client message sent."
+        : "Client message saved in the app."),
     });
   } catch (error) {
     console.error("send-client-message error", error);
