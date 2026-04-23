@@ -1506,6 +1506,7 @@ const SitterDashboard = () => {
     const draft = getDraft(booking);
     const service = serviceMap.get(booking.service_id);
     const variant = booking.service_variant_id ? variantMap.get(booking.service_variant_id) : null;
+    const approverName = getApproverDisplayName(user);
     if (!service) return toast({ title: "Missing service details", variant: "destructive" });
 
     const petApproval = petApprovals.find((item) => item.pet_id === booking.pet_id && item.service_id === booking.service_id);
@@ -1599,6 +1600,28 @@ const SitterDashboard = () => {
     }
 
     const toastTitle = nextStatus === "confirmed" ? "Request confirmed" : "Payment opened";
+    const approvalAuditMessage = buildApprovalAuditMessage({
+      approverName,
+      notificationType: workflowData?.notificationType,
+      notificationStatus: workflowData?.notificationStatus,
+      notificationMessage: workflowData?.notificationMessage,
+    });
+
+    const { error: auditError } = await db.from("booking_updates").insert({
+      booking_id: booking.id,
+      created_by: user.id,
+      kind: "approval",
+      message: approvalAuditMessage,
+      sent_via_sms: false,
+    });
+
+    if (auditError) {
+      toast({
+        title: "Approval saved, but history entry failed",
+        description: auditError.message,
+        variant: "destructive",
+      });
+    }
 
     if (workflowData?.notificationStatus === "failed") {
       toast({
