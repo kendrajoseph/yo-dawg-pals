@@ -1,114 +1,69 @@
 
-Goal: let sitters/admins retry a failed client notification after approval, and keep a reliable history of each notification attempt.
+Goal: add an approval audit log entry to each booking that shows who approved it and whether the client notification was successfully queued.
 
-1. Add a dedicated notification-attempt log table
-- Create a new backend table such as `booking_notification_attempts` to store one row per approval notification attempt.
+1. Extend booking update types to support approval audit entries
+- Add a new booking update kind for approval-related history so approval events can live in the existing `booking_updates` timeline instead of introducing a second audit surface.
+- Use a migration to extend `public.booking_update_kind` with a value such as `approval`.
+- Keep the existing `booking_updates` table and RLS policies unchanged so customers and sitters can already view the new audit entries on the booking.
+
+2. Return richer approval metadata from the booking workflow
+- Update `supabase/functions/booking-workflow/index.ts` so approval actions return enough information to create a human-readable audit entry:
+  - notification type (`confirmation_email` or `payment_alert`)
+  - notification status (`sent`, `skipped`, `failed`)
+  - notification message
+  - attempt number if available
+- Preserve the current behavior where approval can succeed even if the client notification fails.
+
+3. Write an approval audit entry after approval succeeds
+- In `src/pages/SitterDashboard.tsx`, after the approval save + workflow call completes, insert a `booking_updates` row for that booking.
 - Record:
   - `booking_id`
-  - `notification_type` (`confirmation_email` | `payment_alert`)
-  - `trigger_source` (`approval` | `retry`)
-  - `attempt_number`
-  - `status` (`sent` | `skipped` | `failed`)
-  - `message`
-  - `error_message`
-  - `attempted_by`
-  - `created_at`
-- Enable RLS and allow authenticated admin/sitter users to read attempts for bookings they own as sitter, and insert through the workflow path only.
-- Keep roles enforced via the existing separate `user_roles` table pattern.
+  - `created_by` as the signed-in sitter/admin
+  - `kind: "approval"`
+  - a message such as:
+    - “Approved by Anneke. Confirmation email queued for the client.”
+    - “Approved by Anneke. Payment alert was skipped because no email address is on file.”
+    - “Approved by Anneke. Payment alert failed to queue: …”
+- Only create this audit entry once per approval action, not on retries.
 
-2. Centralize notification sending inside the booking workflow function
-- Refactor `supabase/functions/booking-workflow/index.ts` so approval sends and retry sends use one shared helper.
-- Add new actions for retrying:
-  - `retry_confirmation_email`
-  - `retry_payment_alert`
-- Keep the existing approval actions unchanged for booking state updates, but make the notification helper:
-  - resolve recipient + template
-  - call `send-transactional-email`
-  - correctly interpret both hard errors and “success: false” responses like suppression/unsubscribe
-  - insert an attempt row into `booking_notification_attempts`
-  - return structured response data including latest attempt status and attempt count
-- For retry actions, do not re-approve or re-open payment; only re-send the client notification for the already-approved booking.
+4. Make the message identify who approved the booking
+- Use the signed-in user’s name when available from existing profile data, with a safe fallback if the name is missing.
+- Keep the message readable in both sitter and customer views without needing extra joins when rendering.
+- Word the entry around “queued” or “not queued” rather than “sent” so it accurately reflects the app email pipeline.
 
-3. Record initial sends and retries consistently
-- When a booking is first approved, log that notification attempt in the new table as attempt 1.
-- When a retry is triggered, increment the attempt number for that booking + notification type.
-- Store user-friendly failure reasons such as:
-  - email provider invocation failed
-  - recipient email missing
-  - email suppressed/unsubscribed
-- This gives a full audit trail instead of only the latest toast.
+5. Show approval audit entries in booking history UI
+- Update the booking update label maps in:
+  - `src/pages/SitterDashboard.tsx`
+  - `src/pages/Account.tsx`
+- Add a friendly label for the new kind, e.g. “Approval”.
+- Reuse the existing booking updates list on each booking card so the audit appears automatically under the booking’s history.
 
-4. Load notification attempt state into the sitter dashboard
-- In `src/pages/SitterDashboard.tsx`, fetch recent notification-attempt rows alongside bookings.
-- Build a per-booking map of the latest attempt so the UI knows:
-  - whether the latest alert succeeded, was skipped, or failed
-  - which kind of alert it was
-  - how many attempts have been made
-- Keep this read-only summary client-side; the workflow function remains the write path.
+6. Keep approval and retry history distinct
+- Approval audit entries should capture the initial approval event only.
+- Notification retries should continue to live in `booking_notification_attempts` and not create duplicate approval log entries.
+- If desired, the approval message can mention the initial queue result while retry attempts remain visible in the sitter notification-attempt UI already built.
 
-5. Add retry UI where failed notifications are visible
-- Show a retry control on bookings whose latest notification status is `failed`.
-- Place it where the sitter already manages approvals so it remains visible after the initial toast disappears.
-- Label the action based on booking state:
-  - confirmed booking: “Retry confirmation email”
-  - awaiting-payment booking: “Retry payment alert”
-- Disable the button while retrying and refresh the booking/attempt state after completion.
-
-6. Upgrade the approval-failure toast to include an immediate retry action
-- When approval succeeds but notification fails, keep the destructive toast.
-- Add a toast action button that triggers the retry immediately from the toast.
-- The same retry handler should also back the persistent inline retry button so both paths behave identically.
-- Successful retry should replace ambiguity with a clear toast like:
-  - “Confirmation email sent to the client.”
-  - “Payment alert sent to the client.”
-- Skipped retry outcomes should explain why no email was sent.
-
-7. Keep retry behavior safe and explicit
-- Only allow retrying notifications for bookings already in a post-approval state (`confirmed` or `awaiting_payment` / equivalent current payment-open status).
-- Do not retry if the booking does not belong to the signed-in sitter/admin.
-- Do not mutate booking timing/pricing on retry.
-- If the recipient has no email or is suppressed, record the retry attempt but return a skipped result instead of pretending it sent.
-
-8. Verify the end-to-end outcomes
-- Test these scenarios:
-  - approval sends successfully on first try
-  - approval saves but notification fails, then retry succeeds
-  - retry fails again and increments attempt count
-  - retry is skipped because no email exists
-  - retry is skipped because the address is suppressed/unsubscribed
-- Confirm the sitter sees both:
-  - a clear toast outcome
-  - persistent retry/history state in the dashboard
+7. Verify the key scenarios
+- Confirmed booking approval:
+  - audit entry says who approved it
+  - states confirmation email was queued / skipped / failed
+- Awaiting-payment approval:
+  - audit entry says who approved it
+  - states payment alert was queued / skipped / failed
+- Customer account view:
+  - approval entry appears in the existing “Care updates” history for that booking
+- Sitter dashboard:
+  - approval entry appears in the booking’s recent updates/history list
 
 Technical details
 - Files to update:
-  - `supabase/migrations/...` for the new notification attempts table + RLS
-  - `supabase/functions/booking-workflow/index.ts`
+  - `supabase/migrations/...` to add the new `booking_update_kind` enum value
   - `src/pages/SitterDashboard.tsx`
-- Recommended workflow response shape:
+  - `src/pages/Account.tsx`
+  - optionally `supabase/functions/booking-workflow/index.ts` if response wording needs to distinguish queued/skipped/failed more explicitly
+- Important constraint:
+  - do not edit `src/integrations/supabase/types.ts` manually; the generated types should refresh from the backend schema change
+- Recommended approval audit message pattern:
 ```ts
-{
-  ok: boolean;
-  notificationStatus: "sent" | "skipped" | "failed";
-  notificationType: "confirmation_email" | "payment_alert";
-  notificationMessage: string;
-  attemptNumber?: number;
-  retryAvailable?: boolean;
-}
+Approved by {approverName}. {Confirmation email|Payment alert} {was successfully queued for delivery|was skipped because ...|failed to queue: ...}
 ```
-- Recommended table shape:
-```ts
-booking_notification_attempts
-- id
-- booking_id
-- notification_type
-- trigger_source
-- attempt_number
-- status
-- message
-- error_message
-- attempted_by
-- created_at
-```
-- Important implementation detail:
-  - Treat `send-transactional-email` responses with `success: false` as non-sent outcomes and log them explicitly; do not rely only on transport-level errors.
