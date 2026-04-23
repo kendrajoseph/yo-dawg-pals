@@ -103,6 +103,7 @@ type Booking = {
   pet_id: string;
   service_id: string;
   service_variant_id: string | null;
+  bundle_position?: number | null;
   request_group_id?: string | null;
   request_group_label?: string | null;
   status: string;
@@ -1874,7 +1875,16 @@ const SitterDashboard = () => {
                   </div>
                 </div>
                 <div className="mt-4 grid gap-4">
-                  {requestBookings.map((booking) => {
+                  {groupedRequestBookings.map((group) => (
+                    <div key={group.id} className="rounded-md border border-border bg-muted/20 p-4">
+                      <div className="flex flex-wrap items-center justify-between gap-3">
+                        <div>
+                          <h3 className="font-display text-lg uppercase text-primary">{group.label}</h3>
+                          <p className="text-sm text-muted-foreground">{group.bookings.length} service request{group.bookings.length === 1 ? "" : "s"} in this submission</p>
+                        </div>
+                      </div>
+                      <div className="mt-4 grid gap-4">
+                        {group.bookings.map((booking) => {
                     const draft = getDraft(booking);
                     const service = serviceMap.get(booking.service_id);
                     const variant = booking.service_variant_id ? variantMap.get(booking.service_variant_id) : null;
@@ -1919,6 +1929,7 @@ const SitterDashboard = () => {
                               <PetNameLabel name={booking.pets?.name ?? "Pet"} species={booking.pets?.species} />
                             </p>
                             <p className="mt-1 text-sm text-muted-foreground">Requested: {formatBookingSchedule(booking)}</p>
+                            {booking.recurrence_label && <p className="mt-1 text-xs uppercase text-muted-foreground">Repeat: {booking.recurrence_label}</p>}
                             {booking.notes && <p className="mt-2 text-xs text-muted-foreground">Client note: “{booking.notes}”</p>}
                           </div>
                           <div className="rounded-md border border-border bg-card px-4 py-3 text-sm">
@@ -2029,6 +2040,9 @@ const SitterDashboard = () => {
                       </div>
                     );
                   })}
+                      </div>
+                    </div>
+                  ))}
                 </div>
               </Card>
             )}
