@@ -54,6 +54,14 @@ import {
   STATUS_STYLES,
   timeToMinutes,
 } from "@/lib/booking";
+import {
+  formatMinuteLabel,
+  type AssistantDashboardContext,
+  type AssistantExecutionResponse,
+  type AssistantNotificationPreview,
+  type AssistantPlanResponse,
+  weekdayLabel,
+} from "@/lib/scheduleAssistant";
 import { cn } from "@/lib/utils";
 
 type Availability = { id: string; weekday: number; start_minute: number; end_minute: number; max_bookings: number };
@@ -279,9 +287,16 @@ type SnapshotEditor =
       maxBookings: number;
     };
 
-type TabKey = "overview" | "day" | "playbook" | "clients" | "schedule" | "care" | "alerts";
+type TabKey = "overview" | "day" | "playbook" | "clients" | "schedule" | "care" | "assistant" | "alerts";
 type MessageAudience = "single" | "group";
 type SnapshotRange = "day" | "week";
+type AssistantMessage = {
+  id: string;
+  role: "user" | "assistant";
+  content: string;
+  plan?: AssistantPlanResponse | null;
+  preview?: AssistantNotificationPreview[];
+};
 
 const WALK_SLUGS = new Set(["solo-walk", "group-walk"]);
 const MIN_BUFFER_MINUTES = 30;
@@ -334,6 +349,7 @@ const tabMeta: Array<{ value: TabKey; label: string; icon: typeof LayoutDashboar
   { value: "clients", label: "Clients", icon: UserRound },
   { value: "schedule", label: "Schedule", icon: CalendarDays },
   { value: "care", label: "Care", icon: MessageSquare },
+  { value: "assistant", label: "Assistant", icon: Sparkles },
   { value: "alerts", label: "Alerts", icon: Megaphone },
 ];
 
