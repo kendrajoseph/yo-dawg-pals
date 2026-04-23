@@ -670,9 +670,14 @@ const Book = () => {
 
     await Promise.all(
       data.map((booking: { id: string }) =>
-        supabase.functions.invoke("notify-new-booking-request", {
-          body: { bookingId: booking.id },
-        }),
+        Promise.all([
+          supabase.functions.invoke("notify-new-booking-request", {
+            body: { bookingId: booking.id },
+          }),
+          supabase.functions.invoke("booking-workflow", {
+            body: { bookingId: booking.id, action: "request_received" },
+          }),
+        ]),
       ),
     );
 
