@@ -6,8 +6,7 @@ const services = [
   {
     icon: Footprints,
     title: "Solo Walk",
-    desc: "One-on-one walks with 30 or 60 minute options.",
-    detail: "Request your preferred time and we’ll confirm the details.",
+    desc: "A structured one-on-one walk designed for dogs who need extra focus, calmer handling, or support with behavioural challenges. Each outing is tailored to your dog’s pace, triggers, and goals, with training woven in so they get purposeful exercise and better habits at the same time.",
     price: "$30",
     unit: "/ 30 min",
     slug: "solo-walk",
@@ -17,8 +16,7 @@ const services = [
   {
     icon: Users,
     title: "Group Walk",
-    desc: "Social 60 minute walks for dogs who enjoy company.",
-    detail: "Choose a preferred outing and we’ll confirm the details.",
+    desc: "A thoughtfully managed social walk for dogs who enjoy the company of others and do well in a balanced group setting. Your dog gets dependable exercise, safe pack structure, and positive social exposure in a calm, professional environment.",
     price: "$30",
     unit: "/ 60 min",
     slug: "group-walk",
@@ -28,8 +26,7 @@ const services = [
   {
     icon: Home,
     title: "Pet Sitting",
-    desc: "Drop-in visits for feeding, check-ins, play, and care at home.",
-    detail: "Request a visit and we’ll confirm the details.",
+    desc: "Attentive in-home care that keeps your pet comfortable in their own space and routine. Visits include feeding, potty breaks, companionship, play, and thoughtful check-ins, so your pet feels settled and cared for while you’re away.",
     price: "$30",
     unit: "/ visit",
     slug: "sitting",
@@ -39,8 +36,7 @@ const services = [
   {
     icon: Bed,
     title: "Boarding",
-    desc: "Overnight stays in a calm, home-based setting.",
-    detail: "Request your dates and we’ll confirm the details.",
+    desc: "Overnight care in a calm, home-based setting where your dog receives structure, close attention, and a genuine sense of comfort. It’s a more personal alternative to a standard kennel, with care that feels safe, consistent, and high quality from start to finish.",
     price: "$70",
     unit: "/ night",
     slug: "boarding",
@@ -102,7 +98,7 @@ const ServicesSection = () => {
         </div>
 
         <div className="mt-10 grid gap-6 sm:grid-cols-2 lg:grid-cols-4 lg:gap-5">
-          {services.map(({ icon: Icon, title, desc, detail, price, unit, slug, accent, dog }, i) => (
+          {services.map(({ icon: Icon, title, desc, price, unit, slug, accent, dog }, i) => (
             <article
               key={title}
               className="group relative flex flex-col rounded-2xl border-2 border-primary bg-card p-6 pt-12 shadow-pop-sm transition-all duration-200 hover:-translate-y-1 hover:shadow-pop"
@@ -119,7 +115,6 @@ const ServicesSection = () => {
               </div>
               <h3 className="font-display text-2xl text-primary">{title}</h3>
               <p className="mt-2 text-sm leading-relaxed text-foreground/70">{desc}</p>
-              <p className="mt-3 text-xs leading-relaxed text-muted-foreground">{detail}</p>
               <div className="mt-6 flex items-baseline gap-1.5 border-t border-border pt-4">
                 <span className="font-display text-3xl text-primary">{price}</span>
                 <span className="text-xs text-muted-foreground">{unit}</span>
