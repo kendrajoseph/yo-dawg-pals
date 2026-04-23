@@ -423,6 +423,7 @@ const SitterDashboard = () => {
   const [profileDetails, setProfileDetails] = useState<Record<string, ProfileDetails>>({});
   const [clientAdminProfiles, setClientAdminProfiles] = useState<Record<string, ClientAdminProfile>>({});
   const [bookingUpdates, setBookingUpdates] = useState<Record<string, BookingUpdate[]>>({});
+  const [notificationAttempts, setNotificationAttempts] = useState<Record<string, BookingNotificationAttempt[]>>({});
   const [petProfiles, setPetProfiles] = useState<Record<string, PetProfile>>({});
   const [temperamentTags, setTemperamentTags] = useState<TemperamentTag[]>([]);
   const [petTagIdsByPet, setPetTagIdsByPet] = useState<Record<string, string[]>>({});
@@ -457,6 +458,7 @@ const SitterDashboard = () => {
   });
 
   const [savingBookingId, setSavingBookingId] = useState<string | null>(null);
+  const [retryingNotificationKey, setRetryingNotificationKey] = useState<string | null>(null);
   const [sendingUpdateId, setSendingUpdateId] = useState<string | null>(null);
   const [sendingClientMessage, setSendingClientMessage] = useState(false);
   const [savingAlert, setSavingAlert] = useState(false);
@@ -481,6 +483,7 @@ const SitterDashboard = () => {
       { data: messageRows },
       { data: alertRows },
       { data: notificationRows },
+      { data: notificationAttemptRows },
       { data: tagRows },
       { data: fitAlertRows },
     ] = await Promise.all([
@@ -506,6 +509,7 @@ const SitterDashboard = () => {
       db.from("client_messages").select("id, customer_id, booking_id, kind, subject, message, send_email, send_sms, delivered_email_at, delivered_sms_at, created_at").eq("sitter_id", user.id).order("created_at", { ascending: false }).limit(50),
       db.from("service_alerts").select("id, kind, title, message, starts_at, ends_at, is_active, pin_to_profile, created_at").eq("sitter_id", user.id).order("starts_at", { ascending: false }).limit(20),
       db.from("sitter_notifications").select("id, kind, title, message, booking_id, read_at, created_at").eq("user_id", user.id).order("created_at", { ascending: false }).limit(12),
+      db.from("booking_notification_attempts").select("id, booking_id, notification_type, trigger_source, attempt_number, status, message, error_message, attempted_by, created_at").order("created_at", { ascending: false }).limit(200),
       db.from("pet_temperament_tags").select("id, slug, label, description, visibility, risk_services, risk_message").eq("is_active", true).order("sort_order"),
       db.from("pet_fit_alerts").select("id, pet_id, service_id, booking_id, title, message, severity, is_resolved, conflicting_tag_ids, created_at").eq("is_resolved", false).order("created_at", { ascending: false }).limit(20),
     ]);
@@ -524,6 +528,10 @@ const SitterDashboard = () => {
     setClientMessages((messageRows ?? []) as ClientMessage[]);
     setServiceAlerts((alertRows ?? []) as ServiceAlert[]);
     setSitterNotifications((notificationRows ?? []) as SitterNotification[]);
+    setNotificationAttempts(((notificationAttemptRows ?? []) as BookingNotificationAttempt[]).reduce<Record<string, BookingNotificationAttempt[]>>((acc, row) => {
+      acc[row.booking_id] = [...(acc[row.booking_id] ?? []), row];
+      return acc;
+    }, {}));
     setTemperamentTags((tagRows ?? []) as TemperamentTag[]);
     setFitAlerts((fitAlertRows ?? []) as FitAlert[]);
 
