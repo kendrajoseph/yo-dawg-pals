@@ -2,7 +2,7 @@ import { useEffect, useState } from "react";
 import { Heart, ShieldCheck, MapPin } from "lucide-react";
 import { Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
-import { dog6, dog7 } from "@/assets/dogs";
+import { dog4, dog8 } from "@/assets/dogs";
 import anneke1 from "@/assets/anneke/anneke-1.jpeg";
 import anneke2 from "@/assets/anneke/anneke-2.jpeg";
 import anneke3 from "@/assets/anneke/anneke-3.jpeg";
@@ -73,13 +73,13 @@ const MeetSitter = () => {
           </div>
           {/* peeking dog buddies */}
           <img
-            src={dog7}
+            src={dog4}
             alt=""
             aria-hidden
             className="absolute -bottom-4 -left-3 z-10 h-20 w-auto -rotate-12 drop-shadow-[4px_4px_0_hsl(var(--primary))] sm:-bottom-6 sm:-left-6 sm:h-28"
           />
           <img
-            src={dog6}
+            src={dog8}
             alt=""
             aria-hidden
             className="absolute -bottom-4 right-0 z-10 hidden h-20 w-auto rotate-6 drop-shadow-[4px_4px_0_hsl(var(--primary))] sm:block"

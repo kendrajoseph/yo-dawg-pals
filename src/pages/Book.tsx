@@ -17,7 +17,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { toast } from "@/hooks/use-toast";
 import { ArrowLeft, ArrowRight, CalendarDays, Check, Clock, MoonStar, PawPrint, Plus, ShieldCheck, Sparkles, Trash2 } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { DAYS, formatPriceWithDecimals, minutesToTime } from "@/lib/booking";
+import { DAYS, formatPriceWithDecimals, minutesToTime, applySiblingDiscount, calculateBoardingTotalCents } from "@/lib/booking";
 
 type ServiceVariant = {
   id: string;
@@ -29,6 +29,7 @@ type ServiceVariant = {
   unit_label: string | null;
   payment_mode: "full" | "deposit" | "free";
   sort_order: number;
+  sibling_discount_percent?: number;
 };
 
 type Service = {
@@ -202,7 +203,7 @@ const Book = () => {
           .order("sort_order"),
         db
           .from("service_variants")
-          .select("id, service_id, slug, name, duration_minutes, price_cents, unit_label, payment_mode, sort_order")
+          .select("id, service_id, slug, name, duration_minutes, price_cents, unit_label, payment_mode, sort_order, sibling_discount_percent")
           .eq("is_active", true)
           .order("sort_order"),
         db.from("availability").select("id, sitter_id, weekday, start_minute, end_minute, max_bookings"),
@@ -531,13 +532,27 @@ const Book = () => {
 
   const back = () => setStep((current) => Math.max(current - 1, 0));
 
-  const buildBookingPayload = (item: BundleItem, position: number, requestGroupId: string) => {
+  const buildBookingPayload = (item: BundleItem, position: number, requestGroupId: string, sameServicePosition = 0) => {
     const service = item.serviceId ? serviceMap.get(item.serviceId) ?? null : null;
     const variant = item.variantId ? variantMap.get(item.variantId) ?? null : null;
     const selectedWindow = item.windowId ? walkWindows.find((window) => window.id === item.windowId) ?? null : null;
     if (!user || !service || !variant || !item.petId || !item.requestedDate || !sitterId) return null;
 
-    const totalCents = variant.price_cents;
+    // Boarding tiered pricing: $80 first night + $60 each additional night
+    let totalCents = variant.price_cents;
+    if (service.slug === "boarding" && item.requestedDate) {
+      const start = new Date(`${item.requestedDate}T00:00:00`);
+      const end = item.requestedEndDate ? new Date(`${item.requestedEndDate}T00:00:00`) : start;
+      const nights = Math.max(1, Math.round((end.getTime() - start.getTime()) / (1000 * 60 * 60 * 24)) || 1);
+      const extraNightVariant = (service.variants || []).find((v) => v.slug === "boarding-extra-night");
+      const extraCents = extraNightVariant?.price_cents ?? 6000;
+      totalCents = calculateBoardingTotalCents(variant.price_cents, extraCents, nights);
+    }
+
+    // Sibling discount: 50% off second+ dog for group walks / boarding
+    const discountPct = variant.sibling_discount_percent ?? 0;
+    totalCents = applySiblingDiscount(totalCents, sameServicePosition, discountPct);
+
     const paymentAmountCents = variant.payment_mode === "free" ? 0 : variant.payment_mode === "deposit" ? Math.round(totalCents * 0.25) : totalCents;
     const depositCents = variant.payment_mode === "deposit" ? paymentAmountCents : variant.payment_mode === "full" ? totalCents : 0;
 
@@ -656,8 +671,14 @@ const Book = () => {
       return;
     }
 
+    const serviceCounts = new Map<string, number>();
     const bookingPayloads = bundleItems
-      .map((item, index) => buildBookingPayload(item, index, groupData.id))
+      .map((item, index) => {
+        const key = item.serviceId ?? "_";
+        const sameServicePosition = serviceCounts.get(key) ?? 0;
+        serviceCounts.set(key, sameServicePosition + 1);
+        return buildBookingPayload(item, index, groupData.id, sameServicePosition);
+      })
       .filter(Boolean);
 
     const { data, error } = await db.from("bookings").insert(bookingPayloads).select("id");

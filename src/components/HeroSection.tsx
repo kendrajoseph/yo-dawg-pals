@@ -106,7 +106,7 @@ const HeroSection = () => {
               <p className="font-serif text-xs italic leading-snug sm:text-sm">
                 "The walks feel personal, structured, and exactly right for our dog."
               </p>
-              <p className="mt-1 text-[10px] font-tag text-muted-foreground sm:text-xs">— Maya & Biscuit</p>
+              <p className="mt-1 text-[10px] font-tag text-muted-foreground sm:text-xs">— Teresa & Poppy</p>
             </div>
           </div>
         </div>

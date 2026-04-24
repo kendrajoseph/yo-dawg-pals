@@ -41,6 +41,7 @@ const PetProfilesManager = ({
   const [photoFile, setPhotoFile] = useState<File | null>(null);
   const [saving, setSaving] = useState(false);
   const [temperamentTags, setTemperamentTags] = useState<TemperamentTag[]>([]);
+  const [detailPet, setDetailPet] = useState<Pet | null>(null);
 
   const load = async () => {
     if (!user) return;
@@ -157,6 +158,7 @@ const PetProfilesManager = ({
       entry_instructions: str(data.entry_instructions),
       insurance_provider: str(data.insurance_provider),
       insurance_policy: str(data.insurance_policy),
+      temperament_notes: str(data.temperament_notes),
       ...(photo_url !== undefined ? { photo_url } : {}),
     };
 
@@ -242,7 +244,12 @@ const PetProfilesManager = ({
               key={pet.id}
               className={`relative border-4 border-primary bg-card p-4 shadow-pop ${index % 2 ? "rotate-1" : "-rotate-1"}`}
             >
-              <div className="aspect-square w-full overflow-hidden border-2 border-primary bg-muted">
+              <button
+                type="button"
+                onClick={() => setDetailPet(pet)}
+                className="block aspect-square w-full overflow-hidden border-2 border-primary bg-muted transition-transform hover:scale-[1.01] focus:outline-none focus-visible:ring-2 focus-visible:ring-primary"
+                aria-label={`See ${pet.name}'s full profile`}
+              >
                 {pet.photo_url ? (
                   <img src={pet.photo_url} alt={pet.name} className="h-full w-full object-cover" loading="lazy" />
                 ) : (
@@ -250,7 +257,7 @@ const PetProfilesManager = ({
                     <PawPrint className="h-12 w-12 text-foreground/30" />
                   </div>
                 )}
-              </div>
+              </button>
               <div className="mt-3">
                 <h3 className="font-display text-2xl uppercase leading-tight">{pet.name}</h3>
                 <p className="text-xs text-muted-foreground">
@@ -323,6 +330,83 @@ const PetProfilesManager = ({
             onCancel={() => setOpen(false)}
             onSubmit={submit}
           />
+        </DialogContent>
+      </Dialog>
+
+      <Dialog open={!!detailPet} onOpenChange={(o) => !o && setDetailPet(null)}>
+        <DialogContent className="max-h-[92vh] overflow-y-auto border-4 border-primary shadow-pop sm:max-w-2xl">
+          <DialogHeader>
+            <DialogTitle className="font-display text-3xl uppercase">{detailPet?.name}</DialogTitle>
+          </DialogHeader>
+          {detailPet && (
+            <div className="space-y-5">
+              {detailPet.photo_url && (
+                <div className="aspect-video w-full overflow-hidden border-2 border-primary bg-muted">
+                  <img src={detailPet.photo_url} alt={detailPet.name} className="h-full w-full object-cover" />
+                </div>
+              )}
+
+              <div className="grid gap-3 sm:grid-cols-2 text-sm">
+                {detailPet.breed && <div><span className="font-tag text-xs uppercase text-muted-foreground">Breed</span><div>{detailPet.breed}</div></div>}
+                {detailPet.sex && <div><span className="font-tag text-xs uppercase text-muted-foreground">Sex</span><div className="capitalize">{detailPet.sex}</div></div>}
+                {detailPet.age_years != null && <div><span className="font-tag text-xs uppercase text-muted-foreground">Age</span><div>{detailPet.age_years} yr</div></div>}
+                {detailPet.weight_lbs != null && <div><span className="font-tag text-xs uppercase text-muted-foreground">Weight</span><div>{detailPet.weight_lbs} lb</div></div>}
+                {detailPet.color && <div><span className="font-tag text-xs uppercase text-muted-foreground">Color</span><div>{detailPet.color}</div></div>}
+                {detailPet.microchip_id && <div><span className="font-tag text-xs uppercase text-muted-foreground">Microchip</span><div>{detailPet.microchip_id}</div></div>}
+                <div><span className="font-tag text-xs uppercase text-muted-foreground">Spayed/neutered</span><div>{detailPet.spayed_neutered ? "Yes" : "No"}</div></div>
+              </div>
+
+              {(detailPet.temperament_tag_ids ?? []).length > 0 && (
+                <div>
+                  <h4 className="font-display text-sm uppercase text-primary">Temperament</h4>
+                  <div className="mt-2 flex flex-wrap gap-2">
+                    {detailPet.temperament_tag_ids?.map((tagId) => {
+                      const tag = temperamentTags.find((t) => t.id === tagId);
+                      return tag ? <span key={tagId} className="rounded-md bg-muted px-2 py-1 text-xs font-tag text-primary ring-1 ring-border">{tag.label}</span> : null;
+                    })}
+                  </div>
+                </div>
+              )}
+
+              {detailPet.temperament_notes && (
+                <div>
+                  <h4 className="font-display text-sm uppercase text-primary">Other temperament details</h4>
+                  <p className="mt-1 whitespace-pre-wrap text-sm">{detailPet.temperament_notes}</p>
+                </div>
+              )}
+
+              {[
+                ["Medications", detailPet.medications],
+                ["Allergies", detailPet.allergies],
+                ["Diet & feeding", detailPet.dietary_notes],
+                ["Behavior", detailPet.behavioral_notes],
+                ["Vet", [detailPet.vet_name, detailPet.vet_phone, detailPet.vet_address].filter(Boolean).join(" · ")],
+                ["Other vet info", detailPet.vet_info],
+                ["Owner phone", detailPet.owner_phone],
+                ["Emergency contact", detailPet.emergency_contact],
+                ["Secondary contact", [detailPet.secondary_contact_name, detailPet.secondary_contact_phone].filter(Boolean).join(" · ")],
+                ["Authorized pickup", [detailPet.authorized_pickup_name, detailPet.authorized_pickup_phone].filter(Boolean).join(" · ")],
+                ["Door code / lockbox", detailPet.entry_code],
+                ["Entry instructions", detailPet.entry_instructions],
+                ["Insurance", [detailPet.insurance_provider, detailPet.insurance_policy].filter(Boolean).join(" · ")],
+                ["Other notes", detailPet.notes],
+              ].map(([label, value]) =>
+                value ? (
+                  <div key={label as string}>
+                    <h4 className="font-display text-sm uppercase text-primary">{label}</h4>
+                    <p className="mt-1 whitespace-pre-wrap text-sm">{value}</p>
+                  </div>
+                ) : null,
+              )}
+
+              <div className="flex justify-end gap-2 border-t-2 border-dashed border-primary/30 pt-4">
+                <Button variant="ghost" onClick={() => setDetailPet(null)}>Close</Button>
+                <Button onClick={() => { const p = detailPet; setDetailPet(null); if (p) openEdit(p); }} className="bg-primary font-display uppercase shadow-pop-accent">
+                  <Pencil className="h-4 w-4" /> Edit
+                </Button>
+              </div>
+            </div>
+          )}
         </DialogContent>
       </Dialog>
     </div>

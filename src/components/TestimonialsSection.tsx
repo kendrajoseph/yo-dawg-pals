@@ -1,5 +1,5 @@
 import { Star } from "lucide-react";
-import { dog2, dog6, dog1 } from "@/assets/dogs";
+import { dog2, dog6, dog1, dog5 } from "@/assets/dogs";
 
 const testimonials = [
   {
@@ -36,7 +36,7 @@ const testimonials = [
     role: "5-month-old havoc potato",
     bg: "bg-secondary text-secondary-foreground",
     rotate: "rotate-1",
-    dog: dog2,
+    dog: dog5,
   },
 ];
 
