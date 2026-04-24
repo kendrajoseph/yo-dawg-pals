@@ -244,7 +244,12 @@ const PetProfilesManager = ({
               key={pet.id}
               className={`relative border-4 border-primary bg-card p-4 shadow-pop ${index % 2 ? "rotate-1" : "-rotate-1"}`}
             >
-              <div className="aspect-square w-full overflow-hidden border-2 border-primary bg-muted">
+              <button
+                type="button"
+                onClick={() => setDetailPet(pet)}
+                className="block aspect-square w-full overflow-hidden border-2 border-primary bg-muted transition-transform hover:scale-[1.01] focus:outline-none focus-visible:ring-2 focus-visible:ring-primary"
+                aria-label={`See ${pet.name}'s full profile`}
+              >
                 {pet.photo_url ? (
                   <img src={pet.photo_url} alt={pet.name} className="h-full w-full object-cover" loading="lazy" />
                 ) : (
@@ -252,7 +257,7 @@ const PetProfilesManager = ({
                     <PawPrint className="h-12 w-12 text-foreground/30" />
                   </div>
                 )}
-              </div>
+              </button>
               <div className="mt-3">
                 <h3 className="font-display text-2xl uppercase leading-tight">{pet.name}</h3>
                 <p className="text-xs text-muted-foreground">
