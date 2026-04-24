@@ -90,3 +90,21 @@ export const STATUS_LABELS: Record<string, string> = {
   completed: "Completed",
   refunded: "Refunded",
 };
+
+/**
+ * Boarding price: $80 first night, $60 each additional night.
+ * `nights` = number of overnight stays (>=1).
+ */
+export const calculateBoardingTotalCents = (firstNightCents: number, extraNightCents: number, nights: number): number => {
+  const n = Math.max(1, Math.floor(nights));
+  return firstNightCents + extraNightCents * (n - 1);
+};
+
+/**
+ * Apply a 50% sibling discount to the second (and beyond) dog in the same
+ * Group Walk or Boarding request. Position 0 = first dog (full price).
+ */
+export const applySiblingDiscount = (priceCents: number, position: number, discountPercent: number): number => {
+  if (position <= 0 || !discountPercent) return priceCents;
+  return Math.round(priceCents * (1 - discountPercent / 100));
+};
