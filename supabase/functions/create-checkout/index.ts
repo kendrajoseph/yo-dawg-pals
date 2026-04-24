@@ -58,6 +58,24 @@ serve(async (req) => {
     }
 
     const stripe = createStripeClient((environment || "sandbox") as StripeEnv);
+
+    // Reuse / create a Stripe customer so we can save the card for future off-session charges.
+    const { data: profileRow } = await supabase
+      .from("profiles")
+      .select("stripe_customer_id")
+      .eq("id", user.id)
+      .maybeSingle();
+
+    let stripeCustomerId: string | null = (profileRow as any)?.stripe_customer_id ?? null;
+    if (!stripeCustomerId) {
+      const customer = await stripe.customers.create({
+        email: user.email ?? undefined,
+        metadata: { userId: user.id },
+      });
+      stripeCustomerId = customer.id;
+      await supabase.from("profiles").update({ stripe_customer_id: stripeCustomerId }).eq("id", user.id);
+    }
+
     const session = await stripe.checkout.sessions.create({
       line_items: [{
         price_data: {
@@ -76,9 +94,12 @@ serve(async (req) => {
       mode: "payment",
       ui_mode: "embedded",
       return_url: returnUrl || `${req.headers.get("origin")}/booking/${bookingId}/success?session_id={CHECKOUT_SESSION_ID}`,
-      customer_email: user.email,
+      customer: stripeCustomerId,
       metadata: { bookingId, userId: user.id, serviceName: itemName },
-      payment_intent_data: { metadata: { bookingId, userId: user.id } },
+      payment_intent_data: {
+        metadata: { bookingId, userId: user.id },
+        setup_future_usage: "off_session",
+      },
     });
 
     await supabase.from("bookings").update({ stripe_session_id: session.id }).eq("id", bookingId);

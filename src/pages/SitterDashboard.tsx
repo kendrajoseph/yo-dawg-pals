@@ -10,6 +10,7 @@ import {
   ChevronDown,
   ChevronRight,
   Clock3,
+  CreditCard,
   Dog,
   Filter,
   LayoutDashboard,
@@ -28,6 +29,7 @@ import {
   UserRound,
   Users,
   X,
+  Zap,
 } from "lucide-react";
 
 import SiteFooter from "@/components/SiteFooter";
@@ -140,6 +142,7 @@ type Booking = {
   extra_time_minutes: number;
   extra_time_fee_cents: number;
   late_pickup_fee_cents: number;
+  payment_status?: string | null;
   services: { name: string; slug: string; payment_mode: "full" | "deposit" | "free" } | null;
   service_variants: { name: string; duration_minutes: number; price_cents: number; payment_mode: "full" | "deposit" | "free" } | null;
   pets: { id: string; name: string; species: string | null } | null;
@@ -291,7 +294,7 @@ type SnapshotEditor =
       maxBookings: number;
     };
 
-type TabKey = "overview" | "day" | "playbook" | "clients" | "schedule" | "care" | "alerts";
+type TabKey = "overview" | "day" | "playbook" | "clients" | "schedule" | "care" | "payments" | "alerts";
 type MessageAudience = "single" | "group";
 type SnapshotRange = "day" | "week";
 type AssistantMessage = {
@@ -417,6 +420,7 @@ const tabMeta: Array<{ value: TabKey; label: string; icon: typeof LayoutDashboar
   { value: "clients", label: "Clients", icon: UserRound },
   { value: "schedule", label: "Schedule", icon: CalendarDays },
   { value: "care", label: "Care", icon: MessageSquare },
+  { value: "payments", label: "Payments", icon: CreditCard },
   { value: "alerts", label: "Alerts", icon: Megaphone },
 ];
 
@@ -472,6 +476,13 @@ const SitterDashboard = () => {
   const [petTagIdsByPet, setPetTagIdsByPet] = useState<Record<string, string[]>>({});
   const [fitAlerts, setFitAlerts] = useState<FitAlert[]>([]);
   const [savingClientProfile, setSavingClientProfile] = useState(false);
+  const [chargingBookingId, setChargingBookingId] = useState<string | null>(null);
+  const [paymentsFilter, setPaymentsFilter] = useState<"all" | "outstanding" | "paid">("outstanding");
+  const [blockAlertOpen, setBlockAlertOpen] = useState(false);
+  const [blockAlertContext, setBlockAlertContext] = useState<{ date: string; reason: string } | null>(null);
+  const [blockAlertChannels, setBlockAlertChannels] = useState({ email: true, sms: false });
+  const [blockAlertMessage, setBlockAlertMessage] = useState("");
+  const [sendingBlockAlert, setSendingBlockAlert] = useState(false);
 
   const [newAvailability, setNewAvailability] = useState({ weekday: 1, start: "09:00", end: "12:00", maxBookings: 1 });
   const [newServiceIds, setNewServiceIds] = useState<string[]>([]);
@@ -535,7 +546,7 @@ const SitterDashboard = () => {
       db.from("blocked_dates").select("*").eq("sitter_id", user.id).order("blocked_date"),
       db
         .from("bookings")
-        .select("id, customer_id, pet_id, service_id, service_variant_id, request_group_id, request_group_label, start_at, end_at, total_cents, payment_amount_cents, base_price_cents, extra_time_minutes, extra_time_fee_cents, late_pickup_fee_cents, status, notes, booking_kind, requested_date, requested_end_date, recurrence_label, requested_window_label, requested_window_start_minute, requested_window_end_minute, scheduled_start_at, scheduled_end_at, paid_at, group_assignment_label, internal_notes, services(name, slug, payment_mode), service_variants(name, duration_minutes, price_cents, payment_mode), pets(id, name, species)")
+        .select("id, customer_id, pet_id, service_id, service_variant_id, request_group_id, request_group_label, start_at, end_at, total_cents, payment_amount_cents, base_price_cents, extra_time_minutes, extra_time_fee_cents, late_pickup_fee_cents, payment_status, status, notes, booking_kind, requested_date, requested_end_date, recurrence_label, requested_window_label, requested_window_start_minute, requested_window_end_minute, scheduled_start_at, scheduled_end_at, paid_at, group_assignment_label, internal_notes, services(name, slug, payment_mode), service_variants(name, duration_minutes, price_cents, payment_mode), pets(id, name, species)")
         .eq("sitter_id", user.id)
         .order("created_at", { ascending: false }),
       db
@@ -1089,22 +1100,99 @@ const SitterDashboard = () => {
 
   const addBlockedDate = async () => {
     if (!user || !blockDate) return;
+    const dateStr = format(blockDate, "yyyy-MM-dd");
     const { error } = await db.from("blocked_dates").insert({
       sitter_id: user.id,
-      blocked_date: format(blockDate, "yyyy-MM-dd"),
+      blocked_date: dateStr,
       reason: blockReason || null,
     });
-    if (error) toast({ title: "Failed", description: error.message, variant: "destructive" });
-    else {
-      setBlockDate(undefined);
-      setBlockReason("");
-      load();
+    if (error) {
+      toast({ title: "Failed", description: error.message, variant: "destructive" });
+      return;
     }
+    const reasonSnapshot = blockReason;
+    setBlockDate(undefined);
+    setBlockReason("");
+    load();
+    // Prompt Anneke to notify clients about the closure.
+    setBlockAlertContext({ date: dateStr, reason: reasonSnapshot });
+    setBlockAlertChannels({ email: true, sms: false });
+    setBlockAlertMessage(
+      `Heads up — Yo Dawg is closed on ${format(new Date(`${dateStr}T12:00:00`), "EEEE, MMMM d")}${reasonSnapshot ? ` (${reasonSnapshot})` : ""}. Reach out if you'd like help rescheduling.`,
+    );
+    setBlockAlertOpen(true);
   };
 
   const removeBlockedDate = async (id: string) => {
     await db.from("blocked_dates").delete().eq("id", id);
     load();
+  };
+
+  const sendBlockedDayAlert = async () => {
+    if (!user || !blockAlertContext) return;
+    if (!blockAlertChannels.email && !blockAlertChannels.sms) {
+      toast({ title: "Pick a channel", description: "Choose email, text, or both before sending.", variant: "destructive" });
+      return;
+    }
+    setSendingBlockAlert(true);
+
+    // Recipients = every client with at least one booking on Anneke's schedule.
+    const recipientIds = Array.from(
+      new Set(bookings.map((b) => b.customer_id).filter(Boolean) as string[]),
+    );
+    if (recipientIds.length === 0) {
+      toast({ title: "No clients to notify", description: "You don't have any clients on file yet." });
+      setSendingBlockAlert(false);
+      setBlockAlertOpen(false);
+      return;
+    }
+
+    const subject = `Closure: ${format(new Date(`${blockAlertContext.date}T12:00:00`), "EEE, MMM d")}`;
+    let okCount = 0;
+    let failCount = 0;
+    for (const customerId of recipientIds) {
+      try {
+        const { error } = await supabase.functions.invoke("send-client-message", {
+          body: {
+            customerId,
+            kind: "service_update",
+            subject,
+            message: blockAlertMessage,
+            sendEmail: blockAlertChannels.email,
+            sendSms: blockAlertChannels.sms,
+          },
+        });
+        if (error) failCount += 1;
+        else okCount += 1;
+      } catch {
+        failCount += 1;
+      }
+    }
+    setSendingBlockAlert(false);
+    setBlockAlertOpen(false);
+    setBlockAlertContext(null);
+    toast({
+      title: failCount === 0 ? "Closure alert sent" : "Closure alert sent with errors",
+      description: `${okCount} delivered${failCount ? ` · ${failCount} failed` : ""}`,
+      variant: failCount === 0 ? undefined : "destructive",
+    });
+  };
+
+  const chargeSavedCard = async (bookingId: string) => {
+    setChargingBookingId(bookingId);
+    try {
+      const { data, error } = await supabase.functions.invoke("charge-saved-card", {
+        body: { bookingId, environment: "sandbox" },
+      });
+      if (error) throw new Error(error.message || "Charge failed");
+      if ((data as any)?.error) throw new Error((data as any).error);
+      toast({ title: "Card charged", description: "Saved card was charged successfully." });
+      load();
+    } catch (e: any) {
+      toast({ title: "Charge failed", description: e.message ?? "Unable to recharge.", variant: "destructive" });
+    } finally {
+      setChargingBookingId(null);
+    }
   };
 
   const resetWalkWindowForm = () => {
@@ -3556,6 +3644,70 @@ const SitterDashboard = () => {
             )}
           </TabsContent>
 
+          <TabsContent value="payments" className="mt-6 space-y-6">
+            <Card className="border border-border p-5 shadow-soft">
+              <div className="flex flex-wrap items-start justify-between gap-3">
+                <div className="flex items-start gap-3">
+                  <div className="grid h-11 w-11 place-items-center rounded-md bg-accent text-accent-foreground">
+                    <CreditCard className="h-5 w-5" />
+                  </div>
+                  <div>
+                    <h2 className="font-display text-xl uppercase text-primary">Payments</h2>
+                    <p className="text-sm text-muted-foreground">Track who owes what and recharge a saved card with one click.</p>
+                  </div>
+                </div>
+                <div className="flex gap-2">
+                  {(["outstanding", "paid", "all"] as const).map((key) => (
+                    <Button key={key} type="button" size="sm" variant={paymentsFilter === key ? "default" : "outline"} className="font-display uppercase" onClick={() => setPaymentsFilter(key)}>
+                      {key}
+                    </Button>
+                  ))}
+                </div>
+              </div>
+              {(() => {
+                const rows = bookings
+                  .filter((b) => {
+                    const status = b.payment_status ?? (b.paid_at ? "paid" : "outstanding");
+                    if (paymentsFilter === "all") return true;
+                    return status === paymentsFilter;
+                  })
+                  .sort((a, b) => (b.start_at || "").localeCompare(a.start_at || ""));
+                if (rows.length === 0) {
+                  return <p className="mt-6 text-sm text-muted-foreground">No bookings match this filter.</p>;
+                }
+                return (
+                  <ul className="mt-5 divide-y divide-border rounded-md border border-border bg-card">
+                    {rows.map((b) => {
+                      const status = b.payment_status ?? (b.paid_at ? "paid" : "outstanding");
+                      const owner = profileDetails[b.customer_id]?.full_name ?? "Customer";
+                      const serviceName = b.service_variants?.name ?? b.services?.name ?? "Booking";
+                      const total = b.total_cents ?? 0;
+                      const paid = b.payment_amount_cents ?? 0;
+                      const owed = Math.max(0, total - paid);
+                      return (
+                        <li key={b.id} className="flex flex-wrap items-center justify-between gap-3 px-4 py-3 text-sm">
+                          <div className="min-w-0">
+                            <p className="font-display text-sm uppercase text-primary">{owner} · {serviceName}</p>
+                            <p className="text-xs text-muted-foreground">{format(new Date(b.start_at), "EEE, MMM d · p")} · ${(total / 100).toFixed(2)} total{paid ? ` · $${(paid / 100).toFixed(2)} paid` : ""}</p>
+                          </div>
+                          <div className="flex items-center gap-3">
+                            <span className={cn("rounded px-2 py-0.5 text-[10px] font-display uppercase", status === "paid" ? "bg-accent text-accent-foreground" : status === "refunded" ? "bg-muted text-muted-foreground" : "bg-highlight text-highlight-foreground")}>{status}</span>
+                            {status !== "paid" && owed > 0 && (
+                              <Button size="sm" variant="outline" className="font-display uppercase" disabled={chargingBookingId === b.id} onClick={() => chargeSavedCard(b.id)}>
+                                <Zap className="h-3 w-3" /> {chargingBookingId === b.id ? "Charging…" : `Charge $${(owed / 100).toFixed(2)}`}
+                              </Button>
+                            )}
+                          </div>
+                        </li>
+                      );
+                    })}
+                  </ul>
+                );
+              })()}
+              <p className="mt-4 text-xs text-muted-foreground">Recharge uses the card the client saved at their last checkout.</p>
+            </Card>
+          </TabsContent>
+
 
           <TabsContent value="alerts" className="mt-6 space-y-6">
             <div className="grid gap-4 xl:grid-cols-[1fr,1fr]">
@@ -3650,6 +3802,34 @@ const SitterDashboard = () => {
 
         <Link to="/account" className="mt-8 inline-block font-tag text-clay">← back to account</Link>
       </section>
+      <Dialog open={blockAlertOpen} onOpenChange={(open) => { if (!open) { setBlockAlertOpen(false); setBlockAlertContext(null); } }}>
+        <DialogContent className="border border-border bg-background shadow-soft sm:max-w-lg">
+          <DialogHeader>
+            <DialogTitle className="font-display text-xl uppercase text-primary">Notify clients of closure?</DialogTitle>
+          </DialogHeader>
+          {blockAlertContext && (
+            <div className="space-y-4">
+              <p className="text-sm text-muted-foreground">
+                You blocked <span className="font-display uppercase text-primary">{format(new Date(`${blockAlertContext.date}T12:00:00`), "EEE, MMM d")}</span>. Send a heads-up to your clients?
+              </p>
+              <div>
+                <Label>Message</Label>
+                <Textarea value={blockAlertMessage} maxLength={600} onChange={(e) => setBlockAlertMessage(e.target.value)} className="mt-1 min-h-24" />
+              </div>
+              <div className="flex flex-wrap gap-3 rounded-md border border-border bg-muted/40 p-3 text-sm">
+                <label className="flex items-center gap-2"><Checkbox checked={blockAlertChannels.email} onCheckedChange={(c) => setBlockAlertChannels((s) => ({ ...s, email: c === true }))} /> <Mail className="h-4 w-4" /> Email</label>
+                <label className="flex items-center gap-2"><Checkbox checked={blockAlertChannels.sms} onCheckedChange={(c) => setBlockAlertChannels((s) => ({ ...s, sms: c === true }))} /> <Smartphone className="h-4 w-4" /> Text</label>
+              </div>
+              <div className="flex justify-end gap-2">
+                <Button variant="outline" className="font-display uppercase" onClick={() => { setBlockAlertOpen(false); setBlockAlertContext(null); }}>Skip</Button>
+                <Button className="font-display uppercase" disabled={sendingBlockAlert} onClick={sendBlockedDayAlert}>
+                  <Send className="h-4 w-4" /> {sendingBlockAlert ? "Sending…" : "Send alert"}
+                </Button>
+              </div>
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
       <Dialog open={!!activePetProfileId} onOpenChange={(open) => !open && setActivePetProfileId(null)}>
         <DialogContent className="max-h-[88vh] overflow-y-auto border border-border bg-background shadow-soft sm:max-w-3xl">
           <DialogHeader>
