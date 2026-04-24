@@ -55,12 +55,10 @@ const PetForm = ({ form, setForm, availableTemperamentTags = [], photoFile, setP
             <Input required value={form.name} maxLength={50} onChange={(e) => set("name", e.target.value)} />
           </Field>
           <Field label="Species">
-            <Select value={form.species} onValueChange={(v) => set("species", v)}>
+            <Select value="dog" onValueChange={() => set("species", "dog")} disabled>
               <SelectTrigger><SelectValue /></SelectTrigger>
               <SelectContent>
                 <SelectItem value="dog">Dog</SelectItem>
-                <SelectItem value="cat">Cat</SelectItem>
-                <SelectItem value="other">Other</SelectItem>
               </SelectContent>
             </Select>
           </Field>
@@ -155,6 +153,15 @@ const PetForm = ({ form, setForm, availableTemperamentTags = [], photoFile, setP
             })}
           </div>
         )}
+        <Field label="Other temperament details (optional)">
+          <Textarea
+            rows={3}
+            maxLength={1000}
+            placeholder=""
+            value={form.temperament_notes ?? ""}
+            onChange={(e) => set("temperament_notes", e.target.value)}
+          />
+        </Field>
       </Section>
 
       <Accordion type="multiple" defaultValue={["health"]} className="space-y-2">
