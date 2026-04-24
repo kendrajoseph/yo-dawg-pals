@@ -2953,6 +2953,207 @@ const SitterDashboard = () => {
           </TabsContent>
 
           <TabsContent value="schedule" className="mt-6 space-y-6">
+            <Collapsible open={assistantOpen} onOpenChange={setAssistantOpen}>
+              <Card className="border border-border p-4 shadow-soft">
+                <CollapsibleTrigger className="flex w-full items-center justify-between gap-3 text-left">
+                  <div className="flex items-start gap-3">
+                    <div className="grid h-10 w-10 place-items-center rounded-md bg-secondary text-secondary-foreground">
+                      <Sparkles className="h-5 w-5" />
+                    </div>
+                    <div>
+                      <h2 className="font-display text-lg uppercase text-primary">AI schedule assistant</h2>
+                      <p className="text-sm text-muted-foreground">Pinned here so you can compare changes against the schedule below in real time.</p>
+                    </div>
+                  </div>
+                  <ChevronDown className={cn("h-5 w-5 text-muted-foreground transition-transform", assistantOpen && "rotate-180")} />
+                </CollapsibleTrigger>
+                <CollapsibleContent className="mt-4">
+                  <div className="grid gap-4 xl:grid-cols-[0.95fr,1.05fr]">
+                    <Card className="border border-border p-5 shadow-soft">
+                      <div className="flex items-start gap-3">
+                        <div className="grid h-11 w-11 place-items-center rounded-md bg-secondary text-secondary-foreground">
+                          <Sparkles className="h-5 w-5" />
+                        </div>
+                        <div>
+                          <h2 className="font-display text-xl uppercase text-primary">Schedule assistant</h2>
+                          <p className="text-sm text-muted-foreground">Type natural-language commands to build schedule blocks, adjust walk windows, block dates, or queue approvals.</p>
+                        </div>
+                      </div>
+
+                      <div className="mt-4 rounded-md border border-border bg-muted/40 p-4">
+                        <Label>Command</Label>
+                        <Textarea
+                          value={assistantCommand}
+                          onChange={(event) => setAssistantCommand(event.target.value)}
+                          placeholder="I am available every morning this week from 8am to 10am for solo walks and from 3pm to 5pm for group walks on Monday Wednesday and Friday every week indefinitely."
+                          className="mt-2 min-h-28"
+                        />
+                        <div className="mt-3 flex flex-wrap gap-2">
+                          <Button onClick={sendAssistantCommand} disabled={assistantBusy || !assistantCommand.trim()} className="font-display uppercase">
+                            <Sparkles className="h-4 w-4" />
+                            {assistantBusy ? "Planning…" : "Build plan"}
+                          </Button>
+                          <Button type="button" variant="outline" onClick={() => { setAssistantCommand(""); resetAssistantPlan(); }} className="border-border font-display uppercase">
+                            <X className="h-4 w-4" />
+                            Clear
+                          </Button>
+                        </div>
+                      </div>
+
+                      <div className="mt-4 space-y-3">
+                        {assistantMessages.length === 0 ? (
+                          <div className="rounded-md border border-dashed border-border bg-muted/20 px-4 py-6 text-sm text-muted-foreground">
+                            The assistant will keep a short session history here.
+                          </div>
+                        ) : (
+                          assistantMessages.slice(-6).map((message) => (
+                            <div key={message.id} className={cn("rounded-md border px-4 py-3 text-sm", message.role === "user" ? "border-border bg-card" : "border-border bg-muted/40")}>
+                              <div className="text-[11px] font-tag uppercase text-muted-foreground">{message.role === "user" ? "You" : "Assistant"}</div>
+                              <p className="mt-2 whitespace-pre-wrap text-foreground/85">{message.content}</p>
+                            </div>
+                          ))
+                        )}
+                      </div>
+                    </Card>
+
+                    <Card className="border border-border p-5 shadow-soft">
+                      <div className="flex items-start justify-between gap-3">
+                        <div>
+                          <h2 className="font-display text-xl uppercase text-primary">Action preview</h2>
+                          <p className="text-sm text-muted-foreground">Review the parsed intent, exact operations, and client notifications before anything goes out.</p>
+                        </div>
+                        {assistantPlan ? (
+                          <span className="rounded-md bg-muted px-3 py-1 text-[11px] font-tag uppercase text-muted-foreground">{assistantPlan.confidence} confidence</span>
+                        ) : null}
+                      </div>
+
+                      {!assistantPlan ? (
+                        <div className="mt-4 rounded-md border border-dashed border-border bg-muted/20 px-4 py-8 text-sm text-muted-foreground">
+                          Ask the assistant to translate a schedule or approval command into a structured plan.
+                        </div>
+                      ) : (
+                        <div className="mt-4 space-y-4">
+                          <div className="rounded-md border border-border bg-muted/40 p-4">
+                            <div className="font-display text-base uppercase text-primary">{assistantPlan.intent}</div>
+                            <p className="mt-2 text-sm text-foreground/80">{assistantPlan.summary}</p>
+                          </div>
+
+                          <div className="space-y-3">
+                            {assistantPlan.operations.map((operation, index) => (
+                              <div key={`${operation.type}-${index}`} className="rounded-md border border-border bg-card p-4 text-sm">
+                                <div className="flex items-center justify-between gap-2">
+                                  <div className="font-display text-sm uppercase text-primary">{operation.type.replace(/_/g, " ")}</div>
+                                  <span className="text-[11px] font-tag uppercase text-muted-foreground">{operation.summary}</span>
+                                </div>
+
+                                {"blocks" in operation ? (
+                                  <ul className="mt-3 space-y-2 text-foreground/80">
+                                    {operation.blocks.map((block, blockIndex) => (
+                                      <li key={blockIndex} className="rounded-md bg-muted/40 px-3 py-2">
+                                        {weekdayLabel(block.weekday)} · {formatMinuteLabel(block.startMinute)}–{formatMinuteLabel(block.endMinute)} · {block.serviceSlugs.join(", ")}
+                                      </li>
+                                    ))}
+                                  </ul>
+                                ) : null}
+
+                                {"windows" in operation ? (
+                                  <ul className="mt-3 space-y-2 text-foreground/80">
+                                    {operation.windows.map((window, windowIndex) => (
+                                      <li key={windowIndex} className="rounded-md bg-muted/40 px-3 py-2">
+                                        {window.mode === "delete" ? "Remove" : "Set"} {window.label} · {weekdayLabel(window.weekday)} · {window.serviceSlug}
+                                        {window.startMinute != null && window.endMinute != null ? ` · ${formatMinuteLabel(window.startMinute)}–${formatMinuteLabel(window.endMinute)}` : ""}
+                                      </li>
+                                    ))}
+                                  </ul>
+                                ) : null}
+
+                                {"entries" in operation ? (
+                                  <ul className="mt-3 space-y-2 text-foreground/80">
+                                    {operation.entries.map((entry, entryIndex) => (
+                                      <li key={entryIndex} className="rounded-md bg-muted/40 px-3 py-2">
+                                        {entry.date}{entry.reason ? ` · ${entry.reason}` : ""}
+                                      </li>
+                                    ))}
+                                  </ul>
+                                ) : null}
+
+                                {"filters" in operation ? (
+                                  <div className="mt-3 rounded-md bg-muted/40 px-3 py-2 text-foreground/80">
+                                    {operation.decision} requests
+                                    {operation.filters.serviceSlugs?.length ? ` · services: ${operation.filters.serviceSlugs.join(", ")}` : ""}
+                                    {operation.filters.relativeWindow ? ` · ${operation.filters.relativeWindow}` : ""}
+                                    {operation.filters.requestGroupLabel ? ` · group: ${operation.filters.requestGroupLabel}` : ""}
+                                  </div>
+                                ) : null}
+                              </div>
+                            ))}
+                          </div>
+
+                          {assistantPlan.warnings.length > 0 ? (
+                            <div className="rounded-md border border-border bg-muted/40 p-4 text-sm">
+                              <div className="font-display text-sm uppercase text-primary">Warnings</div>
+                              <ul className="mt-2 space-y-1 text-foreground/80">
+                                {assistantPlan.warnings.map((warning) => (
+                                  <li key={warning}>• {warning}</li>
+                                ))}
+                              </ul>
+                            </div>
+                          ) : null}
+
+                          {assistantPlan.followUpQuestions.length > 0 ? (
+                            <div className="rounded-md border border-border bg-muted/40 p-4 text-sm">
+                              <div className="font-display text-sm uppercase text-primary">Needs follow-up</div>
+                              <ul className="mt-2 space-y-1 text-foreground/80">
+                                {assistantPlan.followUpQuestions.map((question) => (
+                                  <li key={question}>• {question}</li>
+                                ))}
+                              </ul>
+                            </div>
+                          ) : null}
+
+                          <div className="flex flex-wrap gap-2">
+                            <Button onClick={applyAssistantPlan} disabled={assistantApplying || assistantPlan.operations.length === 0} className="font-display uppercase">
+                              <Check className="h-4 w-4" />
+                              {assistantApplying ? "Applying…" : "Apply changes"}
+                            </Button>
+                            <Button type="button" variant="outline" onClick={resetAssistantPlan} className="border-border font-display uppercase">
+                              <X className="h-4 w-4" />
+                              Cancel
+                            </Button>
+                          </div>
+                        </div>
+                      )}
+
+                      {assistantPreview.length > 0 ? (
+                        <div className="mt-5 rounded-md border border-border bg-muted/40 p-4">
+                          <div className="flex flex-wrap items-center justify-between gap-3">
+                            <div>
+                              <div className="font-display text-sm uppercase text-primary">Client notification preview</div>
+                              <p className="mt-1 text-sm text-muted-foreground">Nothing is sent until you confirm below.</p>
+                            </div>
+                            <Button onClick={sendAssistantNotifications} disabled={assistantApplying} className="font-display uppercase">
+                              <Send className="h-4 w-4" />
+                              Send now
+                            </Button>
+                          </div>
+
+                          <div className="mt-3 space-y-2 text-sm">
+                            {assistantPreview.map((item) => (
+                              <div key={item.bookingId} className="rounded-md border border-border bg-card px-3 py-3">
+                                <div className="font-display text-sm uppercase text-primary">{item.recipientName} · {item.serviceName}</div>
+                                <p className="mt-1 text-foreground/80">{item.petName} · {new Date(item.scheduledStartAt).toLocaleString()} · {item.statusAfter}</p>
+                                <p className="mt-1 text-xs uppercase text-muted-foreground">{item.templateName}</p>
+                              </div>
+                            ))}
+                          </div>
+                        </div>
+                      ) : null}
+                    </Card>
+                  </div>
+                </CollapsibleContent>
+              </Card>
+            </Collapsible>
+
             <div className="grid gap-4 xl:grid-cols-4">
               {serviceCoverage.map(({ service, slotCount, windowCount, upcomingCount }) => (
                 <Card key={service.id} className="border border-border p-4 shadow-soft">
