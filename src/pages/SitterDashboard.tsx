@@ -290,7 +290,7 @@ type SnapshotEditor =
       maxBookings: number;
     };
 
-type TabKey = "overview" | "day" | "playbook" | "clients" | "schedule" | "care" | "assistant" | "alerts";
+type TabKey = "overview" | "day" | "playbook" | "clients" | "schedule" | "care" | "alerts";
 type MessageAudience = "single" | "group";
 type SnapshotRange = "day" | "week";
 type AssistantMessage = {
@@ -416,7 +416,6 @@ const tabMeta: Array<{ value: TabKey; label: string; icon: typeof LayoutDashboar
   { value: "clients", label: "Clients", icon: UserRound },
   { value: "schedule", label: "Schedule", icon: CalendarDays },
   { value: "care", label: "Care", icon: MessageSquare },
-  { value: "assistant", label: "Assistant", icon: Sparkles },
   { value: "alerts", label: "Alerts", icon: Megaphone },
 ];
 
