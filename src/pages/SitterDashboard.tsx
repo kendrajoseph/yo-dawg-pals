@@ -510,6 +510,7 @@ const SitterDashboard = () => {
   const [assistantPreview, setAssistantPreview] = useState<AssistantNotificationPreview[]>([]);
   const [assistantBusy, setAssistantBusy] = useState(false);
   const [assistantApplying, setAssistantApplying] = useState(false);
+  const [assistantOpen, setAssistantOpen] = useState(true);
 
   const load = async () => {
     if (!user) return;
