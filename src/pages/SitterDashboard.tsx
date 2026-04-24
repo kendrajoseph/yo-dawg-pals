@@ -142,6 +142,7 @@ type Booking = {
   extra_time_minutes: number;
   extra_time_fee_cents: number;
   late_pickup_fee_cents: number;
+  payment_status?: string | null;
   services: { name: string; slug: string; payment_mode: "full" | "deposit" | "free" } | null;
   service_variants: { name: string; duration_minutes: number; price_cents: number; payment_mode: "full" | "deposit" | "free" } | null;
   pets: { id: string; name: string; species: string | null } | null;
