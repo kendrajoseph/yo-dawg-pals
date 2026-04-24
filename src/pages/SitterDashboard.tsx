@@ -3644,6 +3644,70 @@ const SitterDashboard = () => {
             )}
           </TabsContent>
 
+          <TabsContent value="payments" className="mt-6 space-y-6">
+            <Card className="border border-border p-5 shadow-soft">
+              <div className="flex flex-wrap items-start justify-between gap-3">
+                <div className="flex items-start gap-3">
+                  <div className="grid h-11 w-11 place-items-center rounded-md bg-accent text-accent-foreground">
+                    <CreditCard className="h-5 w-5" />
+                  </div>
+                  <div>
+                    <h2 className="font-display text-xl uppercase text-primary">Payments</h2>
+                    <p className="text-sm text-muted-foreground">Track who owes what and recharge a saved card with one click.</p>
+                  </div>
+                </div>
+                <div className="flex gap-2">
+                  {(["outstanding", "paid", "all"] as const).map((key) => (
+                    <Button key={key} type="button" size="sm" variant={paymentsFilter === key ? "default" : "outline"} className="font-display uppercase" onClick={() => setPaymentsFilter(key)}>
+                      {key}
+                    </Button>
+                  ))}
+                </div>
+              </div>
+              {(() => {
+                const rows = bookings
+                  .filter((b) => {
+                    const status = b.payment_status ?? (b.paid_at ? "paid" : "outstanding");
+                    if (paymentsFilter === "all") return true;
+                    return status === paymentsFilter;
+                  })
+                  .sort((a, b) => (b.start_at || "").localeCompare(a.start_at || ""));
+                if (rows.length === 0) {
+                  return <p className="mt-6 text-sm text-muted-foreground">No bookings match this filter.</p>;
+                }
+                return (
+                  <ul className="mt-5 divide-y divide-border rounded-md border border-border bg-card">
+                    {rows.map((b) => {
+                      const status = b.payment_status ?? (b.paid_at ? "paid" : "outstanding");
+                      const owner = profileDetails[b.customer_id]?.full_name ?? "Customer";
+                      const serviceName = b.service_variants?.name ?? b.services?.name ?? "Booking";
+                      const total = b.total_cents ?? 0;
+                      const paid = b.payment_amount_cents ?? 0;
+                      const owed = Math.max(0, total - paid);
+                      return (
+                        <li key={b.id} className="flex flex-wrap items-center justify-between gap-3 px-4 py-3 text-sm">
+                          <div className="min-w-0">
+                            <p className="font-display text-sm uppercase text-primary">{owner} · {serviceName}</p>
+                            <p className="text-xs text-muted-foreground">{format(new Date(b.start_at), "EEE, MMM d · p")} · ${(total / 100).toFixed(2)} total{paid ? ` · $${(paid / 100).toFixed(2)} paid` : ""}</p>
+                          </div>
+                          <div className="flex items-center gap-3">
+                            <span className={cn("rounded px-2 py-0.5 text-[10px] font-display uppercase", status === "paid" ? "bg-accent text-accent-foreground" : status === "refunded" ? "bg-muted text-muted-foreground" : "bg-highlight text-highlight-foreground")}>{status}</span>
+                            {status !== "paid" && owed > 0 && (
+                              <Button size="sm" variant="outline" className="font-display uppercase" disabled={chargingBookingId === b.id} onClick={() => chargeSavedCard(b.id)}>
+                                <Zap className="h-3 w-3" /> {chargingBookingId === b.id ? "Charging…" : `Charge $${(owed / 100).toFixed(2)}`}
+                              </Button>
+                            )}
+                          </div>
+                        </li>
+                      );
+                    })}
+                  </ul>
+                );
+              })()}
+              <p className="mt-4 text-xs text-muted-foreground">Recharge uses the card the client saved at their last checkout.</p>
+            </Card>
+          </TabsContent>
+
 
           <TabsContent value="alerts" className="mt-6 space-y-6">
             <div className="grid gap-4 xl:grid-cols-[1fr,1fr]">
