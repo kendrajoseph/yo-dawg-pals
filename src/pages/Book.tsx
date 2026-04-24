@@ -17,7 +17,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { toast } from "@/hooks/use-toast";
 import { ArrowLeft, ArrowRight, CalendarDays, Check, Clock, MoonStar, PawPrint, Plus, ShieldCheck, Sparkles, Trash2 } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { DAYS, formatPriceWithDecimals, minutesToTime } from "@/lib/booking";
+import { DAYS, formatPriceWithDecimals, minutesToTime, applySiblingDiscount, calculateBoardingTotalCents } from "@/lib/booking";
 
 type ServiceVariant = {
   id: string;
@@ -29,6 +29,7 @@ type ServiceVariant = {
   unit_label: string | null;
   payment_mode: "full" | "deposit" | "free";
   sort_order: number;
+  sibling_discount_percent?: number;
 };
 
 type Service = {
@@ -202,7 +203,7 @@ const Book = () => {
           .order("sort_order"),
         db
           .from("service_variants")
-          .select("id, service_id, slug, name, duration_minutes, price_cents, unit_label, payment_mode, sort_order")
+          .select("id, service_id, slug, name, duration_minutes, price_cents, unit_label, payment_mode, sort_order, sibling_discount_percent")
           .eq("is_active", true)
           .order("sort_order"),
         db.from("availability").select("id, sitter_id, weekday, start_minute, end_minute, max_bookings"),
