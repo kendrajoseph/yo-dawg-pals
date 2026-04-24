@@ -3155,23 +3155,27 @@ const SitterDashboard = () => {
               </Card>
             </Collapsible>
 
-            <div className="grid gap-4 xl:grid-cols-4">
+            <div className="flex flex-wrap items-center gap-2">
               {serviceCoverage.map(({ service, slotCount, windowCount, upcomingCount }) => (
-                <Card key={service.id} className="border border-border p-4 shadow-soft">
-                  <div className="flex items-start justify-between gap-3">
-                    <div>
-                      <p className="font-display text-lg uppercase text-primary">{service.name}</p>
-                      <p className="text-xs text-muted-foreground">{WALK_SLUGS.has(service.slug) ? "Walk lane" : service.slug === "boarding" ? "Overnight lane" : "Exact-slot lane"}</p>
+                <Popover key={service.id}>
+                  <PopoverTrigger asChild>
+                    <Button type="button" variant="outline" size="sm" className="h-8 border-border font-display text-xs uppercase">
+                      {service.requires_pet_approval && <ShieldCheck className="mr-1 h-3 w-3 text-clay" />}
+                      {service.name}
+                      <span className="ml-2 rounded bg-muted px-1.5 py-0.5 text-[10px] text-muted-foreground">{upcomingCount}</span>
+                    </Button>
+                  </PopoverTrigger>
+                  <PopoverContent align="start" className="w-64 border border-border bg-card p-3 shadow-soft">
+                    <p className="font-display text-sm uppercase text-primary">{service.name}</p>
+                    <p className="text-xs text-muted-foreground">{WALK_SLUGS.has(service.slug) ? "Walk lane" : service.slug === "boarding" ? "Overnight lane" : "Exact-slot lane"}</p>
+                    <div className="mt-3 grid gap-1.5 text-sm text-foreground/80">
+                      <div className="flex items-center justify-between"><span>Booking blocks</span><span className="font-display text-primary">{slotCount}</span></div>
+                      <div className="flex items-center justify-between"><span>Walk windows</span><span className="font-display text-primary">{windowCount}</span></div>
+                      <div className="flex items-center justify-between"><span>Upcoming visits</span><span className="font-display text-primary">{upcomingCount}</span></div>
+                      <div className="flex items-center justify-between"><span>Min buffer</span><span className="font-display text-primary">{Math.max(service.turnaround_buffer_minutes, MIN_BUFFER_MINUTES)}m</span></div>
                     </div>
-                    {service.requires_pet_approval && <ShieldCheck className="h-4 w-4 text-clay" />}
-                  </div>
-                  <div className="mt-4 grid gap-2 text-sm text-foreground/80">
-                    <div className="flex items-center justify-between"><span>Booking blocks</span><span className="font-display text-primary">{slotCount}</span></div>
-                    <div className="flex items-center justify-between"><span>Walk windows</span><span className="font-display text-primary">{windowCount}</span></div>
-                    <div className="flex items-center justify-between"><span>Upcoming visits</span><span className="font-display text-primary">{upcomingCount}</span></div>
-                    <div className="flex items-center justify-between"><span>Min buffer</span><span className="font-display text-primary">{Math.max(service.turnaround_buffer_minutes, MIN_BUFFER_MINUTES)}m</span></div>
-                  </div>
-                </Card>
+                  </PopoverContent>
+                </Popover>
               ))}
             </div>
 
