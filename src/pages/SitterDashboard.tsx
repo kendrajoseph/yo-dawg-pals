@@ -2816,7 +2816,7 @@ const SitterDashboard = () => {
                               defaultValue={clientAdminDraft.internal_notes}
                               key={`${selectedClientId}-${selectedClientAdminProfile?.internal_notes ?? ""}`}
                               maxLength={1500}
-                              placeholder="Anything only the admin team should know about working with this client…"
+                              placeholder=""
                               className={cn(
                                 "mt-2 min-h-28 border-primary/20",
                                 clientAdminDraft.internal_notes?.trim()
@@ -3457,7 +3457,7 @@ const SitterDashboard = () => {
                           </Button>
                           <div>
                             <Label>Quick note</Label>
-                            <Input value={draft.note} maxLength={240} onChange={(event) => patchUpdateDraft(booking.id, { note: event.target.value })} placeholder="Happy walk, muddy paws, calm in the car…" />
+                            <Input value={draft.note} maxLength={240} onChange={(event) => patchUpdateDraft(booking.id, { note: event.target.value })} placeholder="" />
                           </div>
                           <Button onClick={() => sendOwnerUpdate(booking, "note")} disabled={sendingUpdateId === `${booking.id}-note` || draft.note.trim().length === 0} variant="secondary" className="h-12 font-display uppercase">
                             <MessageSquare className="h-4 w-4" />
