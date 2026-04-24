@@ -41,6 +41,7 @@ const PetProfilesManager = ({
   const [photoFile, setPhotoFile] = useState<File | null>(null);
   const [saving, setSaving] = useState(false);
   const [temperamentTags, setTemperamentTags] = useState<TemperamentTag[]>([]);
+  const [detailPet, setDetailPet] = useState<Pet | null>(null);
 
   const load = async () => {
     if (!user) return;
@@ -157,6 +158,7 @@ const PetProfilesManager = ({
       entry_instructions: str(data.entry_instructions),
       insurance_provider: str(data.insurance_provider),
       insurance_policy: str(data.insurance_policy),
+      temperament_notes: str(data.temperament_notes),
       ...(photo_url !== undefined ? { photo_url } : {}),
     };
 
