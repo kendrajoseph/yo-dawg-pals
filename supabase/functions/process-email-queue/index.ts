@@ -54,20 +54,20 @@ function parseJwtClaims(token: string): Record<string, unknown> | null {
 
 // Move a message to the dead letter queue and log the reason.
 async function moveToDlq(
-  supabase: ReturnType<typeof createClient>,
+  supabase: any,
   queue: string,
   msg: { msg_id: number; message: Record<string, unknown> },
   reason: string
 ): Promise<void> {
-  const payload = msg.message
+  const payload = msg.message as any
   await supabase.from('email_send_log').insert({
     message_id: payload.message_id,
     template_name: (payload.label || queue) as string,
     recipient_email: payload.to,
     status: 'dlq',
     error_message: reason,
-  })
-  const { error } = await supabase.rpc('move_to_dlq', {
+  } as any)
+  const { error } = await (supabase.rpc as any)('move_to_dlq', {
     source_queue: queue,
     dlq_name: `${queue}_dlq`,
     message_id: msg.msg_id,
@@ -155,13 +155,13 @@ Deno.serve(async (req) => {
     // messages not attempted when a 429 stops processing early.
     const messageIds = Array.from(
       new Set(
-        messages
-          .map((msg) =>
+        (messages as any[])
+          .map((msg: any) =>
             msg?.message?.message_id && typeof msg.message.message_id === 'string'
               ? msg.message.message_id
               : null
           )
-          .filter((id): id is string => Boolean(id))
+          .filter((id: any): id is string => Boolean(id))
       )
     )
     const failedAttemptsByMessageId = new Map<string, number>()

@@ -1,77 +1,58 @@
+# Final Build Plan — Yo Dawg Updates
 
-Goal: verify whether client SMS delivery is working end-to-end and identify any remaining breakpoints.
+All previously approved items, plus moving the AI Schedule Assistant to the top of the Schedule page.
 
-What is already in place
-- The app does have active SMS wiring in the backend:
-  - `send-booking-update` sends client SMS for pickup/dropoff/note updates.
-  - `send-client-message` can send direct client SMS from the dashboard.
-  - `notify-new-booking-request` sends SMS to the sitter for new requests.
-- Required backend secrets already exist for SMS:
-  - `LOVABLE_API_KEY`
-  - `TWILIO_API_KEY`
-  - `TWILIO_FROM_NUMBER`
-- Client SMS is intentionally gated by profile settings:
-  - the client must have `profiles.mobile_phone`
-  - the client must have `profiles.sms_opt_in = true`
+## 1. Branding & Copy
+- Rename "Maya & Biscuit" → "Teresa & Poppy" everywhere (Hero, email templates, sample copy).
+- Internal-note input boxes: remove all sample/placeholder text — start blank.
 
-What cannot be confirmed in read-only mode
-- I can confirm the code path is present, but I cannot confirm real delivery from code alone.
-- To truly confirm SMS works, runtime testing is needed against the live backend and function logs.
+## 2. Dog Illustrations
+- Hero collage: keep as-is.
+- Testimonials: replace duplicate `dog2` with `dog5`.
+- "Meet AJ / Meet Anneke" section: replace logo-repeat dog with `dog4` and `dog8` (the two non-hero dogs from the original drawing).
 
-Verification plan
-1. Test the sitter-to-client SMS path from the dashboard
-- Trigger `send-booking-update` using a booking tied to a client who has:
-  - a valid mobile number
-  - text updates enabled
-- Confirm the function returns:
-  - `ok: true`
-  - `smsSent: true`
-  - no `smsError`
+## 3. Pricing
+Update `src/lib/booking.ts` + `services` / `service_variants` tables:
+- Boarding: **$80 first night, $60 each additional night**.
+- Solo Walk 30m: **$30** (60m stays at $45).
+- Pet Sitting: **30 minutes** duration.
+- Sibling discount: **50% off second dog** for Group Walks and Boarding.
 
-2. Test the direct client message SMS path
-- Trigger `send-client-message` from the admin dashboard with `sendSms: true`.
-- Confirm the response includes:
-  - `ok: true`
-  - `smsSent: true`
-  - `delivered_sms_at` written on the related `client_messages` row
+## 4. Pet Profiles
+- New dedicated **Pet Profiles** page accessible from account nav.
+- Cards on the page are clickable (clicking the **picture** opens detail).
+- Detail view shows full info; internal note boxes blank.
+- Temperament section: add an **"Other"** field where the client can type custom details.
+- Remove **Cat / Other** from the species dropdown — dogs only.
+- DB: add `pets.temperament_notes` (text, nullable).
 
-3. Inspect backend logs for Twilio gateway responses
-- Check logs for:
-  - `send-booking-update`
-  - `send-client-message`
-  - `notify-new-booking-request`
-- Look specifically for any `Twilio API error [...]` messages, invalid-number failures, or auth/gateway errors.
+## 5. Scheduling Page — AI Assistant Relocation (NEW)
+- Move the **AI Schedule Assistant** UI out of its own `assistant` tab.
+- Mount it as a **collapsible panel pinned to the top of the `schedule` tab** in `SitterDashboard.tsx`, above the calendar/schedule grid.
+- Calendar updates from approved assistant plans render live below, so Anneke can compare side-by-side.
+- Remove the standalone "Assistant" tab from the tab bar to avoid duplication.
 
-4. Verify data prerequisites for affected clients
-- Confirm the target client records actually satisfy the SMS conditions:
-  - `profiles.mobile_phone` is populated
-  - `profiles.sms_opt_in` is true
-- If SMS appears to “not send,” this is the first likely cause based on current code.
+## 6. Calendar (Playbook tab)
+- Add a classic **month-grid view** using `react-day-picker`.
+- Blocking a day prompts: *"Notify affected customers?"* → opens an alert composer.
 
-5. Verify dashboard feedback matches actual delivery
-- Confirm the sitter dashboard toast messages reflect the function response correctly:
-  - success when `smsSent: true`
-  - warning/fallback when SMS is skipped or fails
-- If needed, tighten the UI copy so skipped texts are unmistakable.
+## 7. Customer Alerts
+- Blocked-day prompt + manual alert button feed into existing `send-client-message` infra.
+- Channels: **SMS + Email** (toggleable). Uses `service_alerts` table for tracking.
 
-Likely outcomes
-- If logs show successful Twilio responses and `smsSent: true`, SMS is working.
-- If the function returns success but `smsSent: false`, the most likely reason is missing client opt-in or missing mobile number.
-- If logs show Twilio errors, the issue is likely phone formatting, sending-number restrictions, or connector-side delivery failure.
+## 8. Payments Tab (Sitter Dashboard)
+- New **Payments** tab: list bookings with Paid / Outstanding status.
+- Enable Stripe **off-session** saved cards (`setup_future_usage: 'off_session'`).
+- New edge function `charge-saved-card` for one-click re-charges.
 
-Technical details
-- Relevant files already supporting SMS:
-  - `supabase/functions/send-booking-update/index.ts`
-  - `supabase/functions/send-client-message/index.ts`
-  - `supabase/functions/notify-new-booking-request/index.ts`
-  - `src/pages/SitterDashboard.tsx`
-  - `src/pages/Profile.tsx`
-- Important behavioral detail:
-  - `send-booking-update` only sends when `sendSms && profile.sms_opt_in && profile.mobile_phone`
-  - `send-client-message` only sends when `sendSms && profile.sms_opt_in && profile.mobile_phone && LOVABLE_API_KEY && TWILIO_API_KEY && TWILIO_FROM_NUMBER`
-- Current code already normalizes numbers to E.164 format before sending.
+## Overlap Resolutions
+- Pet Profiles page replaces ad-hoc pet editing UI in account.
+- AI Assistant lives only on Schedule page (no duplicate tab).
+- Alerts use existing `send-client-message` — no parallel system.
 
-Implementation if you approve
-- Run live function tests and inspect backend logs.
-- Confirm one real SMS flow end-to-end.
-- If anything fails, patch either the backend error handling or the dashboard messaging so the failure reason is explicit.
+## Technical Summary
+- **Files**: `SitterDashboard.tsx`, `src/lib/booking.ts`, `src/components/TestimonialsSection.tsx`, `src/components/MeetSitter.tsx`, `src/pages/Hero*`, new `src/pages/PetProfiles.tsx`, new `supabase/functions/charge-saved-card/`.
+- **DB migrations**: `pets.temperament_notes`, updated `services` / `service_variants` rows, Stripe customer fields on `profiles`.
+- **Edge functions**: new `charge-saved-card`; reuse `send-client-message` and `assistant-schedule-plan`.
+
+Reply **"go"** and I'll start building.

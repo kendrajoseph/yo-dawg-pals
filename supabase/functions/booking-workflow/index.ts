@@ -325,8 +325,8 @@ serve(async (req) => {
           idempotencyKey: `walk-request-${bookingId}`,
           templateData: {
             customerName,
-            serviceName: booking.services?.name || "Walk",
-            petName: booking.pets?.name || "your dog",
+            serviceName: (booking.services as any)?.name || "Walk",
+            petName: (booking.pets as any)?.name || "your dog",
           },
         },
       });
