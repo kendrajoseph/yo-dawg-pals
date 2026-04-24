@@ -235,6 +235,7 @@ export type Database = {
           notes: string | null
           paid_at: string | null
           payment_amount_cents: number | null
+          payment_status: string
           pet_id: string
           recurrence_label: string | null
           recurrence_pattern: Json | null
@@ -281,6 +282,7 @@ export type Database = {
           notes?: string | null
           paid_at?: string | null
           payment_amount_cents?: number | null
+          payment_status?: string
           pet_id: string
           recurrence_label?: string | null
           recurrence_pattern?: Json | null
@@ -327,6 +329,7 @@ export type Database = {
           notes?: string | null
           paid_at?: string | null
           payment_amount_cents?: number | null
+          payment_status?: string
           pet_id?: string
           recurrence_label?: string | null
           recurrence_pattern?: Json | null
@@ -785,6 +788,7 @@ export type Database = {
           sex: string | null
           spayed_neutered: boolean | null
           species: string
+          temperament_notes: string | null
           updated_at: string
           vet_address: string | null
           vet_info: string | null
@@ -820,6 +824,7 @@ export type Database = {
           sex?: string | null
           spayed_neutered?: boolean | null
           species?: string
+          temperament_notes?: string | null
           updated_at?: string
           vet_address?: string | null
           vet_info?: string | null
@@ -855,6 +860,7 @@ export type Database = {
           sex?: string | null
           spayed_neutered?: boolean | null
           species?: string
+          temperament_notes?: string | null
           updated_at?: string
           vet_address?: string | null
           vet_info?: string | null
@@ -869,33 +875,39 @@ export type Database = {
           avatar_url: string | null
           bio: string | null
           created_at: string
+          default_payment_method_id: string | null
           full_name: string | null
           id: string
           mobile_phone: string | null
           phone: string | null
           sms_opt_in: boolean
+          stripe_customer_id: string | null
           updated_at: string
         }
         Insert: {
           avatar_url?: string | null
           bio?: string | null
           created_at?: string
+          default_payment_method_id?: string | null
           full_name?: string | null
           id: string
           mobile_phone?: string | null
           phone?: string | null
           sms_opt_in?: boolean
+          stripe_customer_id?: string | null
           updated_at?: string
         }
         Update: {
           avatar_url?: string | null
           bio?: string | null
           created_at?: string
+          default_payment_method_id?: string | null
           full_name?: string | null
           id?: string
           mobile_phone?: string | null
           phone?: string | null
           sms_opt_in?: boolean
+          stripe_customer_id?: string | null
           updated_at?: string
         }
         Relationships: []
@@ -987,6 +999,7 @@ export type Database = {
           payment_mode: string
           price_cents: number
           service_id: string
+          sibling_discount_percent: number
           slug: string
           sort_order: number
           unit_label: string | null
@@ -1001,6 +1014,7 @@ export type Database = {
           payment_mode?: string
           price_cents: number
           service_id: string
+          sibling_discount_percent?: number
           slug: string
           sort_order?: number
           unit_label?: string | null
@@ -1015,6 +1029,7 @@ export type Database = {
           payment_mode?: string
           price_cents?: number
           service_id?: string
+          sibling_discount_percent?: number
           slug?: string
           sort_order?: number
           unit_label?: string | null
