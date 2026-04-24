@@ -475,6 +475,13 @@ const SitterDashboard = () => {
   const [petTagIdsByPet, setPetTagIdsByPet] = useState<Record<string, string[]>>({});
   const [fitAlerts, setFitAlerts] = useState<FitAlert[]>([]);
   const [savingClientProfile, setSavingClientProfile] = useState(false);
+  const [chargingBookingId, setChargingBookingId] = useState<string | null>(null);
+  const [paymentsFilter, setPaymentsFilter] = useState<"all" | "outstanding" | "paid">("outstanding");
+  const [blockAlertOpen, setBlockAlertOpen] = useState(false);
+  const [blockAlertContext, setBlockAlertContext] = useState<{ date: string; reason: string } | null>(null);
+  const [blockAlertChannels, setBlockAlertChannels] = useState({ email: true, sms: false });
+  const [blockAlertMessage, setBlockAlertMessage] = useState("");
+  const [sendingBlockAlert, setSendingBlockAlert] = useState(false);
 
   const [newAvailability, setNewAvailability] = useState({ weekday: 1, start: "09:00", end: "12:00", maxBookings: 1 });
   const [newServiceIds, setNewServiceIds] = useState<string[]>([]);
