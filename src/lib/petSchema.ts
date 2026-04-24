@@ -2,7 +2,7 @@ import { z } from "zod";
 
 export const petSchema = z.object({
   name: z.string().trim().min(1, "Name is required").max(50),
-  species: z.string().trim().min(1).max(20),
+  species: z.string().trim().min(1).max(20).default("dog"),
   breed: z.string().trim().max(60).optional().or(z.literal("")),
   sex: z.string().trim().max(20).optional().or(z.literal("")),
   color: z.string().trim().max(60).optional().or(z.literal("")),
