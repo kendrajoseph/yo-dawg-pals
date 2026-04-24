@@ -3802,6 +3802,34 @@ const SitterDashboard = () => {
 
         <Link to="/account" className="mt-8 inline-block font-tag text-clay">← back to account</Link>
       </section>
+      <Dialog open={blockAlertOpen} onOpenChange={(open) => { if (!open) { setBlockAlertOpen(false); setBlockAlertContext(null); } }}>
+        <DialogContent className="border border-border bg-background shadow-soft sm:max-w-lg">
+          <DialogHeader>
+            <DialogTitle className="font-display text-xl uppercase text-primary">Notify clients of closure?</DialogTitle>
+          </DialogHeader>
+          {blockAlertContext && (
+            <div className="space-y-4">
+              <p className="text-sm text-muted-foreground">
+                You blocked <span className="font-display uppercase text-primary">{format(new Date(`${blockAlertContext.date}T12:00:00`), "EEE, MMM d")}</span>. Send a heads-up to your clients?
+              </p>
+              <div>
+                <Label>Message</Label>
+                <Textarea value={blockAlertMessage} maxLength={600} onChange={(e) => setBlockAlertMessage(e.target.value)} className="mt-1 min-h-24" />
+              </div>
+              <div className="flex flex-wrap gap-3 rounded-md border border-border bg-muted/40 p-3 text-sm">
+                <label className="flex items-center gap-2"><Checkbox checked={blockAlertChannels.email} onCheckedChange={(c) => setBlockAlertChannels((s) => ({ ...s, email: c === true }))} /> <Mail className="h-4 w-4" /> Email</label>
+                <label className="flex items-center gap-2"><Checkbox checked={blockAlertChannels.sms} onCheckedChange={(c) => setBlockAlertChannels((s) => ({ ...s, sms: c === true }))} /> <Smartphone className="h-4 w-4" /> Text</label>
+              </div>
+              <div className="flex justify-end gap-2">
+                <Button variant="outline" className="font-display uppercase" onClick={() => { setBlockAlertOpen(false); setBlockAlertContext(null); }}>Skip</Button>
+                <Button className="font-display uppercase" disabled={sendingBlockAlert} onClick={sendBlockedDayAlert}>
+                  <Send className="h-4 w-4" /> {sendingBlockAlert ? "Sending…" : "Send alert"}
+                </Button>
+              </div>
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
       <Dialog open={!!activePetProfileId} onOpenChange={(open) => !open && setActivePetProfileId(null)}>
         <DialogContent className="max-h-[88vh] overflow-y-auto border border-border bg-background shadow-soft sm:max-w-3xl">
           <DialogHeader>
