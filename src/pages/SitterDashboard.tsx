@@ -1099,22 +1099,99 @@ const SitterDashboard = () => {
 
   const addBlockedDate = async () => {
     if (!user || !blockDate) return;
+    const dateStr = format(blockDate, "yyyy-MM-dd");
     const { error } = await db.from("blocked_dates").insert({
       sitter_id: user.id,
-      blocked_date: format(blockDate, "yyyy-MM-dd"),
+      blocked_date: dateStr,
       reason: blockReason || null,
     });
-    if (error) toast({ title: "Failed", description: error.message, variant: "destructive" });
-    else {
-      setBlockDate(undefined);
-      setBlockReason("");
-      load();
+    if (error) {
+      toast({ title: "Failed", description: error.message, variant: "destructive" });
+      return;
     }
+    const reasonSnapshot = blockReason;
+    setBlockDate(undefined);
+    setBlockReason("");
+    load();
+    // Prompt Anneke to notify clients about the closure.
+    setBlockAlertContext({ date: dateStr, reason: reasonSnapshot });
+    setBlockAlertChannels({ email: true, sms: false });
+    setBlockAlertMessage(
+      `Heads up — Yo Dawg is closed on ${format(new Date(`${dateStr}T12:00:00`), "EEEE, MMMM d")}${reasonSnapshot ? ` (${reasonSnapshot})` : ""}. Reach out if you'd like help rescheduling.`,
+    );
+    setBlockAlertOpen(true);
   };
 
   const removeBlockedDate = async (id: string) => {
     await db.from("blocked_dates").delete().eq("id", id);
     load();
+  };
+
+  const sendBlockedDayAlert = async () => {
+    if (!user || !blockAlertContext) return;
+    if (!blockAlertChannels.email && !blockAlertChannels.sms) {
+      toast({ title: "Pick a channel", description: "Choose email, text, or both before sending.", variant: "destructive" });
+      return;
+    }
+    setSendingBlockAlert(true);
+
+    // Recipients = every client with at least one booking on Anneke's schedule.
+    const recipientIds = Array.from(
+      new Set(bookings.map((b) => b.customer_id).filter(Boolean) as string[]),
+    );
+    if (recipientIds.length === 0) {
+      toast({ title: "No clients to notify", description: "You don't have any clients on file yet." });
+      setSendingBlockAlert(false);
+      setBlockAlertOpen(false);
+      return;
+    }
+
+    const subject = `Closure: ${format(new Date(`${blockAlertContext.date}T12:00:00`), "EEE, MMM d")}`;
+    let okCount = 0;
+    let failCount = 0;
+    for (const customerId of recipientIds) {
+      try {
+        const { error } = await supabase.functions.invoke("send-client-message", {
+          body: {
+            customerId,
+            kind: "service_update",
+            subject,
+            message: blockAlertMessage,
+            sendEmail: blockAlertChannels.email,
+            sendSms: blockAlertChannels.sms,
+          },
+        });
+        if (error) failCount += 1;
+        else okCount += 1;
+      } catch {
+        failCount += 1;
+      }
+    }
+    setSendingBlockAlert(false);
+    setBlockAlertOpen(false);
+    setBlockAlertContext(null);
+    toast({
+      title: failCount === 0 ? "Closure alert sent" : "Closure alert sent with errors",
+      description: `${okCount} delivered${failCount ? ` · ${failCount} failed` : ""}`,
+      variant: failCount === 0 ? undefined : "destructive",
+    });
+  };
+
+  const chargeSavedCard = async (bookingId: string) => {
+    setChargingBookingId(bookingId);
+    try {
+      const { data, error } = await supabase.functions.invoke("charge-saved-card", {
+        body: { bookingId, environment: "sandbox" },
+      });
+      if (error) throw new Error(error.message || "Charge failed");
+      if ((data as any)?.error) throw new Error((data as any).error);
+      toast({ title: "Card charged", description: "Saved card was charged successfully." });
+      load();
+    } catch (e: any) {
+      toast({ title: "Charge failed", description: e.message ?? "Unable to recharge.", variant: "destructive" });
+    } finally {
+      setChargingBookingId(null);
+    }
   };
 
   const resetWalkWindowForm = () => {
