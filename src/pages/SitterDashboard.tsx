@@ -10,6 +10,7 @@ import {
   ChevronDown,
   ChevronRight,
   Clock3,
+  CreditCard,
   Dog,
   Filter,
   LayoutDashboard,
@@ -28,6 +29,7 @@ import {
   UserRound,
   Users,
   X,
+  Zap,
 } from "lucide-react";
 
 import SiteFooter from "@/components/SiteFooter";
