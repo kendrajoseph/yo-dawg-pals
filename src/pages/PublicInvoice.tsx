@@ -9,6 +9,7 @@ import { Separator } from "@/components/ui/separator";
 import { CheckCircle2, Loader2, XCircle } from "lucide-react";
 import { format } from "date-fns";
 import { formatCents } from "@/lib/invoices";
+import { PublicInvoiceCheckout } from "@/components/PublicInvoiceCheckout";
 
 type LineItem = {
   id: string;
@@ -67,21 +68,8 @@ const PublicInvoice = () => {
     }
   };
 
-  const pay = async () => {
-    if (!token) return;
+  const startPay = () => {
     setPaying(true);
-    try {
-      const { data: result, error: fnErr } = await supabase.functions.invoke("pay-invoice-public", {
-        body: { token },
-      });
-      if (fnErr) throw fnErr;
-      const url = (result as any)?.url;
-      if (!url) throw new Error("No checkout URL returned");
-      window.location.href = url;
-    } catch (e: any) {
-      setError(e.message ?? "Failed to start checkout.");
-      setPaying(false);
-    }
   };
 
   return (
@@ -174,9 +162,18 @@ const PublicInvoice = () => {
               )}
 
               {data.invoice.status !== "paid" && data.invoice.amount_paid_cents < data.invoice.total_cents && (
-                <Button onClick={pay} disabled={paying} className="mt-6 w-full font-display uppercase">
-                  {paying ? "Redirecting…" : `Pay ${formatCents(data.invoice.total_cents - data.invoice.amount_paid_cents)}`}
-                </Button>
+                <>
+                  {!paying && token && (
+                    <Button onClick={startPay} className="mt-6 w-full font-display uppercase">
+                      Pay {formatCents(data.invoice.total_cents - data.invoice.amount_paid_cents)}
+                    </Button>
+                  )}
+                  {paying && token && (
+                    <div className="mt-6">
+                      <PublicInvoiceCheckout token={token} />
+                    </div>
+                  )}
+                </>
               )}
             </Card>
           </>

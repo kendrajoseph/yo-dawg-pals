@@ -2,6 +2,7 @@ import { useState, useEffect } from "react";
 import { useNavigate, useLocation, Link } from "react-router-dom";
 import { z } from "zod";
 import { supabase } from "@/integrations/supabase/client";
+import { lovable } from "@/integrations/lovable";
 import { useAuth } from "@/hooks/useAuth";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -82,6 +83,20 @@ const Auth = () => {
     navigate(from, { replace: true });
   };
 
+  const handleGoogle = async () => {
+    setLoading(true);
+    const result = await lovable.auth.signInWithOAuth("google", {
+      redirect_uri: `${window.location.origin}${from}`,
+    });
+    if (result.error) {
+      setLoading(false);
+      toast({ title: "Google sign-in failed", description: String(result.error.message ?? result.error), variant: "destructive" });
+      return;
+    }
+    if (result.redirected) return;
+    navigate(from, { replace: true });
+  };
+
   return (
     <main className="min-h-screen bg-background texture-grain">
       <SiteNav />
@@ -157,6 +172,25 @@ const Auth = () => {
               </form>
             </TabsContent>
           </Tabs>
+
+          <div className="mt-5 flex items-center gap-3">
+            <div className="h-px flex-1 bg-border" />
+            <span className="font-display text-xs uppercase tracking-wide text-muted-foreground">or</span>
+            <div className="h-px flex-1 bg-border" />
+          </div>
+
+          <Button
+            type="button"
+            variant="outline"
+            disabled={loading}
+            onClick={handleGoogle}
+            className="mt-4 w-full h-11 font-display uppercase border-2 border-primary"
+          >
+            <svg className="mr-2 h-4 w-4" viewBox="0 0 24 24" aria-hidden>
+              <path d="M21.35 11.1H12v3.2h5.35c-.23 1.46-1.7 4.27-5.35 4.27a5.97 5.97 0 0 1 0-11.94c1.7 0 2.84.72 3.5 1.34l2.4-2.3C16.4 4.2 14.4 3.3 12 3.3a8.7 8.7 0 1 0 0 17.4c5.02 0 8.34-3.52 8.34-8.48 0-.57-.06-1-.13-1.12Z" fill="currentColor" />
+            </svg>
+            Continue with Google
+          </Button>
         </div>
       </section>
     </main>

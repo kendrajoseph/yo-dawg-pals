@@ -239,6 +239,7 @@ export type Database = {
           pet_id: string
           recurrence_label: string | null
           recurrence_pattern: Json | null
+          refund_amount_cents: number
           refund_id: string | null
           request_group_id: string | null
           request_group_label: string | null
@@ -286,6 +287,7 @@ export type Database = {
           pet_id: string
           recurrence_label?: string | null
           recurrence_pattern?: Json | null
+          refund_amount_cents?: number
           refund_id?: string | null
           request_group_id?: string | null
           request_group_label?: string | null
@@ -333,6 +335,7 @@ export type Database = {
           pet_id?: string
           recurrence_label?: string | null
           recurrence_pattern?: Json | null
+          refund_amount_cents?: number
           refund_id?: string | null
           request_group_id?: string | null
           request_group_label?: string | null
@@ -1065,6 +1068,24 @@ export type Database = {
           vet_name?: string | null
           vet_phone?: string | null
           weight_lbs?: number | null
+        }
+        Relationships: []
+      }
+      processed_stripe_events: {
+        Row: {
+          event_type: string
+          id: string
+          processed_at: string
+        }
+        Insert: {
+          event_type: string
+          id: string
+          processed_at?: string
+        }
+        Update: {
+          event_type?: string
+          id?: string
+          processed_at?: string
         }
         Relationships: []
       }
