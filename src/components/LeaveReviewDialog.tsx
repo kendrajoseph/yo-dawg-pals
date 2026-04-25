@@ -1,0 +1,141 @@
+import { useEffect, useState } from "react";
+import { Star } from "lucide-react";
+import { supabase } from "@/integrations/supabase/client";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from "@/components/ui/dialog";
+import { Button } from "@/components/ui/button";
+import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
+import { Checkbox } from "@/components/ui/checkbox";
+import { StarRating } from "@/components/StarRating";
+import { toast } from "@/hooks/use-toast";
+
+type Props = {
+  bookingId: string;
+  customerId: string;
+  sitterId: string;
+  serviceLabel: string;
+  petName?: string | null;
+  onSubmitted?: () => void;
+};
+
+type ExistingReview = {
+  id: string;
+  rating: number;
+  comment: string | null;
+  is_anonymous: boolean;
+};
+
+export function LeaveReviewDialog({ bookingId, customerId, sitterId, serviceLabel, petName, onSubmitted }: Props) {
+  const db = supabase as any;
+  const [open, setOpen] = useState(false);
+  const [existing, setExisting] = useState<ExistingReview | null>(null);
+  const [rating, setRating] = useState(5);
+  const [comment, setComment] = useState("");
+  const [anonymous, setAnonymous] = useState(false);
+  const [saving, setSaving] = useState(false);
+  const [loaded, setLoaded] = useState(false);
+
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      const { data } = await db
+        .from("client_reviews")
+        .select("id, rating, comment, is_anonymous")
+        .eq("booking_id", bookingId)
+        .eq("customer_id", customerId)
+        .maybeSingle();
+      if (cancelled) return;
+      if (data) {
+        setExisting(data);
+        setRating(data.rating);
+        setComment(data.comment ?? "");
+        setAnonymous(data.is_anonymous);
+      }
+      setLoaded(true);
+    })();
+    return () => { cancelled = true; };
+  }, [bookingId, customerId, db]);
+
+  const submit = async () => {
+    if (rating < 1) {
+      toast({ title: "Pick a rating", description: "Tap a star from 1 to 5.", variant: "destructive" });
+      return;
+    }
+    setSaving(true);
+    const payload = {
+      booking_id: bookingId,
+      customer_id: customerId,
+      sitter_id: sitterId,
+      rating,
+      comment: comment.trim() || null,
+      is_anonymous: anonymous,
+    };
+    const { error, data } = existing
+      ? await db.from("client_reviews").update(payload).eq("id", existing.id).select().maybeSingle()
+      : await db.from("client_reviews").insert(payload).select().maybeSingle();
+    setSaving(false);
+    if (error) {
+      toast({ title: "Couldn't save review", description: error.message, variant: "destructive" });
+      return;
+    }
+    toast({ title: existing ? "Review updated" : "Thanks for the review!", description: "Anneke will see your feedback." });
+    if (data) setExisting(data);
+    setOpen(false);
+    onSubmitted?.();
+  };
+
+  if (!loaded) return null;
+
+  return (
+    <Dialog open={open} onOpenChange={setOpen}>
+      <DialogTrigger asChild>
+        <Button size="sm" variant="outline" className="border-2 border-primary font-display uppercase">
+          <Star className="h-4 w-4" /> {existing ? "Edit review" : "Rate service"}
+        </Button>
+      </DialogTrigger>
+      <DialogContent>
+        <DialogHeader>
+          <DialogTitle>{existing ? "Update your review" : "How was your service?"}</DialogTitle>
+          <DialogDescription>
+            {serviceLabel}{petName ? ` for ${petName}` : ""}. Your feedback is private — only Anneke will see it.
+          </DialogDescription>
+        </DialogHeader>
+        <div className="space-y-4 py-2">
+          <div>
+            <Label className="font-display text-xs uppercase text-primary">Your rating</Label>
+            <div className="mt-2"><StarRating value={rating} onChange={setRating} size="lg" /></div>
+          </div>
+          <div>
+            <Label htmlFor="review-comment" className="font-display text-xs uppercase text-primary">Comments (optional)</Label>
+            <Textarea
+              id="review-comment"
+              value={comment}
+              onChange={(e) => setComment(e.target.value)}
+              placeholder="What went well? Anything to improve?"
+              className="mt-2 min-h-[110px]"
+              maxLength={2000}
+            />
+          </div>
+          <label className="flex items-center gap-2 text-sm">
+            <Checkbox checked={anonymous} onCheckedChange={(v) => setAnonymous(v === true)} />
+            <span>Submit this review anonymously</span>
+          </label>
+        </div>
+        <DialogFooter>
+          <Button variant="outline" onClick={() => setOpen(false)} disabled={saving}>Cancel</Button>
+          <Button onClick={submit} disabled={saving} className="font-display uppercase shadow-pop-accent">
+            {saving ? "Saving…" : existing ? "Save changes" : "Submit review"}
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
+  );
+}

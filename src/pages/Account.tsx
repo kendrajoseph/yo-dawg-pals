@@ -21,6 +21,7 @@ import {
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
 import { getStripeEnvironment } from "@/lib/stripe";
+import { LeaveReviewDialog } from "@/components/LeaveReviewDialog";
 
 type BookingRow = {
   id: string;
@@ -37,6 +38,7 @@ type BookingRow = {
   requested_date?: string | null;
   requested_window_label?: string | null;
   scheduled_start_at?: string | null;
+  sitter_id: string;
   services: { name: string; slug: string } | null;
   service_variants: { name: string } | null;
   pets: { name: string } | null;
@@ -113,7 +115,7 @@ const Account = () => {
     const [{ data: bookingData }, { data: profileData }, { data: messageData }, { data: alertData }] = await Promise.all([
       db
         .from("bookings")
-        .select("id, start_at, end_at, status, total_cents, deposit_cents, payment_amount_cents, extra_time_fee_cents, late_pickup_fee_cents, notes, booking_kind, requested_date, requested_window_label, scheduled_start_at, services(name, slug), service_variants(name), pets(name)")
+        .select("id, start_at, end_at, status, total_cents, deposit_cents, payment_amount_cents, extra_time_fee_cents, late_pickup_fee_cents, notes, booking_kind, requested_date, requested_window_label, scheduled_start_at, sitter_id, services(name, slug), service_variants(name), pets(name)")
         .eq("customer_id", user.id)
         .order("created_at", { ascending: false }),
       db.from("profiles").select("mobile_phone, sms_opt_in").eq("id", user.id).maybeSingle(),
@@ -383,6 +385,15 @@ const Account = () => {
                             </AlertDialogFooter>
                           </AlertDialogContent>
                         </AlertDialog>
+                      )}
+                      {booking.status === "completed" && user && (
+                        <LeaveReviewDialog
+                          bookingId={booking.id}
+                          customerId={user.id}
+                          sitterId={booking.sitter_id}
+                          serviceLabel={displayName}
+                          petName={booking.pets?.name}
+                        />
                       )}
                       {booking.status === "cancelled" && (
                         <AlertDialog>

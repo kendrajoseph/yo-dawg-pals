@@ -10,6 +10,7 @@ import {
   PawPrint,
   PieChart,
   Settings,
+  Star,
   UserRound,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
@@ -47,6 +48,7 @@ const PRIMARY: NavItem[] = [
 ];
 
 const SECONDARY: NavItem[] = [
+  { to: "/sitter/reviews", label: "Reviews", icon: Star },
   { to: "/sitter/reports", label: "Reports", icon: PieChart },
   { to: "/sitter/settings", label: "Settings", icon: Settings },
 ];
