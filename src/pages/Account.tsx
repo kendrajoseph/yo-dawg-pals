@@ -191,6 +191,17 @@ const Account = () => {
     load();
   };
 
+  const handleDeleteMessage = async (messageId: string) => {
+    setDeletingMessageId(messageId);
+    const { error } = await db.from("client_messages").delete().eq("id", messageId);
+    setDeletingMessageId(null);
+    if (error) {
+      toast({ title: "Couldn't delete message", description: error.message, variant: "destructive" });
+      return;
+    }
+    setClientMessages((prev) => prev.filter((m) => m.id !== messageId));
+  };
+
   return (
     <main className="min-h-screen bg-background texture-grain">
       <SiteNav />
