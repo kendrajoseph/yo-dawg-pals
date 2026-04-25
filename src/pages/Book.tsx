@@ -877,6 +877,9 @@ const Book = () => {
         }),
       ]);
 
+      // Clear draft now that the request is submitted.
+      try { localStorage.removeItem(DRAFT_KEY); } catch { /* ignore */ }
+
       // Show warm confirmation modal instead of navigating immediately.
       setConfirmation({
         lines: emailLines,
