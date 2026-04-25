@@ -24,6 +24,7 @@ import {
 } from "@/components/ui/alert-dialog";
 import { getStripeEnvironment } from "@/lib/stripe";
 import { LeaveReviewDialog } from "@/components/LeaveReviewDialog";
+import { PaymentSettings } from "@/components/PaymentSettings";
 
 type BookingRow = {
   id: string;
