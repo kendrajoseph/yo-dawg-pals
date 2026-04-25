@@ -237,7 +237,7 @@ const Book = () => {
           .eq("is_active", true)
           .order("sort_order"),
         db.from("availability").select("id, sitter_id, weekday, start_minute, end_minute, max_bookings"),
-        db.from("blocked_dates").select("sitter_id, blocked_date"),
+        db.rpc("get_blocked_dates", { _sitter_id: null }),
         db.from("availability_services").select("availability_id, service_id"),
         db
           .from("walk_windows")
