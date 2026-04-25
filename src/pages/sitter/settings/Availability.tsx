@@ -242,7 +242,7 @@ export default function SettingsAvailability() {
           Need the AI scheduling assistant? Use the classic editor for natural-language commands.
         </div>
         <Button variant="outline" size="sm" asChild>
-          <Link to="/sitter-classic#schedule">Open AI assistant <ExternalLink className="ml-1 h-3 w-3" /></Link>
+          <Link to="/sitter/assistant">Open AI assistant <ExternalLink className="ml-1 h-3 w-3" /></Link>
         </Button>
       </Card>
 
