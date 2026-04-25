@@ -34,6 +34,8 @@ import {
 
 import SiteFooter from "@/components/SiteFooter";
 import SiteNav from "@/components/SiteNav";
+import { PaymentDrawer, type PaymentDrawerBooking } from "@/components/payments/PaymentDrawer";
+import { derivedStatus, formatCents, statusBadgeClass, type Invoice } from "@/lib/invoices";
 import { Button } from "@/components/ui/button";
 import { Calendar } from "@/components/ui/calendar";
 import { Card } from "@/components/ui/card";
@@ -477,7 +479,9 @@ const SitterDashboard = () => {
   const [fitAlerts, setFitAlerts] = useState<FitAlert[]>([]);
   const [savingClientProfile, setSavingClientProfile] = useState(false);
   const [chargingBookingId, setChargingBookingId] = useState<string | null>(null);
-  const [paymentsFilter, setPaymentsFilter] = useState<"all" | "outstanding" | "paid">("outstanding");
+  const [paymentsFilter, setPaymentsFilter] = useState<"all" | "outstanding" | "overdue" | "paid" | "refunded">("outstanding");
+  const [paymentsSearch, setPaymentsSearch] = useState("");
+  const [paymentDrawerBookingId, setPaymentDrawerBookingId] = useState<string | null>(null);
   const [blockAlertOpen, setBlockAlertOpen] = useState(false);
   const [blockAlertContext, setBlockAlertContext] = useState<{ date: string; reason: string } | null>(null);
   const [blockAlertChannels, setBlockAlertChannels] = useState({ email: true, sms: false });
