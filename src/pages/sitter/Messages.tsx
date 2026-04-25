@@ -134,8 +134,8 @@ export default function SitterMessages() {
         ) : (
           <ul className="divide-y divide-border">
             {filtered.map((t) => (
-              <li key={t.customer_id}>
-                <Link to={`/sitter/clients/${t.customer_id}`} className="flex items-center gap-3 px-2 py-3 transition-colors hover:bg-muted">
+              <li key={t.customer_id} className="flex items-center gap-1">
+                <Link to={`/sitter/clients/${t.customer_id}`} className="flex flex-1 items-center gap-3 px-2 py-3 transition-colors hover:bg-muted">
                   <Avatar className="h-10 w-10">
                     <AvatarImage src={t.avatar_url ?? undefined} />
                     <AvatarFallback>{(t.customer_name ?? "?").slice(0, 1).toUpperCase()}</AvatarFallback>
@@ -150,6 +150,31 @@ export default function SitterMessages() {
                   </div>
                   <Badge variant="outline">{t.count}</Badge>
                 </Link>
+                <AlertDialog>
+                  <AlertDialogTrigger asChild>
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      className="h-8 w-8 text-muted-foreground hover:text-destructive"
+                      disabled={deletingId === t.customer_id}
+                      aria-label="Delete conversation"
+                    >
+                      <Trash2 className="h-4 w-4" />
+                    </Button>
+                  </AlertDialogTrigger>
+                  <AlertDialogContent>
+                    <AlertDialogHeader>
+                      <AlertDialogTitle>Delete this conversation?</AlertDialogTitle>
+                      <AlertDialogDescription>
+                        This will permanently remove all {t.count} message{t.count === 1 ? "" : "s"} with {t.customer_name ?? "this client"} from your hub. This cannot be undone.
+                      </AlertDialogDescription>
+                    </AlertDialogHeader>
+                    <AlertDialogFooter>
+                      <AlertDialogCancel>Keep</AlertDialogCancel>
+                      <AlertDialogAction onClick={() => handleDeleteThread(t.customer_id)}>Delete</AlertDialogAction>
+                    </AlertDialogFooter>
+                  </AlertDialogContent>
+                </AlertDialog>
               </li>
             ))}
           </ul>
