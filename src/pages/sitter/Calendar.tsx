@@ -18,6 +18,8 @@ type Booking = {
   end_at: string;
   scheduled_start_at: string | null;
   scheduled_end_at: string | null;
+  requested_date: string | null;
+  requested_window_label: string | null;
   status: string;
   pets: { name: string } | null;
   services: { name: string } | null;
@@ -40,11 +42,10 @@ export default function SitterCalendar() {
     const load = async () => {
       const { data } = await supabase
         .from("bookings")
-        .select("id, start_at, end_at, scheduled_start_at, scheduled_end_at, status, pets(name), services(name), profiles:customer_id(full_name)")
+        .select("id, start_at, end_at, scheduled_start_at, scheduled_end_at, requested_date, requested_window_label, status, pets(name), services(name), profiles:customer_id(full_name)")
         .eq("sitter_id", user.id)
-        .gte("start_at", range.start.toISOString())
-        .lte("start_at", range.end.toISOString())
-        .not("status", "in", "(cancelled,refunded,requested)")
+        .or(`and(start_at.gte.${range.start.toISOString()},start_at.lte.${range.end.toISOString()}),and(requested_date.gte.${format(range.start, "yyyy-MM-dd")},requested_date.lte.${format(range.end, "yyyy-MM-dd")})`)
+        .not("status", "in", "(cancelled,refunded)")
         .order("start_at", { ascending: true });
       if (cancelled) return;
       setBookings((data ?? []) as any);
@@ -72,10 +73,12 @@ export default function SitterCalendar() {
   const byDay = useMemo(() => {
     const m = new Map<string, Booking[]>();
     for (const b of bookings) {
-      const key = format(new Date(b.scheduled_start_at ?? b.start_at), "yyyy-MM-dd");
-      const list = m.get(key) ?? [];
+      const dateRef = b.status === "requested"
+        ? b.requested_date ?? format(new Date(b.start_at), "yyyy-MM-dd")
+        : format(new Date(b.scheduled_start_at ?? b.start_at), "yyyy-MM-dd");
+      const list = m.get(dateRef) ?? [];
       list.push(b);
-      m.set(key, list);
+      m.set(dateRef, list);
     }
     return m;
   }, [bookings]);
