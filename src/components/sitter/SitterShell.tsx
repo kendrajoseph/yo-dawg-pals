@@ -11,6 +11,7 @@ import {
   PawPrint,
   PieChart,
   Settings,
+  Sparkles,
   Star,
   UserRound,
 } from "lucide-react";
@@ -49,6 +50,7 @@ const PRIMARY: NavItem[] = [
 ];
 
 const SECONDARY: NavItem[] = [
+  { to: "/sitter/assistant", label: "Schedule assistant", icon: Sparkles },
   { to: "/sitter/reviews", label: "Reviews", icon: Star },
   { to: "/sitter/reports", label: "Reports", icon: PieChart },
   { to: "/sitter/settings", label: "Settings", icon: Settings },
@@ -185,11 +187,13 @@ function MobileBottomNav() {
 const titleFor = (path: string): string => {
   if (path === "/sitter") return "Today";
   if (path.startsWith("/sitter/inbox")) return "Inbox";
+  if (path.startsWith("/sitter/requests")) return "Request";
   if (path.startsWith("/sitter/calendar")) return "Calendar";
   if (path.startsWith("/sitter/clients")) return "Clients";
   if (path.startsWith("/sitter/pets")) return "Pets";
   if (path.startsWith("/sitter/invoices")) return "Invoices";
   if (path.startsWith("/sitter/messages")) return "Messages";
+  if (path.startsWith("/sitter/assistant")) return "Schedule assistant";
   if (path.startsWith("/sitter/reviews")) return "Reviews";
   if (path.startsWith("/sitter/reports")) return "Reports";
   if (path.startsWith("/sitter/settings")) return "Settings";

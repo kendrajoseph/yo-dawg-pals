@@ -39,7 +39,7 @@ export default function SitterInbox() {
           .eq("sitter_id", sitterId).eq("status", "requested")
           .order("created_at", { ascending: false }),
         supabase.from("pet_fit_alerts")
-          .select("id, title, message, severity, created_at, pets:pet_id(name)")
+          .select("id, title, message, severity, created_at, pet_id, pets:pet_id(name)")
           .eq("is_resolved", false).order("created_at", { ascending: false }),
         supabase.from("invoices")
           .select("id, invoice_number, total_cents, amount_paid_cents, due_date, status")
@@ -57,7 +57,7 @@ export default function SitterInbox() {
           title: `${r.services?.name ?? "Service"} for ${r.pets?.name ?? "pet"}`,
           subtitle: r.requested_date ? format(new Date(r.requested_date), "EEE, MMM d") : "Date TBD",
           meta: r.requested_window_label ?? undefined,
-          href: "/sitter/calendar",
+          href: `/sitter/requests/${r.id}`,
         });
       }
       for (const a of (approvalsRes.data ?? []) as any[]) {
@@ -67,7 +67,7 @@ export default function SitterInbox() {
           title: a.title,
           subtitle: a.pets?.name ?? "Pet",
           meta: a.severity,
-          href: "/sitter/pets",
+          href: a.pet_id ? `/sitter/pets/${a.pet_id}` : "/sitter/pets",
         });
       }
       const todayMs = Date.now();

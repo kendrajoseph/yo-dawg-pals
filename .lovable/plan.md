@@ -1,61 +1,74 @@
-## Switching to Anneke's new Stripe account
+# Audit: pet approval flow, request inbox, AI assistant
 
-You're using **Lovable's built-in Stripe payments** (managed integration through the gateway — no API keys stored in code). To switch which Stripe account it's pointed at, the change happens in the **Payments tab**, not by pasting an API key here. Here's exactly what we'll do.
+## What's actually broken
 
-## Good news first
+There are **3 booking requests sitting in the database right now** (Apr 27, May 1) that you can't see or approve from the new `/sitter` UI. The whole approve-a-request workflow only exists in the legacy `/sitter-classic` page. Here's the chain of breakage:
 
-I checked your data:
-- **0 paid invoices** in the database
-- **No active subscriptions** (you're not on a subscription model — invoices only)
-- The current Stripe account hasn't processed any real money through the app yet
+1. **Inbox shows requests, but the link goes nowhere useful.** `/sitter/inbox` lists each request and links to `/sitter/calendar`. But `/sitter/calendar` *explicitly excludes* `requested` bookings (line 47 filters them out), so the calendar always looks empty for new requests. That's the "blank calendar" you saw.
 
-That means switching is low-risk. Nothing to migrate.
+2. **There is no approval UI at `/sitter/...` at all.** The price-override + "Approve" button, the pet-fit decision (approve / decline), the per-pet conflict alerts, and the recurrence/group-walk scheduling all live exclusively in `src/pages/SitterDashboard.tsx` (the legacy `/sitter-classic` page). The new shell's "New booking" button on the calendar even links back to `/sitter-classic#schedule` — that's an admission the new UI never finished the approval surface.
 
-## What you actually need to do (in the Payments tab)
+3. **Email/SMS links point at the wrong place.** The notify-new-booking-request SMS has no link at all (just text). Any "request" link in older emails/notifications points to `/sitter-classic#schedule`, which is the legacy dashboard that requires you to scroll to find the right pending request. There's no deep link to the specific booking.
 
-You can't paste a new API key into the built-in integration — that would be the legacy "BYOK" path, which I'm specifically *not* recommending because you'd lose the managed webhooks, automatic go-live flow, and tax/compliance handling.
+4. **AI scheduling assistant is also only reachable from `/sitter-classic`.** The new Availability settings page even tells you to "Open AI assistant" by jumping to the classic dashboard. The functions (`assistant-schedule-plan`, `assistant-schedule-execute`) themselves haven't been called recently (no logs). They probably work, but you can't reach them from the new shell.
 
-Instead:
+5. **Pet profile has no "approve for service" action.** `/sitter/pets/:id` shows fit alerts but offers no button to mark a pet as approved/declined for a service. That decision is gated behind the legacy approvals tab.
 
-1. **Open the Payments tab** in Lovable (left sidebar).
-2. **Disconnect the current Stripe connection** (Byram's account).
-3. **Re-enable Stripe payments** — this provisions a fresh sandbox tied to your workspace.
-4. **Click "Claim sandbox"** and, on the Stripe-hosted page that opens, **sign in to Anneke's new Stripe account** (instead of creating a new one).
-5. **Complete go-live** on Anneke's account: business verification, bank details, 2FA, then submit. Stripe will offer to copy products/prices/the Lovable app from sandbox to live — accept and **make sure "Lovable" app is included**.
-6. Lovable then auto-provisions live keys (`STRIPE_LIVE_API_KEY`, `PAYMENTS_LIVE_WEBHOOK_SECRET`) and updates the gateway connection. No code change needed.
+## Plan: fix it in the new UI
 
-## What I need to do on the code/data side
+### 1. Build a real Request Detail page (new)
+Create `src/pages/sitter/RequestDetail.tsx` at route `/sitter/requests/:bookingId`. This becomes the single canonical place to approve a request. It will:
+- Show requested date, window label, recurrence, group label, customer, pet, service.
+- Show pet-fit status for the service with **Approve fit / Decline fit** buttons (writes to `pet_fit_alerts` and the pet-approval workflow used by the legacy dashboard).
+- Editable fields: scheduled start/end (defaulted from the requested window), approved base price, extra time minutes, late pickup fee, internal notes.
+- **Approve** button: sets `status = confirmed` (instant/solo) or `awaiting_payment` (group/deposit-required), stamps `approved_at`/`approved_by`, fills `scheduled_start_at`/`scheduled_end_at`, recomputes `total_cents`, then invokes `booking-workflow` with the right action (mirrors the existing `approveRequest` function in `SitterDashboard.tsx`).
+- **Decline** button: sets `status = cancelled` and triggers a customer notification.
+- Reuses the same logic from `SitterDashboard.tsx` lines 1622–1730 (extracted into a shared helper `src/lib/approveBooking.ts` so both pages stay in sync).
 
-Almost nothing — but a few cleanups while we're at it:
+### 2. Update the Inbox to deep-link to the new page
+In `src/pages/sitter/Inbox.tsx`, change the request row's `href` from `/sitter/calendar` to `/sitter/requests/${r.id}`. Approval rows link to `/sitter/pets/${a.pet_id}?alert=${a.id}`.
 
-1. **Verify no orphaned Stripe references.** I'll scan `payments-webhook`, `create-checkout`, `pay-invoice-public`, `charge-saved-card`, `refund-payment`, and `cancel-booking` to confirm they all use `createStripeClient(env)` from the shared utility (so they automatically pick up the new account once the gateway is re-pointed). No hardcoded customer IDs or product IDs.
-2. **Re-create products & prices on the new Stripe account.** Any products/prices created against Byram's account live in *that* Stripe account and won't exist in Anneke's. I'll list what's referenced in the codebase (e.g. invoice line item products, any subscription prices) and recreate them via the `payments` tools after you complete go-live. Since no one has paid yet, no `lookup_key` collisions to worry about.
-3. **Confirm webhook routing.** Built-in payments registers `payments-webhook?env=sandbox` and `?env=live` automatically against the new account on re-connect — I'll verify the function is deployed and the secret env vars resolve.
-4. **Tax & compliance question (after go-live).** Once Anneke's account is live, I'll ask whether she wants Stripe to handle full tax compliance (+3.5% per transaction, covers ~80 buyer countries) or just tax calculation only (+0.5%). Canada is a supported seller country, so both options are available.
+### 3. Add request visibility on the calendar
+In `src/pages/sitter/Calendar.tsx`, stop filtering out `requested`. Instead include them and render request blocks in a different style (dashed border, "Pending" badge). Clicking a request block opens `/sitter/requests/:id`. This way the calendar actually reflects what's pending.
 
-## What WON'T work / things to be aware of
+### 4. Add approval actions on the Pet profile
+In `src/pages/sitter/PetProfile.tsx`, surface a "Pet fit decisions" card showing per-service status (approved / declined / pending) for that pet. Each row gets Approve / Decline buttons (for the services the pet has actually been booked for). This writes the same `pet_approvals` records the legacy dashboard uses, so a fit decision made here unblocks the request page automatically.
 
-- **Don't share Anneke's secret key with me.** I don't need it and shouldn't store it. The built-in integration uses gateway connection identifiers, not real `sk_live_...` keys.
-- **The current `STRIPE_LIVE_API_KEY` and `PAYMENTS_LIVE_WEBHOOK_SECRET` secrets** will be overwritten automatically by Lovable when you complete the new go-live. Don't touch them manually.
-- **Saved cards / Stripe customers from Byram's account** can't be migrated. None exist yet, so this isn't an issue today.
-- **Anything you tested in the old sandbox** (test products, test prices, test invoices in Stripe dashboard) stays in Byram's Stripe account. The data in *this app's* database (invoices, bookings, etc.) is unaffected — that's all in Lovable Cloud, separate from Stripe.
+### 5. Add a real Schedule Assistant page
+Create `src/pages/sitter/ScheduleAssistant.tsx` at `/sitter/assistant`. Move the natural-language command UI out of the legacy dashboard so it lives in the new shell. Add it to `SitterShell.tsx` nav. Inside:
+- Fetch the same context the legacy dashboard builds (services, availability, walk windows, blocked dates, request groups).
+- Call `assistant-schedule-plan`, show the plan card, allow user to confirm/edit, then call `assistant-schedule-execute`.
+- **Wrap in error containment**: catch 5xx/network errors and show "Assistant is temporarily unavailable — you can still approve requests manually from the Inbox." instead of a blank screen.
+- Update `src/pages/sitter/settings/Availability.tsx` to point its "Open AI assistant" link to `/sitter/assistant` instead of `/sitter-classic#schedule`.
 
-## Order of operations
+### 6. Fix email/SMS links
+- `notify-new-booking-request/index.ts`: append a deep link to the SMS body — `https://yodawg.ca/sitter/requests/{bookingId}`.
+- Add a new transactional email template `booking-request-received-sitter` that's sent to Anneke alongside the SMS, with a clear "Open request" button linking to `/sitter/requests/{bookingId}`. Existing customer-facing `walk-request-received` email is unchanged.
+- Audit `send-booking-update`, `send-payment-reminder`, etc. for any leftover `/sitter-classic` links and rewrite to the corresponding `/sitter/*` route.
+
+### 7. Defensive error handling on the assistant edge functions
+Per the recommended pattern, wrap the Lovable AI gateway call in `assistant-schedule-plan/index.ts` so 429/402/500 responses return `{ ok: false, fallback: true, error }` with HTTP 200 instead of a 500. The new ScheduleAssistant UI checks `fallback` and shows a graceful message rather than a thrown error.
+
+## Files touched
 
 ```text
-1. You: Payments tab → disconnect current Stripe
-2. You: Re-enable Stripe payments → claim → sign in as Anneke
-3. You: Complete Stripe go-live form on Anneke's account
-4. Lovable: auto-provisions new live keys (wait ~1 min)
-5. Me: verify edge functions, recreate products/prices on new account
-6. Me: ask about tax/compliance handling preference
-7. You: test a real $1 invoice end-to-end to confirm payout lands in Anneke's bank
+new   src/pages/sitter/RequestDetail.tsx
+new   src/pages/sitter/ScheduleAssistant.tsx
+new   src/lib/approveBooking.ts                 (extracted shared logic)
+new   supabase/functions/_shared/transactional-email-templates/booking-request-received-sitter.tsx
+edit  src/App.tsx                               (2 new routes)
+edit  src/components/sitter/SitterShell.tsx     (add Assistant nav item)
+edit  src/pages/sitter/Inbox.tsx                (deep links)
+edit  src/pages/sitter/Calendar.tsx             (include requested, click → request page)
+edit  src/pages/sitter/PetProfile.tsx           (fit-decision card)
+edit  src/pages/sitter/settings/Availability.tsx (assistant link)
+edit  supabase/functions/notify-new-booking-request/index.ts (SMS deep link + email)
+edit  supabase/functions/_shared/transactional-email-templates/registry.ts
+edit  supabase/functions/assistant-schedule-plan/index.ts (error containment)
+edit  supabase/functions/assistant-schedule-execute/index.ts (error containment)
 ```
 
-## Files I'll touch (after you complete steps 1–4)
-
-- No `src/` changes expected — the gateway abstraction means our app code doesn't change.
-- Possible: a one-time setup script run via `payments--batch_create_product` + `payments--create_price` to recreate any products on the new account.
-- Possible: `supabase/functions/_shared/stripe.ts` audit (read-only, I expect no changes).
-
-Approve this and I'll wait for you to complete steps 1–4 in the Payments tab, then take it from there.
+## Out of scope (leaving alone)
+- The legacy `/sitter-classic` dashboard stays as a fallback while the new flow stabilizes. We can delete it once the new pages are battle-tested.
+- No DB schema changes — we reuse `bookings`, `pet_fit_alerts`, `booking_request_groups` as-is.
+- No Stripe changes — the in-progress Stripe account migration is unaffected by this work.
