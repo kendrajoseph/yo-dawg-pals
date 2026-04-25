@@ -349,8 +349,13 @@ const Account = () => {
                     </div>
                     <div className="flex items-center gap-3">
                       <div className="text-right">
-                        <div className="font-display text-2xl">{formatPriceWithDecimals(booking.total_cents)}</div>
-                        {canPay && <div className="text-xs text-clay">{formatPriceWithDecimals(booking.payment_amount_cents ?? booking.deposit_cents)} due</div>}
+                        {canPay ? (
+                          <div className="font-display text-2xl text-clay">{formatPriceWithDecimals(booking.payment_amount_cents ?? booking.total_cents)} <span className="text-xs uppercase">due</span></div>
+                        ) : ["confirmed", "completed"].includes(booking.status) ? (
+                          <div className="font-display text-2xl">{formatPriceWithDecimals(booking.payment_amount_cents ?? booking.total_cents)} <span className="text-xs uppercase text-secondary-foreground">paid</span></div>
+                        ) : (
+                          <div className="font-display text-2xl">{formatPriceWithDecimals(booking.total_cents)}</div>
+                        )}
                       </div>
                       {canPay && <Button asChild size="sm" className="bg-tag font-display uppercase text-tag-foreground shadow-pop-accent"><Link to={`/booking/${booking.id}/checkout`}><CreditCard className="h-4 w-4" /> Pay</Link></Button>}
                       {canCancel && (
