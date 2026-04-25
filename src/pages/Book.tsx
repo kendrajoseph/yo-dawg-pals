@@ -1061,7 +1061,7 @@ const Book = () => {
               <div className="space-y-4">
                 <div>
                   <Label htmlFor="bundle-notes">Request note (optional)</Label>
-                  <Textarea id="bundle-notes" rows={6} value={bundleNotes} onChange={(event) => setBundleNotes(event.target.value)} placeholder="Anything that ties these requests together — travel dates, pickup patterns, or care context." />
+                  <Textarea id="bundle-notes" rows={6} value={bundleNotes} onChange={(event) => setBundleNotes(event.target.value)} />
                 </div>
               </div>
             </div>
