@@ -6,7 +6,7 @@ const GATEWAY_URL = "https://connector-gateway.lovable.dev/twilio";
 
 const bodySchema = z.object({
   bookingId: z.string().uuid(),
-  kind: z.enum(["pickup", "dropoff", "note"]),
+  kind: z.enum(["pickup", "dropoff", "arrived", "departed", "note"]),
   note: z.string().trim().max(240).optional(),
   sendSms: z.boolean().default(true),
 });
