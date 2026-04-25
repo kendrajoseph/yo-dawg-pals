@@ -587,6 +587,22 @@ const SitterDashboard = () => {
     setAvailability(nextAvailability);
     setBlocked((blockedDates ?? []) as Blocked[]);
     setBookings(nextBookings);
+
+    // Load invoices for these bookings (latest per booking)
+    if (nextBookings.length > 0) {
+      const { data: invoiceRows } = await db
+        .from("invoices")
+        .select("*")
+        .in("booking_id", nextBookings.map((b) => b.id))
+        .order("created_at", { ascending: false });
+      const map: Record<string, Invoice> = {};
+      for (const inv of (invoiceRows ?? []) as Invoice[]) {
+        if (!map[inv.booking_id]) map[inv.booking_id] = inv;
+      }
+      setInvoicesByBooking(map);
+    } else {
+      setInvoicesByBooking({});
+    }
     setServices(nextServices);
     setServiceVariants((variantRows ?? []) as ServiceVariant[]);
     setWalkWindows((walkWindowRows ?? []) as WalkWindow[]);
