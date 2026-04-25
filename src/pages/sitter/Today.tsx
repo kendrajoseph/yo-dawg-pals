@@ -49,6 +49,24 @@ export default function SitterToday() {
   const [outstandingCents, setOutstandingCents] = useState(0);
   const [overdueCents, setOverdueCents] = useState(0);
   const [loading, setLoading] = useState(true);
+  const [updateTarget, setUpdateTarget] = useState<{ booking: TodayBooking; kind: "pickup" | "dropoff" } | null>(null);
+  const [updateNote, setUpdateNote] = useState("");
+  const [sending, setSending] = useState(false);
+
+  const sendQuickUpdate = async (booking: TodayBooking, kind: "pickup" | "dropoff", note?: string) => {
+    setSending(true);
+    const { data, error } = await supabase.functions.invoke("send-booking-update", {
+      body: { bookingId: booking.id, kind, note: note?.trim() || undefined, sendSms: true },
+    });
+    setSending(false);
+    if (error) {
+      toast({ title: "Couldn't send update", description: error.message, variant: "destructive" });
+      return;
+    }
+    toast({ title: kind === "pickup" ? "Picked up ✓" : "Dropped off ✓", description: data?.message ?? "Update sent." });
+    setUpdateTarget(null);
+    setUpdateNote("");
+  };
 
   useEffect(() => {
     if (!user?.id) return;
