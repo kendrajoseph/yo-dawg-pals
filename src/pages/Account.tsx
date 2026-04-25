@@ -281,7 +281,18 @@ const Account = () => {
                   <li key={message.id} className="border border-border bg-muted/50 px-3 py-3 text-sm">
                     <div className="flex flex-wrap items-center justify-between gap-2">
                       <span className="font-display text-xs uppercase text-primary">{message.kind.replace(/_/g, " ")}</span>
-                      <span className="text-[11px] text-muted-foreground">{formatUpdateTime(message.created_at)}</span>
+                      <div className="flex items-center gap-2">
+                        <span className="text-[11px] text-muted-foreground">{formatUpdateTime(message.created_at)}</span>
+                        <button
+                          type="button"
+                          onClick={() => handleDeleteMessage(message.id)}
+                          disabled={deletingMessageId === message.id}
+                          className="text-muted-foreground hover:text-destructive disabled:opacity-50"
+                          aria-label="Delete message"
+                        >
+                          <Trash2 className="h-3.5 w-3.5" />
+                        </button>
+                      </div>
                     </div>
                     <p className="mt-1 font-display text-base uppercase text-primary">{message.subject}</p>
                     <p className="mt-1 text-foreground/80">{message.message}</p>
