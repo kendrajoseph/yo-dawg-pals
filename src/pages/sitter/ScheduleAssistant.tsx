@@ -61,6 +61,22 @@ export default function SitterScheduleAssistant() {
 
         if (cancelled) return;
 
+        // bookings.customer_id has no FK to profiles, so fetch names separately
+        const requestRows = (requests.data ?? []) as any[];
+        const customerIds = Array.from(new Set(requestRows.map((r) => r.customer_id).filter(Boolean)));
+        let nameById = new Map<string, string | null>();
+        if (customerIds.length) {
+          const { data: profs } = await supabase
+            .from("profiles")
+            .select("id, full_name")
+            .in("id", customerIds);
+          nameById = new Map(((profs ?? []) as any[]).map((p) => [p.id, p.full_name]));
+        }
+        const requestRowsWithNames = requestRows.map((r) => ({
+          ...r,
+          profiles: { full_name: nameById.get(r.customer_id) ?? null },
+        }));
+
         const ctx: AssistantDashboardContext = {
           today: format(new Date(), "yyyy-MM-dd"),
           services: ((services.data ?? []) as any[]).map((s) => ({
@@ -79,7 +95,7 @@ export default function SitterScheduleAssistant() {
             window_label: w.window_label, max_bookings: w.max_bookings,
           })),
           blockedDates: ((blocked.data ?? []) as any[]).map((b) => ({ id: b.id, blocked_date: b.blocked_date, reason: b.reason })),
-          requestGroups: groupRequests((requests.data ?? []) as any[]),
+          requestGroups: groupRequests(requestRowsWithNames),
         };
         setContext(ctx);
       } catch (err) {
