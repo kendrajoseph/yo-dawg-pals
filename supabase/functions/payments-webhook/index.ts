@@ -67,7 +67,8 @@ serve(async (req) => {
           stripe_session_id: session.id,
         }).eq("id", bookingId);
 
-        // Mark related invoice paid
+        // Mark related invoice paid — or create one if the booking was paid via
+        // the approve→checkout flow (which doesn't pre-create an invoice).
         const invoiceId = session.metadata?.invoiceId;
         let resolvedInvoiceId: string | null = invoiceId ?? null;
         if (!resolvedInvoiceId) {
@@ -82,6 +83,71 @@ serve(async (req) => {
             amount_paid_cents: paidCents,
             paid_at: new Date().toISOString(),
           }).eq("id", resolvedInvoiceId);
+        } else {
+          // Auto-create a paid invoice so the booking shows up in Anneke's
+          // Invoices tab and history. Pull line-item details from the booking.
+          const { data: bookingFull } = await supabase
+            .from("bookings")
+            .select("id, customer_id, sitter_id, base_price_cents, extra_time_fee_cents, late_pickup_fee_cents, total_cents, services(name), service_variants(name)")
+            .eq("id", bookingId)
+            .maybeSingle();
+
+          if (bookingFull) {
+            const b: any = bookingFull;
+            const serviceName = b.service_variants?.name ?? b.services?.name ?? "Booking";
+            const basePrice = b.base_price_cents ?? (paidCents - (b.extra_time_fee_cents ?? 0) - (b.late_pickup_fee_cents ?? 0));
+            const lineItems: { label: string; quantity: number; unit_price_cents: number; total_cents: number; kind: string; sort_order: number }[] = [
+              { label: serviceName, quantity: 1, unit_price_cents: basePrice, total_cents: basePrice, kind: "service", sort_order: 0 },
+            ];
+            if (b.extra_time_fee_cents) {
+              lineItems.push({ label: "Extra time", quantity: 1, unit_price_cents: b.extra_time_fee_cents, total_cents: b.extra_time_fee_cents, kind: "extra_time", sort_order: 1 });
+            }
+            if (b.late_pickup_fee_cents) {
+              lineItems.push({ label: "Late pickup fee", quantity: 1, unit_price_cents: b.late_pickup_fee_cents, total_cents: b.late_pickup_fee_cents, kind: "late_fee", sort_order: 2 });
+            }
+            const subtotal = lineItems.reduce((s, li) => s + li.total_cents, 0);
+            const nowIso = new Date().toISOString();
+
+            const { data: createdInv, error: createInvErr } = await supabase
+              .from("invoices")
+              .insert({
+                booking_id: bookingId,
+                sitter_id: b.sitter_id,
+                customer_id: b.customer_id,
+                status: "paid",
+                subtotal_cents: subtotal,
+                total_cents: subtotal,
+                amount_paid_cents: paidCents,
+                paid_at: nowIso,
+                sent_at: nowIso,
+              })
+              .select("id")
+              .single();
+
+            if (createInvErr) {
+              console.error("Auto-create invoice failed", createInvErr);
+            } else if (createdInv) {
+              resolvedInvoiceId = (createdInv as any).id;
+              const itemsToInsert = lineItems.map((li) => ({
+                invoice_id: resolvedInvoiceId!,
+                label: li.label,
+                quantity: li.quantity,
+                unit_price_cents: li.unit_price_cents,
+                total_cents: li.total_cents,
+                kind: li.kind,
+                sort_order: li.sort_order,
+              }));
+              const { error: liErr } = await supabase.from("invoice_line_items").insert(itemsToInsert);
+              if (liErr) console.error("Auto-create invoice line items failed", liErr);
+
+              await supabase.from("payment_events").insert({
+                invoice_id: resolvedInvoiceId,
+                booking_id: bookingId,
+                kind: "invoice_created",
+                metadata: { auto_created: true, source: "checkout.session.completed" },
+              });
+            }
+          }
         }
 
         if (!alreadyPaid) {
