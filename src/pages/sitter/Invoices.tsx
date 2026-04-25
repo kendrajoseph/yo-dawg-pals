@@ -235,8 +235,8 @@ export default function SitterInvoices() {
                 {filtered.map((r) => {
                   const owed = (r.total_cents ?? 0) - (r.amount_paid_cents ?? 0);
                   return (
-                    <li key={r.id}>
-                      <button onClick={() => openRow(r)} className="flex w-full items-center gap-3 px-2 py-3 text-left transition-colors hover:bg-muted">
+                    <li key={r.id} className="flex items-center gap-1">
+                      <button onClick={() => openRow(r)} className="flex flex-1 items-center gap-3 px-2 py-3 text-left transition-colors hover:bg-muted">
                         <div className="min-w-0 flex-1">
                           <div className="flex items-center gap-2">
                             <span className="font-medium">{r.invoice_number}</span>
@@ -254,6 +254,15 @@ export default function SitterInvoices() {
                           )}
                         </div>
                       </button>
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        className="text-muted-foreground hover:text-destructive"
+                        onClick={(e) => { e.stopPropagation(); setDeleteTarget(r); }}
+                        aria-label={`Delete ${r.invoice_number}`}
+                      >
+                        <Trash2 className="h-4 w-4" />
+                      </Button>
                     </li>
                   );
                 })}
