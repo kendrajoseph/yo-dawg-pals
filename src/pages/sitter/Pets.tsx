@@ -32,7 +32,7 @@ export default function SitterPets() {
     const load = async () => {
       const [bookingsRes, alertsRes] = await Promise.all([
         supabase.from("bookings")
-          .select("pets(id, name, breed, species, photo_url, owner_id, profiles:owner_id(full_name))")
+          .select("pets(id, name, breed, species, photo_url, owner_id)")
           .eq("sitter_id", user.id),
         supabase.from("pet_fit_alerts")
           .select("id, title, severity, pet_id, pets:pet_id(name)")
@@ -45,8 +45,21 @@ export default function SitterPets() {
         if (p && !seen.has(p.id)) {
           seen.set(p.id, {
             id: p.id, name: p.name, breed: p.breed, species: p.species, photo_url: p.photo_url,
-            owner_name: p.profiles?.full_name ?? null,
-          });
+            owner_name: null,
+            owner_id: p.owner_id,
+          } as any);
+        }
+      }
+      // pets.owner_id has no FK to profiles, fetch owner names separately
+      const ownerIds = Array.from(new Set([...seen.values()].map((p: any) => p.owner_id).filter(Boolean)));
+      if (ownerIds.length) {
+        const { data: profs } = await supabase
+          .from("profiles")
+          .select("id, full_name")
+          .in("id", ownerIds);
+        const nameById = new Map(((profs ?? []) as any[]).map((p) => [p.id, p.full_name]));
+        for (const pet of seen.values()) {
+          (pet as any).owner_name = nameById.get((pet as any).owner_id) ?? null;
         }
       }
       setPets([...seen.values()].sort((a, b) => a.name.localeCompare(b.name)));
