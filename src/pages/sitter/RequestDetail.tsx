@@ -88,16 +88,32 @@ export default function SitterRequestDetail() {
   const reload = async () => {
     if (!id || !user?.id) return;
     setLoading(true);
-    const { data: b } = await supabase
+    const { data: b, error: bErr } = await supabase
       .from("bookings")
       .select(
-        "id, customer_id, pet_id, service_id, status, booking_kind, requested_date, requested_end_date, requested_window_label, requested_window_start_minute, requested_window_end_minute, recurrence_label, request_group_label, request_group_id, notes, internal_notes, group_assignment_label, base_price_cents, total_cents, pets(id, name, species, photo_url), services(id, name, slug, duration_minutes, price_cents, payment_mode, requires_pet_approval, extra_time_fee_cents, extra_time_increment_minutes, late_pickup_fee_cents), profiles:customer_id(full_name, phone)",
+        "id, customer_id, pet_id, service_id, status, booking_kind, requested_date, requested_end_date, requested_window_label, requested_window_start_minute, requested_window_end_minute, recurrence_label, request_group_label, request_group_id, notes, internal_notes, group_assignment_label, base_price_cents, total_cents, pets(id, name, species, photo_url), services(id, name, slug, duration_minutes, price_cents, payment_mode, requires_pet_approval, extra_time_fee_cents, extra_time_increment_minutes, late_pickup_fee_cents)",
       )
       .eq("id", id)
       .eq("sitter_id", user.id)
       .maybeSingle();
 
-    setBooking(b as any);
+    if (bErr) {
+      console.error("[RequestDetail] booking fetch failed", bErr);
+    }
+
+    // profiles is not joined via FK on bookings.customer_id (which references auth.users),
+    // so fetch the customer profile separately.
+    let customerProfile: { full_name: string | null; phone: string | null } | null = null;
+    if (b?.customer_id) {
+      const { data: p } = await supabase
+        .from("profiles")
+        .select("full_name, phone")
+        .eq("id", b.customer_id)
+        .maybeSingle();
+      customerProfile = (p as any) ?? null;
+    }
+
+    setBooking(b ? ({ ...b, profiles: customerProfile } as any) : null);
 
     if (b?.pet_id && b?.service_id) {
       const { data: f } = await supabase
