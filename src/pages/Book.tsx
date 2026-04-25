@@ -356,14 +356,26 @@ const Book = () => {
     } catch { /* quota exceeded — ignore */ }
   }, [bundleItems, bundleNotes, step]);
 
+  // Prompt for an account immediately after the user picks a service so the
+  // rest of the flow (schedule, pets, review) is filled out as the signed-in
+  // human who will own the booking. Draft is preserved so they pick up exactly
+  // where they left off.
   useEffect(() => {
-    if (!authLoading && !user && step >= 2) {
-      // Save draft before redirecting so it can be restored after sign up.
-      try {
-        localStorage.setItem(DRAFT_KEY, JSON.stringify({ bundleItems, bundleNotes, step, ts: Date.now() }));
-      } catch { /* ignore */ }
-      navigate("/auth", { state: { from: `${location.pathname}${location.search}` } });
-    }
+    if (authLoading || user) return;
+    if (step < 1) return;
+    // Need at least one service selected before redirecting — avoids a redirect
+    // loop on a fresh /book visit where step starts at 0.
+    const hasService = bundleItems.some((item) => item.serviceId);
+    if (!hasService) return;
+    try {
+      localStorage.setItem(DRAFT_KEY, JSON.stringify({ bundleItems, bundleNotes, step, ts: Date.now() }));
+    } catch { /* ignore */ }
+    navigate("/auth", {
+      state: {
+        from: `${location.pathname}${location.search}`,
+        reason: "booking",
+      },
+    });
   }, [authLoading, location.pathname, location.search, navigate, step, user, bundleItems, bundleNotes]);
 
   const bundleItemMap = useMemo(() => new Map(bundleItems.map((item) => [item.id, item])), [bundleItems]);
