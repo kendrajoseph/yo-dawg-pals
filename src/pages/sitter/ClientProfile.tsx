@@ -38,7 +38,7 @@ export default function SitterClientProfile() {
     if (!id || !user?.id) return;
     let cancelled = false;
     const load = async () => {
-      const [pRes, bookingsRes, invoicesRes] = await Promise.all([
+      const [pRes, bookingsRes, invoicesRes, adminRes] = await Promise.all([
         supabase.from("profiles").select("*").eq("id", id).maybeSingle(),
         supabase.from("bookings")
           .select("id, start_at, end_at, status, total_cents, payment_status, services(name), pets(id, name, photo_url)")
@@ -47,6 +47,10 @@ export default function SitterClientProfile() {
         supabase.from("invoices").select("id, invoice_number, status, total_cents, amount_paid_cents, due_date, created_at")
           .eq("sitter_id", user.id).eq("customer_id", id)
           .order("created_at", { ascending: false }),
+        supabase.from("client_admin_profiles")
+          .select("id, star_rating, internal_notes")
+          .eq("client_id", id)
+          .maybeSingle(),
       ]);
       if (cancelled) return;
       setProfile(pRes.data);
@@ -57,6 +61,14 @@ export default function SitterClientProfile() {
         if (b.pets) seen.set(b.pets.id, b.pets);
       }
       setPets([...seen.values()]);
+      const a = adminRes.data;
+      setAdminProfileId(a?.id ?? null);
+      const r = a?.star_rating ?? 3;
+      const n = a?.internal_notes ?? "";
+      setStarRating(r);
+      setInternalNotes(n);
+      setSavedRating(r);
+      setSavedNotes(n);
       setLoading(false);
     };
     load();
