@@ -124,7 +124,7 @@ export default function SitterRequestDetail() {
     setEndDate(booking.requested_end_date ?? booking.requested_date ?? format(new Date(), "yyyy-MM-dd"));
     setStart(minutesToTime(booking.requested_window_start_minute, "09:00"));
     const fallbackEnd =
-      (booking.requested_window_end_minute ?? null) ??
+      booking.requested_window_end_minute ??
       (booking.requested_window_start_minute != null
         ? booking.requested_window_start_minute + (booking.services?.duration_minutes ?? 30)
         : null);
