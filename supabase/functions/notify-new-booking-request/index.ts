@@ -6,6 +6,8 @@ const GATEWAY_URL = "https://connector-gateway.lovable.dev/twilio";
 
 const bodySchema = z.object({
   bookingId: z.string().uuid(),
+  requestGroupId: z.string().uuid().optional(),
+  bookingCount: z.number().int().min(1).optional(),
 });
 
 const json = (body: unknown, status = 200) =>
@@ -88,11 +90,11 @@ Deno.serve(async (req) => {
     }
 
     const userId = claimsData.claims.sub;
-    const { bookingId } = parsed.data;
+    const { bookingId, requestGroupId, bookingCount } = parsed.data;
 
     const { data: booking, error: bookingError } = await admin
       .from("bookings")
-      .select("id, customer_id, sitter_id, status, requested_date, requested_window_label, start_at, services(name), pets(name)")
+      .select("id, customer_id, sitter_id, status, request_group_id, requested_date, requested_window_label, start_at, services(name), pets(name)")
       .eq("id", bookingId)
       .single();
 
@@ -108,15 +110,36 @@ Deno.serve(async (req) => {
       return json({ error: "Only requested bookings can trigger this alert" }, 400);
     }
 
-    const { data: existingNotification } = await admin
-      .from("sitter_notifications")
-      .select("id")
-      .eq("booking_id", bookingId)
-      .eq("kind", "booking_request")
-      .maybeSingle();
-
-    if (existingNotification) {
-      return json({ ok: true, duplicated: true, smsSent: false });
+    // Dedupe at the request-group level: only send ONE sitter notification per group,
+    // even when the group fans out into multiple booking rows (multi-pet, multi-service).
+    const groupId = requestGroupId || booking.request_group_id;
+    if (groupId) {
+      const { data: groupBookingIds } = await admin
+        .from("bookings")
+        .select("id")
+        .eq("request_group_id", groupId);
+      const ids = (groupBookingIds ?? []).map((row: { id: string }) => row.id);
+      if (ids.length > 0) {
+        const { data: existingForGroup } = await admin
+          .from("sitter_notifications")
+          .select("id")
+          .in("booking_id", ids)
+          .eq("kind", "booking_request")
+          .limit(1);
+        if (existingForGroup && existingForGroup.length > 0) {
+          return json({ ok: true, duplicated: true, smsSent: false });
+        }
+      }
+    } else {
+      const { data: existingNotification } = await admin
+        .from("sitter_notifications")
+        .select("id")
+        .eq("booking_id", bookingId)
+        .eq("kind", "booking_request")
+        .maybeSingle();
+      if (existingNotification) {
+        return json({ ok: true, duplicated: true, smsSent: false });
+      }
     }
 
     const [{ data: customerProfile }, { data: sitterProfile }] = await Promise.all([
@@ -130,7 +153,10 @@ Deno.serve(async (req) => {
     const serviceName = booking.services?.name || "a service";
     const timing = formatRequestTiming(booking);
     const notificationTitle = "New booking request";
-    const notificationMessage = `${customerName} requested ${serviceName} for ${petName} (${timing}).`;
+    const totalCount = bookingCount && bookingCount > 1 ? bookingCount : 1;
+    const notificationMessage = totalCount > 1
+      ? `${customerName} submitted ${totalCount} requests starting with ${serviceName} for ${petName} (${timing}).`
+      : `${customerName} requested ${serviceName} for ${petName} (${timing}).`;
 
     const { error: insertError } = await admin.from("sitter_notifications").insert({
       user_id: booking.sitter_id,
@@ -144,6 +170,8 @@ Deno.serve(async (req) => {
         petName,
         serviceName,
         timing,
+        requestGroupId: groupId,
+        bookingCount: totalCount,
       },
     });
 
