@@ -1,6 +1,18 @@
 import { useEffect, useMemo, useState } from "react";
 import { format } from "date-fns";
-import { CreditCard, Search } from "lucide-react";
+import { CreditCard, Search, Trash2 } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
+import { toast } from "sonner";
 import { SitterShell } from "@/components/sitter/SitterShell";
 import { KpiTile } from "@/components/sitter/KpiTile";
 import { EmptyState } from "@/components/sitter/EmptyState";
@@ -41,6 +53,8 @@ export default function SitterInvoices() {
   const [tab, setTab] = useState<StatusTab>("outstanding");
   const [drawerBooking, setDrawerBooking] = useState<PaymentDrawerBooking | null>(null);
   const [drawerOpen, setDrawerOpen] = useState(false);
+  const [deleteTarget, setDeleteTarget] = useState<InvoiceRow | null>(null);
+  const [deleting, setDeleting] = useState(false);
 
   const load = async () => {
     if (!user?.id) return;
@@ -152,6 +166,29 @@ export default function SitterInvoices() {
     setDrawerOpen(true);
   };
 
+  const handleDelete = async () => {
+    if (!deleteTarget) return;
+    setDeleting(true);
+    const { error: liErr } = await supabase
+      .from("invoice_line_items")
+      .delete()
+      .eq("invoice_id", deleteTarget.id);
+    if (liErr) {
+      toast.error(`Could not delete line items: ${liErr.message}`);
+      setDeleting(false);
+      return;
+    }
+    const { error } = await supabase.from("invoices").delete().eq("id", deleteTarget.id);
+    setDeleting(false);
+    if (error) {
+      toast.error(`Could not delete invoice: ${error.message}`);
+      return;
+    }
+    toast.success(`Deleted ${deleteTarget.invoice_number}`);
+    setDeleteTarget(null);
+    load();
+  };
+
   return (
     <SitterShell>
       <div className="mb-6 flex items-end justify-between gap-3">
@@ -198,8 +235,8 @@ export default function SitterInvoices() {
                 {filtered.map((r) => {
                   const owed = (r.total_cents ?? 0) - (r.amount_paid_cents ?? 0);
                   return (
-                    <li key={r.id}>
-                      <button onClick={() => openRow(r)} className="flex w-full items-center gap-3 px-2 py-3 text-left transition-colors hover:bg-muted">
+                    <li key={r.id} className="flex items-center gap-1">
+                      <button onClick={() => openRow(r)} className="flex flex-1 items-center gap-3 px-2 py-3 text-left transition-colors hover:bg-muted">
                         <div className="min-w-0 flex-1">
                           <div className="flex items-center gap-2">
                             <span className="font-medium">{r.invoice_number}</span>
@@ -217,6 +254,15 @@ export default function SitterInvoices() {
                           )}
                         </div>
                       </button>
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        className="text-muted-foreground hover:text-destructive"
+                        onClick={(e) => { e.stopPropagation(); setDeleteTarget(r); }}
+                        aria-label={`Delete ${r.invoice_number}`}
+                      >
+                        <Trash2 className="h-4 w-4" />
+                      </Button>
                     </li>
                   );
                 })}
@@ -233,6 +279,27 @@ export default function SitterInvoices() {
         hasSavedCard={false}
         onChanged={load}
       />
+
+      <AlertDialog open={!!deleteTarget} onOpenChange={(o) => !o && setDeleteTarget(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Delete {deleteTarget?.invoice_number}?</AlertDialogTitle>
+            <AlertDialogDescription>
+              This permanently removes the invoice and its line items. The underlying booking and any payment records are not affected. This cannot be undone.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={deleting}>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={(e) => { e.preventDefault(); handleDelete(); }}
+              disabled={deleting}
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+            >
+              {deleting ? "Deleting…" : "Delete invoice"}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </SitterShell>
   );
 }
