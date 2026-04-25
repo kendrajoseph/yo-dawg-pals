@@ -356,8 +356,12 @@ const PetProfilesManager = ({
         </div>
       )}
 
-      <Dialog open={open} onOpenChange={setOpen}>
-        <DialogContent className="max-h-[92vh] overflow-y-auto border-4 border-primary shadow-pop sm:max-w-2xl">
+      <Dialog open={open} onOpenChange={(next) => { if (next) setOpen(true); else requestClose(); }}>
+        <DialogContent
+          className="max-h-[92vh] overflow-y-auto border-4 border-primary shadow-pop sm:max-w-2xl"
+          onInteractOutside={(e) => { if (isDirty) e.preventDefault(); }}
+          onEscapeKeyDown={(e) => { if (isDirty && !confirm("Discard your unsaved pet profile changes?")) e.preventDefault(); }}
+        >
           <DialogHeader>
             <DialogTitle className="font-display text-3xl uppercase">{editing ? `Edit ${editing.name}` : "New pet profile"}</DialogTitle>
           </DialogHeader>
@@ -369,7 +373,7 @@ const PetProfilesManager = ({
             setPhotoFile={setPhotoFile}
             saving={saving}
             isEdit={!!editing}
-            onCancel={() => setOpen(false)}
+            onCancel={requestClose}
             onSubmit={submit}
           />
         </DialogContent>
