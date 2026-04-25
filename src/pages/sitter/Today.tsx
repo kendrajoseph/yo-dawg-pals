@@ -51,11 +51,11 @@ const kindToast: Record<UpdateKind, string> = {
 };
 
 // Choose the two transition events appropriate for each service type.
-// - Walks (solo, group, dog walking): pickup at home → drop-off at home
-// - Pet sitting (in client's home): arrived → left
-// - Boarding (client brings pet to Anneke / picks them up): drop-off → pickup (from client perspective the inverse — we show what Anneke does)
-//   We use the events Anneke triggers: "received" the pet (dropoff to her) is reported as `pickup` semantics from her side, so we use arrived/departed for boarding-day milestones.
-// - Training, meet & greet: arrived → left (in-person session)
+// - Walks (solo, group, dog walking): Anneke picks the pet up from home and drops them back off → pickup / dropoff
+// - Pet sitting (in client's home): Anneke arrives at the client's home and later leaves → arrived / departed
+// - Boarding: the client drops the pet off with Anneke and later picks them back up → dropoff / pickup
+//   (from the client's perspective these are still drop-off and pick-up events, just inverted in time)
+// - Training, meet & greet: in-person session at the client's home → arrived / departed
 const eventsForSlug = (slug: string | null | undefined): [UpdateKind, UpdateKind] | null => {
   switch (slug) {
     case "walk":
@@ -67,9 +67,7 @@ const eventsForSlug = (slug: string | null | undefined): [UpdateKind, UpdateKind
     case "meet-and-greet":
       return ["arrived", "departed"];
     case "boarding":
-      // Boarding happens at Anneke's place — the meaningful events for the client are
-      // when their pet has settled in (arrived) and when they've been collected (departed).
-      return ["arrived", "departed"];
+      return ["dropoff", "pickup"];
     default:
       return null;
   }
