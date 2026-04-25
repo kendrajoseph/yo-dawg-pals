@@ -55,7 +55,7 @@ export default function SitterScheduleAssistant() {
             .eq("sitter_id", user.id),
           supabase.from("blocked_dates").select("id, blocked_date, reason").eq("sitter_id", user.id),
           supabase.from("bookings")
-            .select("id, status, customer_id, booking_kind, requested_date, requested_end_date, requested_window_label, requested_window_start_minute, requested_window_end_minute, recurrence_label, request_group_id, request_group_label, services(slug, name), pets(name), profiles:customer_id(full_name)")
+            .select("id, status, customer_id, booking_kind, requested_date, requested_end_date, requested_window_label, requested_window_start_minute, requested_window_end_minute, recurrence_label, request_group_id, request_group_label, services(slug, name), pets(name)")
             .eq("sitter_id", user.id).eq("status", "requested"),
         ]);
 
