@@ -53,7 +53,7 @@ export default function SitterPetProfile() {
     let cancelled = false;
     (async () => {
       const [petRes, tagsRes, bookingsRes, alertsRes, servicesRes, approvalsRes] = await Promise.all([
-        supabase.from("pets").select("*, profiles:owner_id(id, full_name, phone, mobile_phone, sms_opt_in)").eq("id", id).maybeSingle(),
+        supabase.from("pets").select("*").eq("id", id).maybeSingle(),
         supabase.from("pet_tag_assignments").select("tag:tag_id(label, slug, visibility)").eq("pet_id", id),
         supabase.from("bookings")
           .select("id, start_at, status, services(name)")
@@ -64,7 +64,18 @@ export default function SitterPetProfile() {
         supabase.from("sitter_pet_approvals").select("service_id, status, notes").eq("sitter_id", user.id).eq("pet_id", id),
       ]);
       if (cancelled) return;
-      setPet(petRes.data);
+
+      // pets.owner_id has no FK to profiles, so fetch the owner profile separately
+      let ownerProfile: any = null;
+      if (petRes.data?.owner_id) {
+        const { data: prof } = await supabase
+          .from("profiles")
+          .select("id, full_name, phone, mobile_phone, sms_opt_in")
+          .eq("id", petRes.data.owner_id)
+          .maybeSingle();
+        ownerProfile = prof ?? null;
+      }
+      setPet(petRes.data ? { ...petRes.data, profiles: ownerProfile } : null);
       setTags(tagsRes.data ?? []);
       setBookings(bookingsRes.data ?? []);
       setAlerts(alertsRes.data ?? []);
