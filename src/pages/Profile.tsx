@@ -25,27 +25,33 @@ const phoneField = z
   .optional()
   .or(z.literal(""));
 
-const profileSchema = z
-  .object({
-    full_name: z
-      .string()
-      .trim()
-      .min(1, "Name is required")
-      .max(100, "Name must be 100 characters or less"),
-    phone: phoneField,
-    mobile_phone: phoneField,
-    sms_opt_in: z.boolean(),
-    bio: z
-      .string()
-      .trim()
-      .max(1000, "Notes must be 1000 characters or less")
-      .optional()
-      .or(z.literal("")),
-  })
-  .refine((data) => !data.sms_opt_in || Boolean(data.mobile_phone?.trim()), {
-    message: "Add a mobile number before turning on text updates",
-    path: ["mobile_phone"],
-  });
+const profileSchema = z.object({
+  full_name: z
+    .string()
+    .trim()
+    .min(1, "Name is required")
+    .max(100, "Name must be 100 characters or less"),
+  email: z
+    .string()
+    .trim()
+    .email("Enter a valid email")
+    .max(255, "Email must be 255 characters or less"),
+  phone: phoneField,
+  // Mobile is required so we can text pickup/dropoff updates. Copy stays soft.
+  mobile_phone: z
+    .string()
+    .trim()
+    .min(7, "Add a mobile number we can text")
+    .max(30, "Phone must be 30 characters or less")
+    .regex(/^[\d\s()+\-.]+$/, "Phone can only contain digits, spaces, and ()+-."),
+  sms_opt_in: z.boolean(),
+  bio: z
+    .string()
+    .trim()
+    .max(1000, "Notes must be 1000 characters or less")
+    .optional()
+    .or(z.literal("")),
+});
 
 const Profile = () => {
   const db = supabase as any;
