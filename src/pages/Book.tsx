@@ -1141,7 +1141,7 @@ const Book = () => {
                       {activeDate ? format(activeDate, "EEEE, MMM d") : "Select a date"}
                     </p>
                     <p className="mt-2 max-w-xl text-sm text-foreground/75">
-                      {`${activeVariant.duration_minutes} min${activeService.extra_time_fee_cents && activeService.extra_time_increment_minutes ? ` · ${formatPriceWithDecimals(activeService.extra_time_fee_cents)} / ${activeService.extra_time_increment_minutes} min add-on` : ""}`}
+                      {`${activeVariant.duration_minutes} min`}
                     </p>
 
                     {isActiveWalkWindowRequest ? (
