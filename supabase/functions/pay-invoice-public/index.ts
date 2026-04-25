@@ -1,4 +1,5 @@
-// Public endpoint: looks up an invoice by token and returns Stripe Checkout URL.
+// Public endpoint: looks up an invoice by token and returns an embedded
+// Stripe Checkout client_secret so the payer can complete payment inline.
 import { corsHeaders } from "npm:@supabase/supabase-js@2/cors";
 import { createClient } from "npm:@supabase/supabase-js@2";
 import { z } from "npm:zod@3.24.1";
@@ -38,7 +39,8 @@ Deno.serve(async (req) => {
     const stripe = createStripeClient(environment as StripeEnv);
     const session = await stripe.checkout.sessions.create({
       mode: "payment",
-      payment_method_types: ["card"],
+      ui_mode: "embedded",
+      return_url: `${origin}/pay/${token}?status=paid&session_id={CHECKOUT_SESSION_ID}`,
       line_items: [{
         price_data: {
           currency: "cad",
@@ -47,8 +49,6 @@ Deno.serve(async (req) => {
         },
         quantity: 1,
       }],
-      success_url: `${origin}/pay/${token}?status=paid`,
-      cancel_url: `${origin}/pay/${token}?status=cancelled`,
       payment_intent_data: {
         setup_future_usage: "off_session",
         metadata: {
@@ -64,7 +64,7 @@ Deno.serve(async (req) => {
       },
     });
 
-    return json({ url: session.url });
+    return json({ clientSecret: session.client_secret });
   } catch (e: any) {
     console.error("pay-invoice-public error", e);
     return json({ error: e?.message ?? "Failed" }, 500);
