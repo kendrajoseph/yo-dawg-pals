@@ -214,6 +214,7 @@ const Account = () => {
           <div className="flex flex-wrap gap-2">
             <Button asChild variant="outline" className="border-2 border-primary font-display uppercase"><Link to="/account/profile"><User className="h-4 w-4" /> My profile</Link></Button>
             <Button asChild variant="outline" className="border-2 border-primary font-display uppercase"><Link to="/account/pets"><PawPrint className="h-4 w-4" /> My pets</Link></Button>
+            <Button asChild variant="outline" className="border-2 border-primary font-display uppercase"><Link to="/account/calendar"><CalendarDays className="h-4 w-4" /> My calendar</Link></Button>
             <Button asChild className="bg-primary font-display uppercase shadow-pop-accent"><Link to="/book"><CalendarPlus className="h-4 w-4" /> Book a service</Link></Button>
             {canManageDashboard && <Button asChild variant="secondary" className="font-display uppercase"><Link to="/sitter">Sitter dashboard</Link></Button>}
           </div>
