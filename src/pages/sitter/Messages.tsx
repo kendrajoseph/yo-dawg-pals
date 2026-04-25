@@ -43,6 +43,23 @@ export default function SitterMessages() {
   const [search, setSearch] = useState("");
   const [composeOpen, setComposeOpen] = useState(false);
   const [reloadKey, setReloadKey] = useState(0);
+  const [deletingId, setDeletingId] = useState<string | null>(null);
+
+  const handleDeleteThread = async (customerId: string) => {
+    if (!user?.id) return;
+    setDeletingId(customerId);
+    const { error } = await supabase
+      .from("client_messages")
+      .delete()
+      .eq("sitter_id", user.id)
+      .eq("customer_id", customerId);
+    setDeletingId(null);
+    if (error) {
+      toast({ title: "Couldn't delete conversation", description: error.message, variant: "destructive" });
+      return;
+    }
+    setThreads((prev) => prev.filter((t) => t.customer_id !== customerId));
+  };
 
   useEffect(() => {
     if (!user?.id) return;
