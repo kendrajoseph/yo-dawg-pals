@@ -339,31 +339,7 @@ const Profile = () => {
                   </div>
                 </div>
 
-                <div className="rounded-xl border-2 border-primary bg-card p-4 shadow-pop-sm">
-                  <div className="flex items-start gap-3">
-                    <div className="mt-0.5 grid h-9 w-9 shrink-0 place-items-center rounded-full bg-secondary text-secondary-foreground">
-                      <Smartphone className="h-4 w-4" />
-                    </div>
-                    <div className="flex-1">
-                      <Label htmlFor="sms_opt_in" className="font-display uppercase text-primary">
-                        Turn on text updates
-                      </Label>
-                      <p className="mt-1 text-sm text-muted-foreground">
-                        Text updates can be sent when your dog is picked up, dropped off, or if there is a quick note worth sharing.
-                      </p>
-                      <div className="mt-3 flex items-center gap-3">
-                        <Checkbox
-                          id="sms_opt_in"
-                          checked={form.sms_opt_in}
-                          onCheckedChange={(checked) => setForm({ ...form, sms_opt_in: checked === true })}
-                        />
-                        <Label htmlFor="sms_opt_in" className="text-sm text-foreground">
-                          Yes, send me organized text updates about my dog’s care.
-                        </Label>
-                      </div>
-                    </div>
-                  </div>
-                </div>
+                {/* SMS opt-in is implicit when a mobile number is on file. */}
 
                 <div className="space-y-2">
                   <Label htmlFor="bio" className="font-display uppercase">
