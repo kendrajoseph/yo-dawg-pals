@@ -162,9 +162,18 @@ const PublicInvoice = () => {
               )}
 
               {data.invoice.status !== "paid" && data.invoice.amount_paid_cents < data.invoice.total_cents && (
-                <Button onClick={pay} disabled={paying} className="mt-6 w-full font-display uppercase">
-                  {paying ? "Redirecting…" : `Pay ${formatCents(data.invoice.total_cents - data.invoice.amount_paid_cents)}`}
-                </Button>
+                <>
+                  {!paying && token && (
+                    <Button onClick={startPay} className="mt-6 w-full font-display uppercase">
+                      Pay {formatCents(data.invoice.total_cents - data.invoice.amount_paid_cents)}
+                    </Button>
+                  )}
+                  {paying && token && (
+                    <div className="mt-6">
+                      <PublicInvoiceCheckout token={token} />
+                    </div>
+                  )}
+                </>
               )}
             </Card>
           </>
