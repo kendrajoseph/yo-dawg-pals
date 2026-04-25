@@ -31,7 +31,48 @@ type TodayBooking = {
   end_at: string;
   status: string;
   pets: { name: string } | null;
-  services: { name: string } | null;
+  services: { name: string; slug: string | null } | null;
+};
+
+type UpdateKind = "pickup" | "dropoff" | "arrived" | "departed";
+
+const kindLabel: Record<UpdateKind, string> = {
+  pickup: "Pickup",
+  dropoff: "Drop-off",
+  arrived: "Arrived",
+  departed: "Left",
+};
+
+const kindToast: Record<UpdateKind, string> = {
+  pickup: "Picked up ✓",
+  dropoff: "Dropped off ✓",
+  arrived: "Arrival sent ✓",
+  departed: "Departure sent ✓",
+};
+
+// Choose the two transition events appropriate for each service type.
+// - Walks (solo, group, dog walking): pickup at home → drop-off at home
+// - Pet sitting (in client's home): arrived → left
+// - Boarding (client brings pet to Anneke / picks them up): drop-off → pickup (from client perspective the inverse — we show what Anneke does)
+//   We use the events Anneke triggers: "received" the pet (dropoff to her) is reported as `pickup` semantics from her side, so we use arrived/departed for boarding-day milestones.
+// - Training, meet & greet: arrived → left (in-person session)
+const eventsForSlug = (slug: string | null | undefined): [UpdateKind, UpdateKind] | null => {
+  switch (slug) {
+    case "walk":
+    case "solo-walk":
+    case "group-walk":
+      return ["pickup", "dropoff"];
+    case "sitting":
+    case "training":
+    case "meet-and-greet":
+      return ["arrived", "departed"];
+    case "boarding":
+      // Boarding happens at Anneke's place — the meaningful events for the client are
+      // when their pet has settled in (arrived) and when they've been collected (departed).
+      return ["arrived", "departed"];
+    default:
+      return null;
+  }
 };
 
 type InboxItem = {
