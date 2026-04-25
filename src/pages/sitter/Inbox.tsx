@@ -74,16 +74,15 @@ export default function SitterInbox() {
       for (const i of (invoicesRes.data ?? []) as any[]) {
         const owed = (i.total_cents ?? 0) - (i.amount_paid_cents ?? 0);
         const overdue = i.due_date && new Date(i.due_date + "T23:59:59").getTime() < todayMs;
-        if (overdue) {
-          out.push({
-            kind: "payment",
-            id: i.id,
-            title: `Overdue: ${i.invoice_number}`,
-            subtitle: `$${(owed / 100).toFixed(2)} owed`,
-            meta: i.due_date ? `due ${format(new Date(i.due_date), "MMM d")}` : undefined,
-            href: "/sitter/invoices",
-          });
-        }
+        const prefix = overdue ? "Overdue: " : i.status === "partial" ? "Partial: " : "Outstanding: ";
+        out.push({
+          kind: "payment",
+          id: i.id,
+          title: `${prefix}${i.invoice_number}`,
+          subtitle: `$${(owed / 100).toFixed(2)} owed`,
+          meta: i.due_date ? `due ${format(new Date(i.due_date), "MMM d")}` : undefined,
+          href: "/sitter/invoices",
+        });
       }
 
       setRows(out);
