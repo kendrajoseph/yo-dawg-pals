@@ -752,10 +752,24 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
+            foreignKeyName: "invoices_customer_id_fkey"
+            columns: ["customer_id"]
+            isOneToOne: false
+            referencedRelation: "profiles_public"
+            referencedColumns: ["id"]
+          },
+          {
             foreignKeyName: "invoices_sitter_id_fkey"
             columns: ["sitter_id"]
             isOneToOne: false
             referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "invoices_sitter_id_fkey"
+            columns: ["sitter_id"]
+            isOneToOne: false
+            referencedRelation: "profiles_public"
             referencedColumns: ["id"]
           },
         ]
@@ -1555,7 +1569,24 @@ export type Database = {
       }
     }
     Views: {
-      [_ in never]: never
+      profiles_public: {
+        Row: {
+          avatar_url: string | null
+          full_name: string | null
+          id: string | null
+        }
+        Insert: {
+          avatar_url?: string | null
+          full_name?: string | null
+          id?: string | null
+        }
+        Update: {
+          avatar_url?: string | null
+          full_name?: string | null
+          id?: string | null
+        }
+        Relationships: []
+      }
     }
     Functions: {
       delete_email: {
