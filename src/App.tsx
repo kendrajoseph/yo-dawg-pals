@@ -28,6 +28,7 @@ import SitterPets from "./pages/sitter/Pets.tsx";
 import SitterPetProfile from "./pages/sitter/PetProfile.tsx";
 import SitterMessages from "./pages/sitter/Messages.tsx";
 import SitterReports from "./pages/sitter/Reports.tsx";
+import SitterReviews from "./pages/sitter/Reviews.tsx";
 import SettingsHome from "./pages/sitter/settings/SettingsHome.tsx";
 import SettingsRedirect from "./pages/sitter/settings/SettingsRedirect.tsx";
 import SettingsAvailability from "./pages/sitter/settings/Availability.tsx";
