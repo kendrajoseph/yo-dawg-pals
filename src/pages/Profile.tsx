@@ -159,23 +159,40 @@ const Profile = () => {
     setErrors({});
     setSaving(true);
 
+    // Auto-enable text updates whenever a mobile is on file. Stays subtle — no
+    // checkbox required for it to work.
+    const smsOn = result.data.sms_opt_in || Boolean(result.data.mobile_phone?.trim());
+
     const { error } = await db
       .from("profiles")
       .update({
         full_name: result.data.full_name,
         phone: result.data.phone || null,
-        mobile_phone: result.data.mobile_phone || null,
-        sms_opt_in: result.data.sms_opt_in,
+        mobile_phone: result.data.mobile_phone,
+        sms_opt_in: smsOn,
         bio: result.data.bio || null,
       })
       .eq("id", user.id);
 
-    setSaving(false);
     if (error) {
+      setSaving(false);
       toast.error("Couldn't save: " + error.message);
-    } else {
-      toast.success(result.data.sms_opt_in ? "Profile saved. Text updates are on." : "Profile saved");
+      return;
     }
+
+    // Update auth email if it changed.
+    if (result.data.email && result.data.email !== user.email) {
+      const { error: emailErr } = await supabase.auth.updateUser({ email: result.data.email });
+      if (emailErr) {
+        setSaving(false);
+        toast.error("Email update failed: " + emailErr.message);
+        return;
+      }
+      toast.success("Profile saved. Check your inbox to confirm the new email.");
+    } else {
+      toast.success("Profile saved");
+    }
+    setSaving(false);
   };
 
   const handleSignOut = async () => {
