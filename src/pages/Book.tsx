@@ -1297,7 +1297,6 @@ const Book = () => {
                   maxLength={500}
                   value={activeItem.notes}
                   onChange={(event) => patchBundleItem(activeItem.id, { notes: event.target.value })}
-                  placeholder="Anything important to know — leash habits, meds, feeding rhythm, pickups, building access, or social fit."
                 />
               </div>
             </div>
