@@ -65,21 +65,37 @@ export default function SitterMessages() {
     if (!user?.id) return;
     let cancelled = false;
     const load = async () => {
-      const { data } = await supabase
+      const { data, error } = await supabase
         .from("client_messages")
-        .select("id, subject, message, created_at, customer_id, profiles:customer_id(full_name, avatar_url)")
+        .select("id, subject, message, created_at, customer_id")
         .eq("sitter_id", user.id)
         .order("created_at", { ascending: false })
         .limit(200);
       if (cancelled) return;
+      if (error) {
+        console.error("Failed to load client messages", error);
+        setLoading(false);
+        return;
+      }
+      const rows = (data ?? []) as any[];
+      const customerIds = Array.from(new Set(rows.map((r) => r.customer_id)));
+      let profilesMap = new Map<string, { full_name: string | null; avatar_url: string | null }>();
+      if (customerIds.length > 0) {
+        const { data: profileRows } = await supabase
+          .from("profiles")
+          .select("id, full_name, avatar_url")
+          .in("id", customerIds);
+        profilesMap = new Map((profileRows ?? []).map((p: any) => [p.id, { full_name: p.full_name, avatar_url: p.avatar_url }]));
+      }
       const grouped = new Map<string, Thread>();
-      for (const m of (data ?? []) as any[]) {
+      for (const m of rows) {
+        const profile = profilesMap.get(m.customer_id);
         const existing = grouped.get(m.customer_id);
         if (!existing) {
           grouped.set(m.customer_id, {
             customer_id: m.customer_id,
-            customer_name: m.profiles?.full_name ?? null,
-            avatar_url: m.profiles?.avatar_url ?? null,
+            customer_name: profile?.full_name ?? null,
+            avatar_url: profile?.avatar_url ?? null,
             last_subject: m.subject,
             last_message: m.message,
             last_at: m.created_at,
