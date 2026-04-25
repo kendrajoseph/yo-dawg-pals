@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { Link, useParams } from "react-router-dom";
 import { format } from "date-fns";
-import { ArrowLeft, PawPrint, Stethoscope, Phone, AlertTriangle, KeyRound, Heart, ShieldCheck, MessageSquare } from "lucide-react";
+import { ArrowLeft, PawPrint, Stethoscope, Phone, AlertTriangle, KeyRound, Heart, ShieldCheck, MessageSquare, CheckCircle2, XCircle, Circle } from "lucide-react";
 import { SitterShell } from "@/components/sitter/SitterShell";
 import { EmptyState } from "@/components/sitter/EmptyState";
 import { Card } from "@/components/ui/card";
@@ -11,6 +11,9 @@ import { Button } from "@/components/ui/button";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { MessageComposer } from "@/components/sitter/MessageComposer";
+import { setPetServiceFit } from "@/lib/approveBooking";
+import { toast } from "sonner";
+import { cn } from "@/lib/utils";
 
 function Field({ label, value, mono }: { label: string; value: string | number | null | undefined; mono?: boolean }) {
   if (value === null || value === undefined || value === "") return null;
@@ -39,14 +42,17 @@ export default function SitterPetProfile() {
   const [tags, setTags] = useState<any[]>([]);
   const [bookings, setBookings] = useState<any[]>([]);
   const [alerts, setAlerts] = useState<any[]>([]);
+  const [services, setServices] = useState<any[]>([]);
+  const [approvals, setApprovals] = useState<Record<string, { status: string; notes: string | null }>>({});
   const [loading, setLoading] = useState(true);
   const [composeOpen, setComposeOpen] = useState(false);
+  const [savingId, setSavingId] = useState<string | null>(null);
 
   useEffect(() => {
     if (!id || !user?.id) return;
     let cancelled = false;
     (async () => {
-      const [petRes, tagsRes, bookingsRes, alertsRes] = await Promise.all([
+      const [petRes, tagsRes, bookingsRes, alertsRes, servicesRes, approvalsRes] = await Promise.all([
         supabase.from("pets").select("*, profiles:owner_id(id, full_name, phone, mobile_phone, sms_opt_in)").eq("id", id).maybeSingle(),
         supabase.from("pet_tag_assignments").select("tag:tag_id(label, slug, visibility)").eq("pet_id", id),
         supabase.from("bookings")
@@ -54,16 +60,35 @@ export default function SitterPetProfile() {
           .eq("sitter_id", user.id).eq("pet_id", id)
           .order("start_at", { ascending: false }).limit(20),
         supabase.from("pet_fit_alerts").select("*").eq("pet_id", id).order("created_at", { ascending: false }),
+        supabase.from("services").select("id, name, slug").eq("is_active", true).order("name"),
+        supabase.from("sitter_pet_approvals").select("service_id, status, notes").eq("sitter_id", user.id).eq("pet_id", id),
       ]);
       if (cancelled) return;
       setPet(petRes.data);
       setTags(tagsRes.data ?? []);
       setBookings(bookingsRes.data ?? []);
       setAlerts(alertsRes.data ?? []);
+      setServices(servicesRes.data ?? []);
+      const map: Record<string, { status: string; notes: string | null }> = {};
+      (approvalsRes.data ?? []).forEach((a: any) => { map[a.service_id] = { status: a.status, notes: a.notes }; });
+      setApprovals(map);
       setLoading(false);
     })();
     return () => { cancelled = true; };
   }, [id, user?.id]);
+
+  const updateFit = async (serviceId: string, status: "approved" | "declined" | "pending") => {
+    if (!user?.id || !id) return;
+    setSavingId(serviceId);
+    const r = await setPetServiceFit(user.id, id, serviceId, status);
+    setSavingId(null);
+    if (!r.ok) {
+      toast.error(r.error ?? "Couldn't save");
+      return;
+    }
+    setApprovals((prev) => ({ ...prev, [serviceId]: { status, notes: prev[serviceId]?.notes ?? null } }));
+    toast.success(`Marked ${status}`);
+  };
 
   if (loading) return <SitterShell><div className="p-6 text-sm text-muted-foreground">Loading…</div></SitterShell>;
   if (!pet) return <SitterShell><EmptyState title="Pet not found" /></SitterShell>;
