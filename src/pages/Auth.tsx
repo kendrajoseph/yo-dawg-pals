@@ -25,13 +25,15 @@ const Auth = () => {
   const navigate = useNavigate();
   const location = useLocation();
   const { user } = useAuth();
-  const from = (location.state as { from?: string })?.from || "/account";
+  const state = (location.state as { from?: string; reason?: string } | null) ?? {};
+  const from = state.from || "/account";
+  const isBookingFlow = state.reason === "booking" || from.startsWith("/book");
 
   useEffect(() => {
     if (user) navigate(from, { replace: true });
   }, [user, from, navigate]);
 
-  const [tab, setTab] = useState<"signin" | "signup">("signin");
+  const [tab, setTab] = useState<"signin" | "signup">(isBookingFlow ? "signup" : "signin");
   const [loading, setLoading] = useState(false);
   const [form, setForm] = useState({ email: "", password: "", fullName: "" });
 
