@@ -226,6 +226,8 @@ export default function SitterToday() {
               {todayBookings.map((b) => {
                 const startAt = new Date(b.scheduled_start_at ?? b.start_at);
                 const endAt = new Date(b.scheduled_end_at ?? b.end_at);
+                const events = eventsForSlug(b.services?.slug);
+                const [startEvent, endEvent] = events ?? [];
                 return (
                   <li key={b.id} className="flex flex-wrap items-center gap-3 py-3">
                     <div className="w-16 text-right">
@@ -238,38 +240,44 @@ export default function SitterToday() {
                     </div>
                     <Badge variant="outline" className="capitalize">{b.status.replace(/_/g, " ")}</Badge>
                     <div className="flex items-center gap-1">
-                      <Button
-                        size="sm"
-                        variant="outline"
-                        className="h-8 px-2"
-                        onClick={(e) => { e.preventDefault(); sendQuickUpdate(b, "pickup"); }}
-                        onContextMenu={(e) => { e.preventDefault(); setUpdateTarget({ booking: b, kind: "pickup" }); }}
-                        disabled={sending}
-                        title="One-click pickup. Right-click to add a note."
-                      >
-                        <LogIn className="mr-1 h-3.5 w-3.5" /> Pickup
-                      </Button>
-                      <Button
-                        size="sm"
-                        variant="outline"
-                        className="h-8 px-2"
-                        onClick={(e) => { e.preventDefault(); sendQuickUpdate(b, "dropoff"); }}
-                        onContextMenu={(e) => { e.preventDefault(); setUpdateTarget({ booking: b, kind: "dropoff" }); }}
-                        disabled={sending}
-                        title="One-click drop-off. Right-click to add a note."
-                      >
-                        <LogOut className="mr-1 h-3.5 w-3.5" /> Drop-off
-                      </Button>
-                      <Button
-                        size="sm"
-                        variant="ghost"
-                        className="h-8 px-2 text-muted-foreground"
-                        onClick={() => setUpdateTarget({ booking: b, kind: "pickup" })}
-                        disabled={sending}
-                        title="Send with a note"
-                      >
-                        + note
-                      </Button>
+                      {events ? (
+                        <>
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            className="h-8 px-2"
+                            onClick={(e) => { e.preventDefault(); sendQuickUpdate(b, startEvent!); }}
+                            onContextMenu={(e) => { e.preventDefault(); setUpdateTarget({ booking: b, kind: startEvent! }); }}
+                            disabled={sending}
+                            title={`One-click ${kindLabel[startEvent!].toLowerCase()}. Right-click to add a note.`}
+                          >
+                            <LogIn className="mr-1 h-3.5 w-3.5" /> {kindLabel[startEvent!]}
+                          </Button>
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            className="h-8 px-2"
+                            onClick={(e) => { e.preventDefault(); sendQuickUpdate(b, endEvent!); }}
+                            onContextMenu={(e) => { e.preventDefault(); setUpdateTarget({ booking: b, kind: endEvent! }); }}
+                            disabled={sending}
+                            title={`One-click ${kindLabel[endEvent!].toLowerCase()}. Right-click to add a note.`}
+                          >
+                            <LogOut className="mr-1 h-3.5 w-3.5" /> {kindLabel[endEvent!]}
+                          </Button>
+                          <Button
+                            size="sm"
+                            variant="ghost"
+                            className="h-8 px-2 text-muted-foreground"
+                            onClick={() => setUpdateTarget({ booking: b, kind: startEvent! })}
+                            disabled={sending}
+                            title="Send with a note"
+                          >
+                            + note
+                          </Button>
+                        </>
+                      ) : (
+                        <span className="text-[11px] text-muted-foreground">No status updates for this service</span>
+                      )}
                     </div>
                   </li>
                 );
