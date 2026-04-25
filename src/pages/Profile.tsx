@@ -285,12 +285,17 @@ const Profile = () => {
                   </Label>
                   <Input
                     id="email"
-                    value={user?.email ?? ""}
-                    disabled
-                    className="border-2 border-primary/40 bg-muted"
+                    type="email"
+                    value={form.email}
+                    onChange={(e) => setForm({ ...form, email: e.target.value })}
+                    maxLength={255}
+                    className="border-2 border-primary"
                   />
+                  {errors.email && (
+                    <p className="text-sm font-medium text-destructive">{errors.email}</p>
+                  )}
                   <p className="text-xs text-muted-foreground">
-                    Contact us to change the email on your account.
+                    We'll send a confirmation email to your new address before the change takes effect.
                   </p>
                 </div>
 
@@ -314,7 +319,7 @@ const Profile = () => {
 
                   <div className="space-y-2">
                     <Label htmlFor="mobile_phone" className="font-display uppercase">
-                      Mobile for text updates
+                      Mobile number
                     </Label>
                     <Input
                       id="mobile_phone"
@@ -326,7 +331,7 @@ const Profile = () => {
                       className="border-2 border-primary"
                     />
                     <p className="text-xs text-muted-foreground">
-                      Used for pickup, drop-off, and quick care notes.
+                      Used for quick pickup, drop-off, and care updates.
                     </p>
                     {errors.mobile_phone && (
                       <p className="text-sm font-medium text-destructive">{errors.mobile_phone}</p>
