@@ -284,7 +284,7 @@ export default function SitterScheduleAssistant() {
         <div className="border-t border-border p-3">
           <div className="flex items-end gap-2">
             <Textarea
-              placeholder='e.g. "Approve all of Friday\'s pending solo walks at the requested times."'
+              placeholder={`e.g. "Approve all of Friday's pending solo walks at the requested times."`}
               value={command}
               onChange={(e) => setCommand(e.target.value)}
               onKeyDown={(e) => { if (e.key === "Enter" && (e.metaKey || e.ctrlKey)) submit(); }}
