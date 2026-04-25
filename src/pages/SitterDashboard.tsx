@@ -4233,6 +4233,34 @@ const SitterDashboard = () => {
           )}
         </DialogContent>
       </Dialog>
+      {(() => {
+        const b = paymentDrawerBookingId ? bookings.find((x) => x.id === paymentDrawerBookingId) : null;
+        if (!b) return null;
+        const drawerBooking: PaymentDrawerBooking = {
+          id: b.id,
+          customer_id: b.customer_id,
+          total_cents: b.total_cents ?? null,
+          payment_amount_cents: b.payment_amount_cents ?? null,
+          payment_status: b.payment_status ?? null,
+          paid_at: b.paid_at ?? null,
+          start_at: b.start_at,
+          end_at: b.end_at,
+          refund_id: (b as any).refund_id ?? null,
+          stripe_payment_intent: (b as any).stripe_payment_intent ?? null,
+          stripe_charge_id: (b as any).stripe_charge_id ?? null,
+          service_label: b.service_variants?.name ?? b.services?.name ?? "Booking",
+          customer_name: profileDetails[b.customer_id]?.full_name ?? "Customer",
+        };
+        return (
+          <PaymentDrawer
+            open={!!paymentDrawerBookingId}
+            onOpenChange={(o) => { if (!o) setPaymentDrawerBookingId(null); }}
+            booking={drawerBooking}
+            hasSavedCard={false}
+            onChanged={() => { void load(); }}
+          />
+        );
+      })()}
       <SiteFooter />
     </main>
   );
