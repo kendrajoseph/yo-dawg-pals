@@ -281,7 +281,14 @@ export default function SitterClientProfile() {
           </Card>
         </TabsContent>
 
-        <TabsContent value="invoices" className="mt-4">
+        <TabsContent value="invoices" className="mt-4 space-y-3">
+          {invoices.length > 0 && (
+            <div className="flex justify-end">
+              <Button size="sm" variant="outline" onClick={exportClientInvoicesCsv}>
+                <Download className="mr-1.5 h-4 w-4" />Export CSV
+              </Button>
+            </div>
+          )}
           <Card className="border border-border p-4 shadow-soft">
             {invoices.length === 0 ? (
               <EmptyState icon={<CreditCard className="h-7 w-7" />} title="No invoices" />
