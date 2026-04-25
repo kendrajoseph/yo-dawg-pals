@@ -20,6 +20,7 @@ Deno.serve(async (req) => {
     const service = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
     const anon = Deno.env.get("SUPABASE_ANON_KEY") ?? Deno.env.get("SUPABASE_PUBLISHABLE_KEY") ?? "";
     const admin = createClient(url, service);
+    console.log("env keys:", { hasService: !!service, serviceLen: service?.length, hasAnon: !!anon, anonLen: anon?.length, anonStart: anon?.slice(0, 10), serviceStart: service?.slice(0, 10) });
 
     const { data: invoice } = await admin
       .from("invoices")
