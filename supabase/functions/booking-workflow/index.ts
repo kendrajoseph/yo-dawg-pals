@@ -317,16 +317,35 @@ serve(async (req) => {
       if (!isCustomer) return json({ error: "Forbidden" }, 403);
       if (!customerEmail) return json({ error: "Missing customer email" }, 400);
 
+      // Caller passes pre-formatted summary lines + total so we send ONE consolidated email
+      // per request group (not one per booking).
+      const { lines, totalLabel, notes, requestGroupId } = await (async () => {
+        const body = await Promise.resolve({
+          lines: (req as any)._parsedLines,
+          totalLabel: (req as any)._parsedTotal,
+          notes: (req as any)._parsedNotes,
+          requestGroupId: (req as any)._parsedGroupId,
+        });
+        return body;
+      })();
+
       await supabase.functions.invoke("send-transactional-email", {
         headers: { Authorization: `Bearer ${serviceRoleKey}` },
         body: {
           templateName: "walk-request-received",
           recipientEmail: customerEmail,
-          idempotencyKey: `walk-request-${bookingId}`,
+          idempotencyKey: `walk-request-${requestGroupId || bookingId}`,
           templateData: {
             customerName,
-            serviceName: (booking.services as any)?.name || "Walk",
-            petName: (booking.pets as any)?.name || "your dog",
+            lines: lines || [{
+              serviceName: (booking.services as any)?.name || "Walk",
+              petName: (booking.pets as any)?.name || "your dog",
+              timing: booking.scheduled_start_at
+                ? new Date(booking.scheduled_start_at).toLocaleString("en-CA", { weekday: "short", month: "short", day: "numeric", hour: "numeric", minute: "2-digit" })
+                : "TBD",
+            }],
+            totalLabel,
+            notes,
           },
         },
       });
