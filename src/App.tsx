@@ -20,7 +20,15 @@ import SitterDashboard from "./pages/SitterDashboard.tsx";
 import SitterToday from "./pages/sitter/Today.tsx";
 import SitterInbox from "./pages/sitter/Inbox.tsx";
 import SitterInvoices from "./pages/sitter/Invoices.tsx";
-import SitterPagePlaceholder from "./pages/sitter/Placeholder.tsx";
+import SitterCalendar from "./pages/sitter/Calendar.tsx";
+import SitterClients from "./pages/sitter/Clients.tsx";
+import SitterClientProfile from "./pages/sitter/ClientProfile.tsx";
+import SitterPets from "./pages/sitter/Pets.tsx";
+import SitterPetProfile from "./pages/sitter/PetProfile.tsx";
+import SitterMessages from "./pages/sitter/Messages.tsx";
+import SitterReports from "./pages/sitter/Reports.tsx";
+import SettingsHome from "./pages/sitter/settings/SettingsHome.tsx";
+import SettingsRedirect from "./pages/sitter/settings/SettingsRedirect.tsx";
 import Unsubscribe from "./pages/Unsubscribe.tsx";
 import FAQ from "./pages/FAQ.tsx";
 import Terms from "./pages/Terms.tsx";
@@ -49,13 +57,19 @@ const App = () => (
             <Route path="/sitter" element={<ProtectedRoute requireSitter><SitterToday /></ProtectedRoute>} />
             <Route path="/sitter/inbox" element={<ProtectedRoute requireSitter><SitterInbox /></ProtectedRoute>} />
             <Route path="/sitter/invoices" element={<ProtectedRoute requireSitter><SitterInvoices /></ProtectedRoute>} />
-            <Route path="/sitter/calendar" element={<ProtectedRoute requireSitter><SitterPagePlaceholder title="Calendar" description="Day, week, and month view of confirmed bookings." /></ProtectedRoute>} />
-            <Route path="/sitter/clients" element={<ProtectedRoute requireSitter><SitterPagePlaceholder title="Clients" description="Your client directory with star ratings and notes." /></ProtectedRoute>} />
-            <Route path="/sitter/pets" element={<ProtectedRoute requireSitter><SitterPagePlaceholder title="Pets" description="Pet profiles, temperament tags, and approval queue." /></ProtectedRoute>} />
-            <Route path="/sitter/messages" element={<ProtectedRoute requireSitter><SitterPagePlaceholder title="Messages" description="Conversations with clients and broadcast updates." /></ProtectedRoute>} />
-            <Route path="/sitter/reports" element={<ProtectedRoute requireSitter><SitterPagePlaceholder title="Reports" description="Revenue, top services, and accounts-receivable aging." /></ProtectedRoute>} />
-            <Route path="/sitter/settings" element={<ProtectedRoute requireSitter><SitterPagePlaceholder title="Settings" description="Services, availability, reminders, templates, and branding." /></ProtectedRoute>} />
-            <Route path="/sitter/settings/availability" element={<ProtectedRoute requireSitter><SitterPagePlaceholder title="Availability" description="Weekly hours, walk windows, and blocked dates." /></ProtectedRoute>} />
+            <Route path="/sitter/calendar" element={<ProtectedRoute requireSitter><SitterCalendar /></ProtectedRoute>} />
+            <Route path="/sitter/clients" element={<ProtectedRoute requireSitter><SitterClients /></ProtectedRoute>} />
+            <Route path="/sitter/clients/:id" element={<ProtectedRoute requireSitter><SitterClientProfile /></ProtectedRoute>} />
+            <Route path="/sitter/pets" element={<ProtectedRoute requireSitter><SitterPets /></ProtectedRoute>} />
+            <Route path="/sitter/pets/:id" element={<ProtectedRoute requireSitter><SitterPetProfile /></ProtectedRoute>} />
+            <Route path="/sitter/messages" element={<ProtectedRoute requireSitter><SitterMessages /></ProtectedRoute>} />
+            <Route path="/sitter/reports" element={<ProtectedRoute requireSitter><SitterReports /></ProtectedRoute>} />
+            <Route path="/sitter/settings" element={<ProtectedRoute requireSitter><SettingsHome /></ProtectedRoute>} />
+            <Route path="/sitter/settings/services" element={<ProtectedRoute requireSitter><SettingsRedirect title="Services & pricing" description="Define what you offer and how it's priced." hash="#playbook" /></ProtectedRoute>} />
+            <Route path="/sitter/settings/availability" element={<ProtectedRoute requireSitter><SettingsRedirect title="Availability" description="Weekly hours, walk windows, and blocked dates." hash="#schedule" /></ProtectedRoute>} />
+            <Route path="/sitter/settings/reminders" element={<ProtectedRoute requireSitter><SettingsRedirect title="Reminders" description="Auto-send invoice reminders on a cadence." hash="#payments" /></ProtectedRoute>} />
+            <Route path="/sitter/settings/templates" element={<ProtectedRoute requireSitter><SettingsRedirect title="Templates" description="Email and SMS message templates." hash="#playbook" /></ProtectedRoute>} />
+            <Route path="/sitter/settings/branding" element={<ProtectedRoute requireSitter><SettingsRedirect title="Branding" description="Logo and colours on invoices and emails." hash="#playbook" /></ProtectedRoute>} />
             <Route path="/sitter-classic" element={<ProtectedRoute requireSitter><SitterDashboard /></ProtectedRoute>} />
             <Route path="/unsubscribe" element={<Unsubscribe />} />
             <Route path="/faq" element={<FAQ />} />
