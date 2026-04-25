@@ -11,6 +11,7 @@ import Index from "./pages/Index.tsx";
 import NotFound from "./pages/NotFound.tsx";
 import Auth from "./pages/Auth.tsx";
 import Account from "./pages/Account.tsx";
+import AccountCalendar from "./pages/AccountCalendar.tsx";
 import Pets from "./pages/Pets.tsx";
 import Profile from "./pages/Profile.tsx";
 import Book from "./pages/Book.tsx";
@@ -53,6 +54,7 @@ const App = () => (
             <Route path="/booking/:id/checkout" element={<ProtectedRoute><Checkout /></ProtectedRoute>} />
             <Route path="/booking/:id/success" element={<ProtectedRoute><BookingSuccess /></ProtectedRoute>} />
             <Route path="/account" element={<ProtectedRoute><Account /></ProtectedRoute>} />
+            <Route path="/account/calendar" element={<ProtectedRoute><AccountCalendar /></ProtectedRoute>} />
             <Route path="/account/pets" element={<ProtectedRoute><Pets /></ProtectedRoute>} />
             <Route path="/account/profile" element={<ProtectedRoute><Profile /></ProtectedRoute>} />
             <Route path="/sitter" element={<ProtectedRoute requireSitter><SitterToday /></ProtectedRoute>} />
