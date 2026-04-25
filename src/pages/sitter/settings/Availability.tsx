@@ -86,6 +86,37 @@ export default function SettingsAvailability() {
     return m;
   }, [availServices]);
 
+  // ---- Overlap helpers ----
+  // Two ranges overlap if they share more than a touching boundary.
+  const rangesOverlap = (aStart: number, aEnd: number, bStart: number, bEnd: number) =>
+    aStart < bEnd && bStart < aEnd;
+
+  const findSlotOverlap = (weekday: number, start: number, end: number, serviceIds: string[], ignoreSlotId?: string) => {
+    const wanted = new Set(serviceIds);
+    for (const slot of slots) {
+      if (slot.id === ignoreSlotId) continue;
+      if (slot.weekday !== weekday) continue;
+      if (!rangesOverlap(start, end, slot.start_minute, slot.end_minute)) continue;
+      const tags = tagsBySlot.get(slot.id) ?? new Set<string>();
+      const shared = [...wanted].filter((id) => tags.has(id));
+      if (shared.length > 0) {
+        const names = shared.map((id) => services.find((s) => s.id === id)?.name).filter(Boolean).join(", ");
+        return { slot, names };
+      }
+    }
+    return null;
+  };
+
+  const findWindowOverlap = (serviceId: string, weekday: number, start: number, end: number, ignoreId?: string) => {
+    return windows.find(
+      (w) =>
+        w.id !== ignoreId &&
+        w.service_id === serviceId &&
+        w.weekday === weekday &&
+        rangesOverlap(start, end, w.start_minute, w.end_minute),
+    );
+  };
+
   // ---- Slots ----
   const addSlot = async () => {
     if (!user) return;
@@ -93,6 +124,15 @@ export default function SettingsAvailability() {
     const end = timeToMinutes(slotForm.end);
     if (end <= start) return toast({ title: "End must be after start", variant: "destructive" });
     if (slotForm.serviceIds.length === 0) return toast({ title: "Pick at least one service", variant: "destructive" });
+
+    const conflict = findSlotOverlap(slotForm.weekday, start, end, slotForm.serviceIds);
+    if (conflict) {
+      return toast({
+        title: "Overlapping block",
+        description: `${DAYS[slotForm.weekday]} ${minutesToTime(conflict.slot.start_minute)}–${minutesToTime(conflict.slot.end_minute)} already covers ${conflict.names}.`,
+        variant: "destructive",
+      });
+    }
 
     const { data, error } = await supabase.from("availability").insert({
       sitter_id: user.id, weekday: slotForm.weekday, start_minute: start, end_minute: end, max_bookings: slotForm.maxBookings,
@@ -117,8 +157,23 @@ export default function SettingsAvailability() {
   };
 
   const toggleSlotService = async (slotId: string, serviceId: string, on: boolean) => {
-    if (on) await supabase.from("availability_services").insert({ availability_id: slotId, service_id: serviceId });
-    else await supabase.from("availability_services").delete().eq("availability_id", slotId).eq("service_id", serviceId);
+    if (on) {
+      const slot = slots.find((s) => s.id === slotId);
+      if (slot) {
+        const conflict = findSlotOverlap(slot.weekday, slot.start_minute, slot.end_minute, [serviceId], slotId);
+        if (conflict) {
+          const svcName = services.find((s) => s.id === serviceId)?.name ?? "this service";
+          return toast({
+            title: "Overlapping block",
+            description: `${svcName} already has ${DAYS[conflict.slot.weekday]} ${minutesToTime(conflict.slot.start_minute)}–${minutesToTime(conflict.slot.end_minute)}.`,
+            variant: "destructive",
+          });
+        }
+      }
+      await supabase.from("availability_services").insert({ availability_id: slotId, service_id: serviceId });
+    } else {
+      await supabase.from("availability_services").delete().eq("availability_id", slotId).eq("service_id", serviceId);
+    }
     load();
   };
 
@@ -128,6 +183,16 @@ export default function SettingsAvailability() {
     const start = timeToMinutes(winForm.start);
     const end = timeToMinutes(winForm.end);
     if (end <= start) return toast({ title: "End must be after start", variant: "destructive" });
+
+    const conflict = findWindowOverlap(winForm.serviceId, winForm.weekday, start, end, winForm.id || undefined);
+    if (conflict) {
+      return toast({
+        title: "Overlapping walk window",
+        description: `"${conflict.window_label}" already covers ${DAYS[conflict.weekday]} ${minutesToTime(conflict.start_minute)}–${minutesToTime(conflict.end_minute)}.`,
+        variant: "destructive",
+      });
+    }
+
     const payload = {
       service_id: winForm.serviceId, weekday: winForm.weekday, start_minute: start, end_minute: end,
       window_label: winForm.label, max_bookings: winForm.maxBookings,

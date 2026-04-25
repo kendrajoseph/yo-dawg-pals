@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
@@ -42,6 +42,40 @@ const PetProfilesManager = ({
   const [saving, setSaving] = useState(false);
   const [temperamentTags, setTemperamentTags] = useState<TemperamentTag[]>([]);
   const [detailPet, setDetailPet] = useState<Pet | null>(null);
+  const initialFormRef = useRef<PetFormValues>(emptyPetForm);
+
+  const isDirty = useMemo(() => {
+    if (!open) return false;
+    if (photoFile) return true;
+    return JSON.stringify(form) !== JSON.stringify(initialFormRef.current);
+  }, [open, form, photoFile]);
+
+  // Warn before leaving the page (refresh / close tab) with unsaved pet edits.
+  useEffect(() => {
+    if (!isDirty) return;
+    const handler = (e: BeforeUnloadEvent) => {
+      e.preventDefault();
+      e.returnValue = "";
+    };
+    window.addEventListener("beforeunload", handler);
+    return () => window.removeEventListener("beforeunload", handler);
+  }, [isDirty]);
+
+  // When the dialog opens, push a history entry so the browser Back button
+  // closes the dialog instead of leaving the page (and losing unsaved input).
+  useEffect(() => {
+    if (!open) return;
+    window.history.pushState({ petDialog: true }, "");
+    const onPop = () => {
+      // popstate fires when user hits Back. Confirm if dirty, otherwise just close.
+      setOpen((wasOpen) => {
+        if (!wasOpen) return wasOpen;
+        return false;
+      });
+    };
+    window.addEventListener("popstate", onPop);
+    return () => window.removeEventListener("popstate", onPop);
+  }, [open]);
 
   const load = async () => {
     if (!user) return;
@@ -84,15 +118,23 @@ const PetProfilesManager = ({
   const openNew = () => {
     setEditing(null);
     setForm(emptyPetForm);
+    initialFormRef.current = emptyPetForm;
     setPhotoFile(null);
     setOpen(true);
   };
 
   const openEdit = (pet: Pet) => {
     setEditing(pet);
-    setForm(petToForm(pet));
+    const initial = petToForm(pet);
+    setForm(initial);
+    initialFormRef.current = initial;
     setPhotoFile(null);
     setOpen(true);
+  };
+
+  const requestClose = () => {
+    if (isDirty && !confirm("Discard your unsaved pet profile changes?")) return;
+    setOpen(false);
   };
 
   const submit = async (e: React.FormEvent) => {
@@ -314,8 +356,12 @@ const PetProfilesManager = ({
         </div>
       )}
 
-      <Dialog open={open} onOpenChange={setOpen}>
-        <DialogContent className="max-h-[92vh] overflow-y-auto border-4 border-primary shadow-pop sm:max-w-2xl">
+      <Dialog open={open} onOpenChange={(next) => { if (next) setOpen(true); else requestClose(); }}>
+        <DialogContent
+          className="max-h-[92vh] overflow-y-auto border-4 border-primary shadow-pop sm:max-w-2xl"
+          onInteractOutside={(e) => { if (isDirty) e.preventDefault(); }}
+          onEscapeKeyDown={(e) => { if (isDirty && !confirm("Discard your unsaved pet profile changes?")) e.preventDefault(); }}
+        >
           <DialogHeader>
             <DialogTitle className="font-display text-3xl uppercase">{editing ? `Edit ${editing.name}` : "New pet profile"}</DialogTitle>
           </DialogHeader>
@@ -327,7 +373,7 @@ const PetProfilesManager = ({
             setPhotoFile={setPhotoFile}
             saving={saving}
             isEdit={!!editing}
-            onCancel={() => setOpen(false)}
+            onCancel={requestClose}
             onSubmit={submit}
           />
         </DialogContent>
