@@ -42,13 +42,23 @@ export default function SitterCalendar() {
     const load = async () => {
       const { data } = await supabase
         .from("bookings")
-        .select("id, start_at, end_at, scheduled_start_at, scheduled_end_at, requested_date, requested_window_label, status, pets(name), services(name), profiles:customer_id(full_name)")
+        .select("id, customer_id, start_at, end_at, scheduled_start_at, scheduled_end_at, requested_date, requested_window_label, status, pets(name), services(name)")
         .eq("sitter_id", user.id)
         .or(`and(start_at.gte.${range.start.toISOString()},start_at.lte.${range.end.toISOString()}),and(requested_date.gte.${format(range.start, "yyyy-MM-dd")},requested_date.lte.${format(range.end, "yyyy-MM-dd")})`)
         .not("status", "in", "(cancelled,refunded)")
         .order("start_at", { ascending: true });
       if (cancelled) return;
-      setBookings((data ?? []) as any);
+      const rows = (data ?? []) as any[];
+      const customerIds = Array.from(new Set(rows.map((r) => r.customer_id).filter(Boolean)));
+      let nameById = new Map<string, string | null>();
+      if (customerIds.length) {
+        const { data: profs } = await supabase
+          .from("profiles")
+          .select("id, full_name")
+          .in("id", customerIds);
+        nameById = new Map((profs ?? []).map((p: any) => [p.id, p.full_name]));
+      }
+      setBookings(rows.map((r) => ({ ...r, profiles: { full_name: nameById.get(r.customer_id) ?? null } })) as any);
     };
     load();
     return () => { cancelled = true; };
