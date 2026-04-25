@@ -184,7 +184,9 @@ Deno.serve(async (req) => {
       return json({ ok: true, smsSent: false, reason: "Sitter phone number is missing" });
     }
 
-    const smsBody = `YoDawg: New request from ${customerName} for ${petName} · ${serviceName} · ${timing}.`;
+    const smsBody = totalCount > 1
+      ? `YoDawg: New request from ${customerName} (${totalCount} bookings) starting with ${serviceName} for ${petName} · ${timing}.`
+      : `YoDawg: New request from ${customerName} for ${petName} · ${serviceName} · ${timing}.`;
     const twilioResponse = await fetch(`${GATEWAY_URL}/Messages.json`, {
       method: "POST",
       headers: {
