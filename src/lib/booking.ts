@@ -5,10 +5,23 @@ export const formatPriceWithDecimals = (cents: number) => `$${(cents / 100).toFi
 
 export const DAYS = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
 
-export const minutesToTime = (mins: number) => {
+// 24-hour "HH:mm" — used as the value for native <input type="time"> fields,
+// which always expect 24h regardless of how the browser displays them.
+export const minutesToTime24 = (mins: number) => {
   const h = Math.floor(mins / 60);
   const m = mins % 60;
   return `${String(h).padStart(2, "0")}:${String(m).padStart(2, "0")}`;
+};
+
+// 12-hour clock with am/pm — what we show to humans everywhere in the UI.
+export const minutesToTime = (mins: number) => {
+  const h24 = Math.floor(mins / 60);
+  const m = mins % 60;
+  const period = h24 >= 12 ? "pm" : "am";
+  const h12 = h24 % 12 === 0 ? 12 : h24 % 12;
+  return m === 0
+    ? `${h12}${period}`
+    : `${h12}:${String(m).padStart(2, "0")}${period}`;
 };
 
 export const timeToMinutes = (t: string) => {
