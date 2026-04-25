@@ -195,17 +195,54 @@ Deno.serve(async (req) => {
       return json({ error: insertError.message }, 400);
     }
 
+    // Also send a transactional email so the client gets it in their inbox
+    let emailSent = false;
+    try {
+      const { data: authUser } = await admin.auth.admin.getUserById(booking.customer_id);
+      const recipientEmail = authUser?.user?.email;
+      if (recipientEmail) {
+        const subject =
+          kind === "pickup"
+            ? `${petName} is on their way home`
+            : kind === "dropoff"
+              ? `${petName} just got dropped off`
+              : `Quick update about ${petName}`;
+        const res = await admin.functions.invoke("send-transactional-email", {
+          headers: { Authorization: `Bearer ${supabaseServiceRoleKey}` },
+          body: {
+            templateName: "client-direct-message",
+            recipientEmail,
+            idempotencyKey: `booking-update-${bookingId}-${kind}-${Date.now()}`,
+            templateData: {
+              customerName,
+              subject,
+              message: smsBody,
+              sitterName: "Anneke",
+              bookingLabel: serviceName,
+              kindLabel: kind === "pickup" ? "Pickup" : kind === "dropoff" ? "Drop-off" : "Care update",
+            },
+          },
+        });
+        if (!res.error) emailSent = true;
+      }
+    } catch (e) {
+      console.warn("send-booking-update email failed", e);
+    }
+
     return json({
       ok: true,
       smsSent,
+      emailSent,
       smsError,
       message: smsSent
-        ? `Text sent to ${customerName}.`
-        : smsError
-          ? "Update saved, but SMS could not be sent."
-        : sendSms
-          ? "Update saved. SMS was skipped because the owner has not enabled text updates."
-          : "Update saved without sending a text.",
+        ? `Text + email sent to ${customerName}.`
+        : emailSent
+          ? `Email sent to ${customerName}${smsError ? " (SMS failed)" : ""}.`
+          : smsError
+            ? "Update saved, but SMS could not be sent."
+          : sendSms
+            ? "Update saved. SMS was skipped because the owner has not enabled text updates."
+            : "Update saved without sending a text.",
       preview: smsBody,
     });
   } catch (error) {

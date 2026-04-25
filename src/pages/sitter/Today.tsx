@@ -1,16 +1,27 @@
 import { useEffect, useMemo, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { format } from "date-fns";
-import { CalendarPlus, CalendarCheck, CreditCard, Inbox as InboxIcon, MessageSquarePlus, AlertTriangle, Clock3 } from "lucide-react";
+import { CalendarPlus, CalendarCheck, CreditCard, Inbox as InboxIcon, MessageSquarePlus, AlertTriangle, Clock3, LogIn, LogOut } from "lucide-react";
 import { SitterShell } from "@/components/sitter/SitterShell";
 import { KpiTile } from "@/components/sitter/KpiTile";
 import { EmptyState } from "@/components/sitter/EmptyState";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import { Textarea } from "@/components/ui/textarea";
+import { Label } from "@/components/ui/label";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { formatCents } from "@/lib/invoices";
+import { toast } from "@/hooks/use-toast";
 
 type TodayBooking = {
   id: string;
@@ -38,6 +49,24 @@ export default function SitterToday() {
   const [outstandingCents, setOutstandingCents] = useState(0);
   const [overdueCents, setOverdueCents] = useState(0);
   const [loading, setLoading] = useState(true);
+  const [updateTarget, setUpdateTarget] = useState<{ booking: TodayBooking; kind: "pickup" | "dropoff" } | null>(null);
+  const [updateNote, setUpdateNote] = useState("");
+  const [sending, setSending] = useState(false);
+
+  const sendQuickUpdate = async (booking: TodayBooking, kind: "pickup" | "dropoff", note?: string) => {
+    setSending(true);
+    const { data, error } = await supabase.functions.invoke("send-booking-update", {
+      body: { bookingId: booking.id, kind, note: note?.trim() || undefined, sendSms: true },
+    });
+    setSending(false);
+    if (error) {
+      toast({ title: "Couldn't send update", description: error.message, variant: "destructive" });
+      return;
+    }
+    toast({ title: kind === "pickup" ? "Picked up ✓" : "Dropped off ✓", description: data?.message ?? "Update sent." });
+    setUpdateTarget(null);
+    setUpdateNote("");
+  };
 
   useEffect(() => {
     if (!user?.id) return;
@@ -159,7 +188,7 @@ export default function SitterToday() {
                 const startAt = new Date(b.scheduled_start_at ?? b.start_at);
                 const endAt = new Date(b.scheduled_end_at ?? b.end_at);
                 return (
-                  <li key={b.id} className="flex items-center gap-3 py-3">
+                  <li key={b.id} className="flex flex-wrap items-center gap-3 py-3">
                     <div className="w-16 text-right">
                       <div className="font-display text-sm text-primary">{format(startAt, "h:mm a")}</div>
                       <div className="text-[11px] text-muted-foreground">{format(endAt, "h:mm a")}</div>
@@ -169,6 +198,40 @@ export default function SitterToday() {
                       <div className="truncate text-xs text-muted-foreground">{b.pets?.name ?? "Pet"}</div>
                     </div>
                     <Badge variant="outline" className="capitalize">{b.status.replace(/_/g, " ")}</Badge>
+                    <div className="flex items-center gap-1">
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        className="h-8 px-2"
+                        onClick={(e) => { e.preventDefault(); sendQuickUpdate(b, "pickup"); }}
+                        onContextMenu={(e) => { e.preventDefault(); setUpdateTarget({ booking: b, kind: "pickup" }); }}
+                        disabled={sending}
+                        title="One-click pickup. Right-click to add a note."
+                      >
+                        <LogIn className="mr-1 h-3.5 w-3.5" /> Pickup
+                      </Button>
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        className="h-8 px-2"
+                        onClick={(e) => { e.preventDefault(); sendQuickUpdate(b, "dropoff"); }}
+                        onContextMenu={(e) => { e.preventDefault(); setUpdateTarget({ booking: b, kind: "dropoff" }); }}
+                        disabled={sending}
+                        title="One-click drop-off. Right-click to add a note."
+                      >
+                        <LogOut className="mr-1 h-3.5 w-3.5" /> Drop-off
+                      </Button>
+                      <Button
+                        size="sm"
+                        variant="ghost"
+                        className="h-8 px-2 text-muted-foreground"
+                        onClick={() => setUpdateTarget({ booking: b, kind: "pickup" })}
+                        disabled={sending}
+                        title="Send with a note"
+                      >
+                        + note
+                      </Button>
+                    </div>
                   </li>
                 );
               })}
@@ -217,6 +280,40 @@ export default function SitterToday() {
           <Button variant="outline" className="justify-start" asChild><Link to="/sitter/settings/availability">Block a date</Link></Button>
         </div>
       </Card>
+
+      <Dialog open={!!updateTarget} onOpenChange={(open) => { if (!open) { setUpdateTarget(null); setUpdateNote(""); } }}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>
+              {updateTarget?.kind === "pickup" ? "Send pickup update" : "Send drop-off update"}
+            </DialogTitle>
+            <DialogDescription>
+              Sends a text and email to {updateTarget?.booking.pets?.name ?? "the pet"}'s owner. Add an optional note for anything important.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-2">
+            <Label htmlFor="quick-note">Optional note</Label>
+            <Textarea
+              id="quick-note"
+              value={updateNote}
+              onChange={(e) => setUpdateNote(e.target.value)}
+              placeholder=""
+              rows={3}
+            />
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => { setUpdateTarget(null); setUpdateNote(""); }} disabled={sending}>
+              Cancel
+            </Button>
+            <Button
+              onClick={() => updateTarget && sendQuickUpdate(updateTarget.booking, updateTarget.kind, updateNote)}
+              disabled={sending}
+            >
+              {sending ? "Sending…" : "Send update"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </SitterShell>
   );
 }

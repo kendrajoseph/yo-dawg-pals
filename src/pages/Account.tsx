@@ -6,7 +6,7 @@ import SiteNav from "@/components/SiteNav";
 import SiteFooter from "@/components/SiteFooter";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
-import { BellRing, CalendarPlus, ChevronRight, CreditCard, Mail, PawPrint, Smartphone, Trash2, User, X } from "lucide-react";
+import { BellRing, CalendarDays, CalendarPlus, ChevronRight, CreditCard, Mail, PawPrint, Smartphone, Trash2, User, X } from "lucide-react";
 import { formatBookingSchedule, formatPriceWithDecimals, STATUS_LABELS, STATUS_STYLES } from "@/lib/booking";
 import { toast } from "@/hooks/use-toast";
 import {
@@ -105,6 +105,7 @@ const Account = () => {
   const [loading, setLoading] = useState(true);
   const [cancellingId, setCancellingId] = useState<string | null>(null);
   const [deletingId, setDeletingId] = useState<string | null>(null);
+  const [deletingMessageId, setDeletingMessageId] = useState<string | null>(null);
 
   const load = async () => {
     if (!user) return;
@@ -127,7 +128,11 @@ const Account = () => {
       sms_opt_in: Boolean((profileData as { sms_opt_in?: boolean | null } | null)?.sms_opt_in),
     });
     setClientMessages((messageData ?? []) as ClientMessageRow[]);
-    setServiceAlerts((alertData ?? []) as ServiceAlertRow[]);
+    const nowMs = Date.now();
+    const liveAlerts = ((alertData ?? []) as ServiceAlertRow[]).filter(
+      (a) => !a.ends_at || new Date(a.ends_at).getTime() >= nowMs,
+    );
+    setServiceAlerts(liveAlerts);
 
     if (nextBookings.length > 0) {
       const { data: updatesData } = await db
@@ -186,6 +191,17 @@ const Account = () => {
     load();
   };
 
+  const handleDeleteMessage = async (messageId: string) => {
+    setDeletingMessageId(messageId);
+    const { error } = await db.from("client_messages").delete().eq("id", messageId);
+    setDeletingMessageId(null);
+    if (error) {
+      toast({ title: "Couldn't delete message", description: error.message, variant: "destructive" });
+      return;
+    }
+    setClientMessages((prev) => prev.filter((m) => m.id !== messageId));
+  };
+
   return (
     <main className="min-h-screen bg-background texture-grain">
       <SiteNav />
@@ -198,6 +214,7 @@ const Account = () => {
           <div className="flex flex-wrap gap-2">
             <Button asChild variant="outline" className="border-2 border-primary font-display uppercase"><Link to="/account/profile"><User className="h-4 w-4" /> My profile</Link></Button>
             <Button asChild variant="outline" className="border-2 border-primary font-display uppercase"><Link to="/account/pets"><PawPrint className="h-4 w-4" /> My pets</Link></Button>
+            <Button asChild variant="outline" className="border-2 border-primary font-display uppercase"><Link to="/account/calendar"><CalendarDays className="h-4 w-4" /> My calendar</Link></Button>
             <Button asChild className="bg-primary font-display uppercase shadow-pop-accent"><Link to="/book"><CalendarPlus className="h-4 w-4" /> Book a service</Link></Button>
             {canManageDashboard && <Button asChild variant="secondary" className="font-display uppercase"><Link to="/sitter">Sitter dashboard</Link></Button>}
           </div>
@@ -265,7 +282,18 @@ const Account = () => {
                   <li key={message.id} className="border border-border bg-muted/50 px-3 py-3 text-sm">
                     <div className="flex flex-wrap items-center justify-between gap-2">
                       <span className="font-display text-xs uppercase text-primary">{message.kind.replace(/_/g, " ")}</span>
-                      <span className="text-[11px] text-muted-foreground">{formatUpdateTime(message.created_at)}</span>
+                      <div className="flex items-center gap-2">
+                        <span className="text-[11px] text-muted-foreground">{formatUpdateTime(message.created_at)}</span>
+                        <button
+                          type="button"
+                          onClick={() => handleDeleteMessage(message.id)}
+                          disabled={deletingMessageId === message.id}
+                          className="text-muted-foreground hover:text-destructive disabled:opacity-50"
+                          aria-label="Delete message"
+                        >
+                          <Trash2 className="h-3.5 w-3.5" />
+                        </button>
+                      </div>
                     </div>
                     <p className="mt-1 font-display text-base uppercase text-primary">{message.subject}</p>
                     <p className="mt-1 text-foreground/80">{message.message}</p>
@@ -322,8 +350,13 @@ const Account = () => {
                     </div>
                     <div className="flex items-center gap-3">
                       <div className="text-right">
-                        <div className="font-display text-2xl">{formatPriceWithDecimals(booking.total_cents)}</div>
-                        {canPay && <div className="text-xs text-clay">{formatPriceWithDecimals(booking.payment_amount_cents ?? booking.deposit_cents)} due</div>}
+                        {canPay ? (
+                          <div className="font-display text-2xl text-clay">{formatPriceWithDecimals(booking.payment_amount_cents ?? booking.total_cents)} <span className="text-xs uppercase">due</span></div>
+                        ) : ["confirmed", "completed"].includes(booking.status) ? (
+                          <div className="font-display text-2xl">{formatPriceWithDecimals(booking.payment_amount_cents ?? booking.total_cents)} <span className="text-xs uppercase text-secondary-foreground">paid</span></div>
+                        ) : (
+                          <div className="font-display text-2xl">{formatPriceWithDecimals(booking.total_cents)}</div>
+                        )}
                       </div>
                       {canPay && <Button asChild size="sm" className="bg-tag font-display uppercase text-tag-foreground shadow-pop-accent"><Link to={`/booking/${booking.id}/checkout`}><CreditCard className="h-4 w-4" /> Pay</Link></Button>}
                       {canCancel && (
