@@ -1,4 +1,4 @@
-import { ReactNode } from "react";
+import { ReactNode, useEffect } from "react";
 import { NavLink, useLocation } from "react-router-dom";
 import {
   CalendarDays,
@@ -7,6 +7,7 @@ import {
   Inbox,
   LayoutDashboard,
   MessageSquare,
+  MoreHorizontal,
   PawPrint,
   PieChart,
   Settings,
@@ -53,9 +54,17 @@ const SECONDARY: NavItem[] = [
   { to: "/sitter/settings", label: "Settings", icon: Settings },
 ];
 
+// 4 most-used + a "More" button (which opens the full sidebar sheet on mobile)
+const BOTTOM_TABS: NavItem[] = [
+  { to: "/sitter", label: "Today", icon: LayoutDashboard, end: true },
+  { to: "/sitter/inbox", label: "Inbox", icon: Inbox, badgeKey: "inbox" },
+  { to: "/sitter/calendar", label: "Calendar", icon: CalendarDays },
+  { to: "/sitter/invoices", label: "Invoices", icon: CreditCard, badgeKey: "invoices" },
+];
+
 function NavList({ items, label }: { items: NavItem[]; label: string }) {
   const counts = useSitterCounts();
-  const { state } = useSidebar();
+  const { state, isMobile, setOpenMobile } = useSidebar();
   const collapsed = state === "collapsed";
 
   return (
@@ -72,6 +81,7 @@ function NavList({ items, label }: { items: NavItem[]; label: string }) {
                   <NavLink
                     to={item.to}
                     end={item.end}
+                    onClick={() => { if (isMobile) setOpenMobile(false); }}
                     className={({ isActive }) =>
                       cn(
                         "flex items-center gap-3 rounded-md px-2 py-2 text-sm transition-colors",
@@ -120,6 +130,58 @@ function SitterSidebar() {
   );
 }
 
+function MobileBottomNav() {
+  const counts = useSitterCounts();
+  const { setOpenMobile } = useSidebar();
+  return (
+    <nav
+      className="fixed inset-x-0 bottom-0 z-30 border-t border-border bg-card/95 backdrop-blur md:hidden"
+      style={{ paddingBottom: "env(safe-area-inset-bottom)" }}
+      aria-label="Sitter primary"
+    >
+      <ul className="grid grid-cols-5">
+        {BOTTOM_TABS.map((item) => {
+          const Icon = item.icon;
+          const badge = item.badgeKey ? counts[item.badgeKey] : 0;
+          return (
+            <li key={item.to}>
+              <NavLink
+                to={item.to}
+                end={item.end}
+                className={({ isActive }) =>
+                  cn(
+                    "relative flex h-14 flex-col items-center justify-center gap-0.5 text-[10px] font-medium uppercase tracking-wide transition-colors",
+                    isActive ? "text-primary" : "text-muted-foreground hover:text-foreground",
+                  )
+                }
+              >
+                <Icon className="h-5 w-5" />
+                <span>{item.label}</span>
+                {badge > 0 && (
+                  <span className="absolute right-3 top-1.5 inline-flex h-4 min-w-4 items-center justify-center rounded-full bg-primary px-1 text-[10px] font-semibold text-primary-foreground">
+                    {badge > 9 ? "9+" : badge}
+                  </span>
+                )}
+              </NavLink>
+            </li>
+          );
+        })}
+        <li>
+          <button
+            type="button"
+            onClick={() => setOpenMobile(true)}
+            className="flex h-14 w-full flex-col items-center justify-center gap-0.5 text-[10px] font-medium uppercase tracking-wide text-muted-foreground hover:text-foreground"
+            aria-label="More navigation"
+          >
+            <MoreHorizontal className="h-5 w-5" />
+            <span>More</span>
+          </button>
+        </li>
+      </ul>
+    </nav>
+  );
+}
+
 const titleFor = (path: string): string => {
   if (path === "/sitter") return "Today";
   if (path.startsWith("/sitter/inbox")) return "Inbox";
@@ -128,32 +190,47 @@ const titleFor = (path: string): string => {
   if (path.startsWith("/sitter/pets")) return "Pets";
   if (path.startsWith("/sitter/invoices")) return "Invoices";
   if (path.startsWith("/sitter/messages")) return "Messages";
+  if (path.startsWith("/sitter/reviews")) return "Reviews";
   if (path.startsWith("/sitter/reports")) return "Reports";
   if (path.startsWith("/sitter/settings")) return "Settings";
   return "Sitter";
 };
 
-export function SitterShell({ children, action }: { children: ReactNode; action?: ReactNode }) {
+function ShellInner({ children, action }: { children: ReactNode; action?: ReactNode }) {
   const location = useLocation();
+  const { isMobile, setOpenMobile } = useSidebar();
+
+  // Always close the mobile sidebar sheet whenever the route changes
+  useEffect(() => {
+    if (isMobile) setOpenMobile(false);
+  }, [location.pathname, isMobile, setOpenMobile]);
+
+  return (
+    <div className="flex min-h-screen w-full bg-background">
+      <SitterSidebar />
+      <div className="flex flex-1 flex-col">
+        <header className="sticky top-0 z-20 flex h-14 items-center gap-2 border-b border-border bg-card/90 px-3 backdrop-blur sm:px-4">
+          <SidebarTrigger className="hidden md:inline-flex" />
+          <div className="flex min-w-0 items-center gap-2 text-sm text-muted-foreground">
+            <span className="hidden sm:inline">Operator</span>
+            <ChevronRight className="hidden h-3.5 w-3.5 sm:inline" />
+            <span className="truncate font-medium text-foreground">{titleFor(location.pathname)}</span>
+          </div>
+          <div className="ml-auto flex items-center gap-2">{action}</div>
+        </header>
+        <main className="flex-1 px-3 py-4 pb-24 sm:px-6 sm:py-6 md:px-8 md:pb-6">
+          <div className="mx-auto max-w-6xl">{children}</div>
+        </main>
+      </div>
+      <MobileBottomNav />
+    </div>
+  );
+}
+
+export function SitterShell({ children, action }: { children: ReactNode; action?: ReactNode }) {
   return (
     <SidebarProvider>
-      <div className="flex min-h-screen w-full bg-background">
-        <SitterSidebar />
-        <div className="flex flex-1 flex-col">
-          <header className="sticky top-0 z-10 flex h-14 items-center gap-3 border-b border-border bg-card/90 px-4 backdrop-blur">
-            <SidebarTrigger />
-            <div className="flex items-center gap-2 text-sm text-muted-foreground">
-              <span>Operator</span>
-              <ChevronRight className="h-3.5 w-3.5" />
-              <span className="font-medium text-foreground">{titleFor(location.pathname)}</span>
-            </div>
-            <div className="ml-auto flex items-center gap-2">{action}</div>
-          </header>
-          <main className="flex-1 px-4 py-6 sm:px-8">
-            <div className="mx-auto max-w-6xl">{children}</div>
-          </main>
-        </div>
-      </div>
+      <ShellInner action={action}>{children}</ShellInner>
     </SidebarProvider>
   );
 }
