@@ -75,6 +75,38 @@ export default function SitterClientProfile() {
     return () => { cancelled = true; };
   }, [id, user?.id]);
 
+  const saveAdminProfile = async () => {
+    if (!id || !user?.id) return;
+    setSavingAdmin(true);
+    const payload = {
+      client_id: id,
+      star_rating: starRating,
+      internal_notes: internalNotes.trim() || null,
+      last_updated_by: user.id,
+    };
+    const { data, error } = adminProfileId
+      ? await supabase
+          .from("client_admin_profiles")
+          .update(payload)
+          .eq("id", adminProfileId)
+          .select("id")
+          .maybeSingle()
+      : await supabase
+          .from("client_admin_profiles")
+          .insert(payload)
+          .select("id")
+          .maybeSingle();
+    setSavingAdmin(false);
+    if (error) {
+      toast({ title: "Couldn't save", description: error.message, variant: "destructive" });
+      return;
+    }
+    if (data?.id) setAdminProfileId(data.id);
+    setSavedRating(starRating);
+    setSavedNotes(internalNotes);
+    toast({ title: "Saved", description: "Internal notes updated." });
+  };
+
   if (loading) {
     return <SitterShell><div className="p-6 text-sm text-muted-foreground">Loading…</div></SitterShell>;
   }
