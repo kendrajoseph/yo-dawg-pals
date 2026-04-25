@@ -80,7 +80,7 @@ export default function SitterMessages() {
 
   return (
     <SitterShell action={
-      <Button size="sm" asChild><Link to="/sitter-classic#care"><Plus className="mr-1.5 h-4 w-4" />Compose</Link></Button>
+      <Button size="sm" onClick={() => setComposeOpen(true)}><Plus className="mr-1.5 h-4 w-4" />Compose</Button>
     }>
       <div className="mb-6">
         <h1 className="font-display text-3xl text-primary">Messages</h1>
@@ -100,7 +100,7 @@ export default function SitterMessages() {
             icon={<MessageSquare className="h-8 w-8" />}
             title="No conversations yet"
             description="Messages you send to clients will appear here."
-            action={<Button size="sm" asChild><Link to="/sitter-classic#care">Compose your first</Link></Button>}
+            action={<Button size="sm" onClick={() => setComposeOpen(true)}>Compose your first</Button>}
           />
         ) : (
           <ul className="divide-y divide-border">
@@ -126,6 +126,8 @@ export default function SitterMessages() {
           </ul>
         )}
       </Card>
+
+      <MessageComposer open={composeOpen} onOpenChange={setComposeOpen} onSent={() => setReloadKey((k) => k + 1)} />
     </SitterShell>
   );
 }
