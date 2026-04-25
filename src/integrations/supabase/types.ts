@@ -1546,7 +1546,13 @@ export type Database = {
         | "refunded"
         | "requested"
         | "awaiting_payment"
-      booking_update_kind: "pickup" | "dropoff" | "note" | "approval"
+      booking_update_kind:
+        | "pickup"
+        | "dropoff"
+        | "note"
+        | "approval"
+        | "arrived"
+        | "departed"
       client_message_kind: "service_update" | "customer_service" | "offer"
       pet_approval_status: "pending" | "approved" | "declined"
       service_alert_kind: "hours_update" | "closure" | "announcement" | "promo"
@@ -1689,7 +1695,14 @@ export const Constants = {
         "requested",
         "awaiting_payment",
       ],
-      booking_update_kind: ["pickup", "dropoff", "note", "approval"],
+      booking_update_kind: [
+        "pickup",
+        "dropoff",
+        "note",
+        "approval",
+        "arrived",
+        "departed",
+      ],
       client_message_kind: ["service_update", "customer_service", "offer"],
       pet_approval_status: ["pending", "approved", "declined"],
       service_alert_kind: ["hours_update", "closure", "announcement", "promo"],
