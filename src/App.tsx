@@ -10,6 +10,7 @@ import { PaymentTestModeBanner } from "@/components/PaymentTestModeBanner";
 import Index from "./pages/Index.tsx";
 import NotFound from "./pages/NotFound.tsx";
 import Auth from "./pages/Auth.tsx";
+import ResetPassword from "./pages/ResetPassword.tsx";
 import Account from "./pages/Account.tsx";
 import AccountCalendar from "./pages/AccountCalendar.tsx";
 import Pets from "./pages/Pets.tsx";
@@ -53,6 +54,7 @@ const App = () => (
           <Routes>
             <Route path="/" element={<Index />} />
             <Route path="/auth" element={<Auth />} />
+            <Route path="/reset-password" element={<ResetPassword />} />
             <Route path="/book" element={<Book />} />
             <Route path="/booking/:id/checkout" element={<ProtectedRoute><Checkout /></ProtectedRoute>} />
             <Route path="/booking/:id/success" element={<ProtectedRoute><BookingSuccess /></ProtectedRoute>} />
