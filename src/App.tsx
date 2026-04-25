@@ -35,6 +35,7 @@ import SitterReviews from "./pages/sitter/Reviews.tsx";
 import SettingsHome from "./pages/sitter/settings/SettingsHome.tsx";
 import SettingsRedirect from "./pages/sitter/settings/SettingsRedirect.tsx";
 import SettingsAvailability from "./pages/sitter/settings/Availability.tsx";
+import SettingsServices from "./pages/sitter/settings/Services.tsx";
 import Unsubscribe from "./pages/Unsubscribe.tsx";
 import FAQ from "./pages/FAQ.tsx";
 import Terms from "./pages/Terms.tsx";
