@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { Link, useParams } from "react-router-dom";
 import { format } from "date-fns";
-import { ArrowLeft, Mail, Phone, PawPrint, CalendarDays, CreditCard, MessageSquare, Star, Save } from "lucide-react";
+import { ArrowLeft, Mail, Phone, PawPrint, CalendarDays, CreditCard, MessageSquare, Star, Save, Download } from "lucide-react";
 import { SitterShell } from "@/components/sitter/SitterShell";
 import { EmptyState } from "@/components/sitter/EmptyState";
 import { Card } from "@/components/ui/card";
@@ -13,7 +13,8 @@ import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
-import { formatCents } from "@/lib/invoices";
+import { formatCents, derivedStatus } from "@/lib/invoices";
+import { downloadCsv, formatCentsForCsv, todayStamp } from "@/lib/csv";
 import { toast } from "@/hooks/use-toast";
 
 export default function SitterClientProfile() {
@@ -105,6 +106,30 @@ export default function SitterClientProfile() {
     setSavedRating(starRating);
     setSavedNotes(internalNotes);
     toast({ title: "Saved", description: "Internal notes updated." });
+  };
+
+  const exportClientInvoicesCsv = () => {
+    if (invoices.length === 0) {
+      toast({ title: "No invoices to export" });
+      return;
+    }
+    const clientName = profile?.full_name?.replace(/[^a-zA-Z0-9-]+/g, "-").toLowerCase() ?? "client";
+    const rows = invoices.map((i: any) => {
+      const status = derivedStatus(i);
+      const balance = (i.total_cents ?? 0) - (i.amount_paid_cents ?? 0);
+      return {
+        "Invoice #": i.invoice_number,
+        "Client": profile?.full_name ?? "",
+        "Status": status,
+        "Issued": i.created_at ? new Date(i.created_at).toISOString().slice(0, 10) : "",
+        "Due": i.due_date ?? "",
+        "Total": formatCentsForCsv(i.total_cents),
+        "Paid": formatCentsForCsv(i.amount_paid_cents),
+        "Balance": formatCentsForCsv(balance),
+      };
+    });
+    downloadCsv(`yodawg-${clientName}-invoices-${todayStamp()}.csv`, rows);
+    toast({ title: "Exported", description: `${rows.length} invoice${rows.length === 1 ? "" : "s"} downloaded.` });
   };
 
   if (loading) {
@@ -256,7 +281,14 @@ export default function SitterClientProfile() {
           </Card>
         </TabsContent>
 
-        <TabsContent value="invoices" className="mt-4">
+        <TabsContent value="invoices" className="mt-4 space-y-3">
+          {invoices.length > 0 && (
+            <div className="flex justify-end">
+              <Button size="sm" variant="outline" onClick={exportClientInvoicesCsv}>
+                <Download className="mr-1.5 h-4 w-4" />Export CSV
+              </Button>
+            </div>
+          )}
           <Card className="border border-border p-4 shadow-soft">
             {invoices.length === 0 ? (
               <EmptyState icon={<CreditCard className="h-7 w-7" />} title="No invoices" />

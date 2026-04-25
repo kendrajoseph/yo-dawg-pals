@@ -6,8 +6,10 @@ import SiteNav from "@/components/SiteNav";
 import SiteFooter from "@/components/SiteFooter";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
-import { BellRing, CalendarDays, CalendarPlus, ChevronRight, CreditCard, Mail, PawPrint, Smartphone, Trash2, User, X } from "lucide-react";
+import { BellRing, CalendarDays, CalendarPlus, ChevronRight, CreditCard, Download, FileText, Mail, PawPrint, Smartphone, Trash2, User, X } from "lucide-react";
 import { formatBookingSchedule, formatPriceWithDecimals, STATUS_LABELS, STATUS_STYLES } from "@/lib/booking";
+import { formatCents, statusBadgeClass, derivedStatus } from "@/lib/invoices";
+import { downloadCsv, formatCentsForCsv, todayStamp } from "@/lib/csv";
 import { toast } from "@/hooks/use-toast";
 import {
   AlertDialog,
@@ -81,6 +83,21 @@ type ServiceAlertRow = {
   pin_to_profile: boolean;
 };
 
+type CustomerInvoiceRow = {
+  id: string;
+  invoice_number: string;
+  status: string;
+  total_cents: number;
+  subtotal_cents: number;
+  amount_paid_cents: number;
+  due_date: string | null;
+  created_at: string;
+  paid_at: string | null;
+  sent_at: string | null;
+  public_token: string;
+  notes: string | null;
+};
+
 const kindLabel: Record<BookingUpdateRow["kind"], string> = {
   pickup: "Picked up",
   dropoff: "Dropped off",
@@ -108,11 +125,12 @@ const Account = () => {
   const [cancellingId, setCancellingId] = useState<string | null>(null);
   const [deletingId, setDeletingId] = useState<string | null>(null);
   const [deletingMessageId, setDeletingMessageId] = useState<string | null>(null);
+  const [invoices, setInvoices] = useState<CustomerInvoiceRow[]>([]);
 
   const load = async () => {
     if (!user) return;
 
-    const [{ data: bookingData }, { data: profileData }, { data: messageData }, { data: alertData }] = await Promise.all([
+    const [{ data: bookingData }, { data: profileData }, { data: messageData }, { data: alertData }, { data: invoiceData }] = await Promise.all([
       db
         .from("bookings")
         .select("id, start_at, end_at, status, total_cents, deposit_cents, payment_amount_cents, extra_time_fee_cents, late_pickup_fee_cents, notes, booking_kind, requested_date, requested_window_label, scheduled_start_at, sitter_id, services(name, slug), service_variants(name), pets(name)")
@@ -121,6 +139,7 @@ const Account = () => {
       db.from("profiles").select("mobile_phone, sms_opt_in").eq("id", user.id).maybeSingle(),
       db.from("client_messages").select("id, subject, message, kind, send_email, send_sms, delivered_email_at, delivered_sms_at, booking_id, created_at").eq("customer_id", user.id).order("created_at", { ascending: false }).limit(8),
       db.from("service_alerts").select("id, title, message, kind, starts_at, ends_at, pin_to_profile").eq("is_active", true).order("starts_at", { ascending: false }).limit(6),
+      db.from("invoices").select("id, invoice_number, status, total_cents, subtotal_cents, amount_paid_cents, due_date, created_at, paid_at, sent_at, public_token, notes").eq("customer_id", user.id).order("created_at", { ascending: false }),
     ]);
 
     const nextBookings = (bookingData ?? []) as BookingRow[];
@@ -135,7 +154,7 @@ const Account = () => {
       (a) => !a.ends_at || new Date(a.ends_at).getTime() >= nowMs,
     );
     setServiceAlerts(liveAlerts);
-
+    setInvoices((invoiceData ?? []) as CustomerInvoiceRow[]);
     if (nextBookings.length > 0) {
       const { data: updatesData } = await db
         .from("booking_updates")
@@ -202,6 +221,32 @@ const Account = () => {
       return;
     }
     setClientMessages((prev) => prev.filter((m) => m.id !== messageId));
+  };
+
+  const exportInvoicesCsv = () => {
+    if (invoices.length === 0) {
+      toast({ title: "No invoices to export" });
+      return;
+    }
+    const rows = invoices.map((i) => {
+      const status = derivedStatus(i as any);
+      const balance = (i.total_cents ?? 0) - (i.amount_paid_cents ?? 0);
+      return {
+        "Invoice #": i.invoice_number,
+        "Status": status,
+        "Issued": i.created_at ? new Date(i.created_at).toISOString().slice(0, 10) : "",
+        "Sent": i.sent_at ? new Date(i.sent_at).toISOString().slice(0, 10) : "",
+        "Due": i.due_date ?? "",
+        "Paid on": i.paid_at ? new Date(i.paid_at).toISOString().slice(0, 10) : "",
+        "Subtotal": formatCentsForCsv(i.subtotal_cents),
+        "Total": formatCentsForCsv(i.total_cents),
+        "Paid": formatCentsForCsv(i.amount_paid_cents),
+        "Balance": formatCentsForCsv(balance),
+        "Notes": i.notes ?? "",
+      };
+    });
+    downloadCsv(`yodawg-my-invoices-${todayStamp()}.csv`, rows);
+    toast({ title: "Exported", description: `${rows.length} invoice${rows.length === 1 ? "" : "s"} downloaded.` });
   };
 
   return (
@@ -305,6 +350,60 @@ const Account = () => {
             )}
           </Card>
         </div>
+
+        <div className="mt-10 flex flex-wrap items-center justify-between gap-3">
+          <h2 className="font-display text-2xl uppercase text-primary">Invoices</h2>
+          {invoices.length > 0 && (
+            <Button onClick={exportInvoicesCsv} variant="outline" className="border-2 border-primary font-display uppercase">
+              <Download className="h-4 w-4" /> Export CSV
+            </Button>
+          )}
+        </div>
+        {loading ? (
+          <p className="mt-4 text-sm text-muted-foreground">Loading…</p>
+        ) : invoices.length === 0 ? (
+          <Card className="mt-4 border-4 border-primary p-6 text-center shadow-pop">
+            <p className="font-tag text-xl text-clay">no invoices yet</p>
+            <p className="mt-1 text-sm text-muted-foreground">Invoices Anneke sends you will appear here.</p>
+          </Card>
+        ) : (
+          <Card className="mt-4 border-4 border-primary p-0 shadow-pop">
+            <ul className="divide-y divide-border">
+              {invoices.map((i) => {
+                const status = derivedStatus(i as any);
+                const balance = (i.total_cents ?? 0) - (i.amount_paid_cents ?? 0);
+                const canPay = status !== "paid" && status !== "void" && balance > 0;
+                return (
+                  <li key={i.id} className="flex flex-col gap-3 p-4 sm:flex-row sm:items-center sm:justify-between">
+                    <div className="min-w-0">
+                      <div className="flex flex-wrap items-center gap-2">
+                        <FileText className="h-4 w-4 text-muted-foreground" />
+                        <span className="font-display text-base uppercase">{i.invoice_number}</span>
+                        <span className={`rounded border px-2 py-0.5 text-[11px] font-display uppercase ${statusBadgeClass(status)}`}>{status}</span>
+                      </div>
+                      <p className="mt-1 text-xs text-muted-foreground">
+                        Issued {new Date(i.created_at).toLocaleDateString(undefined, { month: "short", day: "numeric", year: "numeric" })}
+                        {i.due_date ? ` · due ${new Date(i.due_date).toLocaleDateString(undefined, { month: "short", day: "numeric" })}` : ""}
+                        {i.paid_at ? ` · paid ${new Date(i.paid_at).toLocaleDateString(undefined, { month: "short", day: "numeric" })}` : ""}
+                      </p>
+                    </div>
+                    <div className="flex items-center gap-3">
+                      <div className="text-right">
+                        <div className="font-display text-xl text-primary">{formatCents(i.total_cents)}</div>
+                        {balance > 0 && status !== "paid" && (
+                          <div className="text-xs text-muted-foreground">{formatCents(balance)} due</div>
+                        )}
+                      </div>
+                      <Button asChild size="sm" variant={canPay ? "default" : "outline"} className={canPay ? "bg-tag font-display uppercase text-tag-foreground shadow-pop-accent" : "border-2 border-primary font-display uppercase"}>
+                        <Link to={`/pay/${i.public_token}`}>{canPay ? "View / pay" : "View"}</Link>
+                      </Button>
+                    </div>
+                  </li>
+                );
+              })}
+            </ul>
+          </Card>
+        )}
 
         <h2 className="mt-10 font-display text-2xl uppercase text-primary">Bookings</h2>
         {loading ? (
