@@ -1569,6 +1569,24 @@ export type Database = {
       }
     }
     Views: {
+      blocked_dates_public: {
+        Row: {
+          blocked_date: string | null
+          id: string | null
+          sitter_id: string | null
+        }
+        Insert: {
+          blocked_date?: string | null
+          id?: string | null
+          sitter_id?: string | null
+        }
+        Update: {
+          blocked_date?: string | null
+          id?: string | null
+          sitter_id?: string | null
+        }
+        Relationships: []
+      }
       profiles_public: {
         Row: {
           avatar_url: string | null
