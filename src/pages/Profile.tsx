@@ -294,7 +294,7 @@ const Profile = () => {
                     <Input
                       id="mobile_phone"
                       type="tel"
-                      placeholder="(555) 987-6543"
+                      required
                       value={form.mobile_phone}
                       onChange={(e) => setForm({ ...form, mobile_phone: e.target.value })}
                       maxLength={30}
