@@ -166,7 +166,7 @@ export function MessageComposer({
           </div>
           <div>
             <Label>Subject</Label>
-            <Input value={subject} maxLength={120} onChange={(e) => setSubject(e.target.value)} placeholder="Tomorrow's walk timing" />
+            <Input value={subject} maxLength={120} onChange={(e) => setSubject(e.target.value)} />
           </div>
         </div>
 
