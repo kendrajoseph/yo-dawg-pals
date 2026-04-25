@@ -120,7 +120,7 @@ export default function SitterToday() {
 
       const [bookingsRes, requestsRes, approvalsRes, invoicesRes] = await Promise.all([
         supabase.from("bookings")
-          .select("id, scheduled_start_at, scheduled_end_at, start_at, end_at, status, pets(name), services(name)")
+          .select("id, scheduled_start_at, scheduled_end_at, start_at, end_at, status, pets(name), services(name, slug)")
           .eq("sitter_id", sitterId)
           .gte("start_at", start.toISOString())
           .lte("start_at", end.toISOString())
