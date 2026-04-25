@@ -351,6 +351,60 @@ const Account = () => {
           </Card>
         </div>
 
+        <div className="mt-10 flex flex-wrap items-center justify-between gap-3">
+          <h2 className="font-display text-2xl uppercase text-primary">Invoices</h2>
+          {invoices.length > 0 && (
+            <Button onClick={exportInvoicesCsv} variant="outline" className="border-2 border-primary font-display uppercase">
+              <Download className="h-4 w-4" /> Export CSV
+            </Button>
+          )}
+        </div>
+        {loading ? (
+          <p className="mt-4 text-sm text-muted-foreground">Loading…</p>
+        ) : invoices.length === 0 ? (
+          <Card className="mt-4 border-4 border-primary p-6 text-center shadow-pop">
+            <p className="font-tag text-xl text-clay">no invoices yet</p>
+            <p className="mt-1 text-sm text-muted-foreground">Invoices Anneke sends you will appear here.</p>
+          </Card>
+        ) : (
+          <Card className="mt-4 border-4 border-primary p-0 shadow-pop">
+            <ul className="divide-y divide-border">
+              {invoices.map((i) => {
+                const status = derivedStatus(i as any);
+                const balance = (i.total_cents ?? 0) - (i.amount_paid_cents ?? 0);
+                const canPay = status !== "paid" && status !== "void" && balance > 0;
+                return (
+                  <li key={i.id} className="flex flex-col gap-3 p-4 sm:flex-row sm:items-center sm:justify-between">
+                    <div className="min-w-0">
+                      <div className="flex flex-wrap items-center gap-2">
+                        <FileText className="h-4 w-4 text-muted-foreground" />
+                        <span className="font-display text-base uppercase">{i.invoice_number}</span>
+                        <span className={`rounded border px-2 py-0.5 text-[11px] font-display uppercase ${statusBadgeClass(status)}`}>{status}</span>
+                      </div>
+                      <p className="mt-1 text-xs text-muted-foreground">
+                        Issued {new Date(i.created_at).toLocaleDateString(undefined, { month: "short", day: "numeric", year: "numeric" })}
+                        {i.due_date ? ` · due ${new Date(i.due_date).toLocaleDateString(undefined, { month: "short", day: "numeric" })}` : ""}
+                        {i.paid_at ? ` · paid ${new Date(i.paid_at).toLocaleDateString(undefined, { month: "short", day: "numeric" })}` : ""}
+                      </p>
+                    </div>
+                    <div className="flex items-center gap-3">
+                      <div className="text-right">
+                        <div className="font-display text-xl text-primary">{formatCents(i.total_cents)}</div>
+                        {balance > 0 && status !== "paid" && (
+                          <div className="text-xs text-muted-foreground">{formatCents(balance)} due</div>
+                        )}
+                      </div>
+                      <Button asChild size="sm" variant={canPay ? "default" : "outline"} className={canPay ? "bg-tag font-display uppercase text-tag-foreground shadow-pop-accent" : "border-2 border-primary font-display uppercase"}>
+                        <Link to={`/pay/${i.public_token}`}>{canPay ? "View / pay" : "View"}</Link>
+                      </Button>
+                    </div>
+                  </li>
+                );
+              })}
+            </ul>
+          </Card>
+        )}
+
         <h2 className="mt-10 font-display text-2xl uppercase text-primary">Bookings</h2>
         {loading ? (
           <p className="mt-4 text-sm text-muted-foreground">Loading…</p>
