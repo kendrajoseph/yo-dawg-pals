@@ -25,3 +25,12 @@ verify_jwt = false
 verify_jwt = false
 [functions.booking-workflow]
 verify_jwt = false
+
+[functions.pay-invoice-public]
+verify_jwt = false
+
+[functions.remove-saved-card]
+verify_jwt = false
+
+[functions.charge-saved-card]
+verify_jwt = false
