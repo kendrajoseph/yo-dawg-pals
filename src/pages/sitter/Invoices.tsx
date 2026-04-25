@@ -53,6 +53,8 @@ export default function SitterInvoices() {
   const [tab, setTab] = useState<StatusTab>("outstanding");
   const [drawerBooking, setDrawerBooking] = useState<PaymentDrawerBooking | null>(null);
   const [drawerOpen, setDrawerOpen] = useState(false);
+  const [deleteTarget, setDeleteTarget] = useState<InvoiceRow | null>(null);
+  const [deleting, setDeleting] = useState(false);
 
   const load = async () => {
     if (!user?.id) return;
