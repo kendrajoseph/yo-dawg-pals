@@ -193,6 +193,69 @@ export default function SitterPetProfile() {
         )}
 
         <Card className="border border-border p-5 shadow-soft lg:col-span-2">
+          <h3 className="mb-1 inline-flex items-center gap-2 font-display text-lg text-primary">
+            <ShieldCheck className="h-4 w-4" />Pet fit decisions
+          </h3>
+          <p className="mb-3 text-xs text-muted-foreground">
+            Approve or decline {pet.name} for each service. Declined services won't allow new bookings.
+          </p>
+          {services.length === 0 ? (
+            <p className="text-sm text-muted-foreground">No active services.</p>
+          ) : (
+            <ul className="divide-y divide-border">
+              {services.map((s) => {
+                const current = approvals[s.id]?.status ?? "pending";
+                const isSaving = savingId === s.id;
+                return (
+                  <li key={s.id} className="flex flex-wrap items-center justify-between gap-2 py-2.5">
+                    <div className="flex items-center gap-2">
+                      <span className="text-sm font-medium">{s.name}</span>
+                      <Badge
+                        variant="outline"
+                        className={cn(
+                          "capitalize",
+                          current === "approved" && "border-emerald-300 bg-emerald-50 text-emerald-900",
+                          current === "declined" && "border-red-300 bg-red-50 text-red-900",
+                        )}
+                      >
+                        {current}
+                      </Badge>
+                    </div>
+                    <div className="flex items-center gap-1">
+                      <Button
+                        size="sm"
+                        variant={current === "approved" ? "default" : "outline"}
+                        disabled={isSaving}
+                        onClick={() => updateFit(s.id, "approved")}
+                      >
+                        <CheckCircle2 className="mr-1 h-3.5 w-3.5" />Approve
+                      </Button>
+                      <Button
+                        size="sm"
+                        variant={current === "declined" ? "destructive" : "outline"}
+                        disabled={isSaving}
+                        onClick={() => updateFit(s.id, "declined")}
+                      >
+                        <XCircle className="mr-1 h-3.5 w-3.5" />Decline
+                      </Button>
+                      <Button
+                        size="sm"
+                        variant="ghost"
+                        disabled={isSaving || current === "pending"}
+                        onClick={() => updateFit(s.id, "pending")}
+                        title="Reset to pending"
+                      >
+                        <Circle className="h-3.5 w-3.5" />
+                      </Button>
+                    </div>
+                  </li>
+                );
+              })}
+            </ul>
+          )}
+        </Card>
+
+        <Card className="border border-border p-5 shadow-soft lg:col-span-2">
           <h3 className="mb-3 font-display text-lg text-primary">Recent bookings</h3>
           {bookings.length === 0 ? (
             <p className="text-sm text-muted-foreground">No bookings yet.</p>
