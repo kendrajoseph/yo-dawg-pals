@@ -46,14 +46,54 @@ Deno.serve(async (req) => {
       return json({ error: "No Stripe payment to refund (was this paid via Stripe?)" }, 400);
     }
 
-    const stripe = createStripeClient(environment as StripeEnv);
-    const refund = await stripe.refunds.create({
-      payment_intent: (booking as any).stripe_payment_intent ?? undefined,
-      charge: !(booking as any).stripe_payment_intent ? (booking as any).stripe_charge_id : undefined,
-      amount: amountCents,
-      reason: "requested_by_customer",
-      metadata: { bookingId, sitter_reason: reason ?? "" },
-    });
+    // Auto-detect env (sandbox vs live) from the original checkout session id we
+    // recorded in payment_events. The client may default to "sandbox", but the
+    // actual charge could have happened in live mode (cs_live_...) — refunding
+    // in the wrong env raises "No such payment_intent".
+    let resolvedEnv: StripeEnv = environment as StripeEnv;
+    try {
+      const { data: lastCharge } = await admin.from("payment_events")
+        .select("metadata")
+        .eq("booking_id", bookingId)
+        .eq("kind", "charge_succeeded")
+        .order("created_at", { ascending: false })
+        .limit(1)
+        .maybeSingle();
+      const sid = (lastCharge as any)?.metadata?.stripe_session_id ?? "";
+      const pid = (lastCharge as any)?.metadata?.stripe_payment_intent ?? (booking as any).stripe_payment_intent ?? "";
+      if (typeof sid === "string" && sid.startsWith("cs_live_")) resolvedEnv = "live";
+      else if (typeof sid === "string" && sid.startsWith("cs_test_")) resolvedEnv = "sandbox";
+      else if (typeof pid === "string" && /^pi_[A-Za-z0-9]+/.test(pid)) {
+        // No session metadata — leave resolvedEnv as the caller-supplied value
+      }
+    } catch (_) { /* fall through to caller-supplied env */ }
+
+    const tryRefund = async (env: StripeEnv) => {
+      const stripe = createStripeClient(env);
+      return await stripe.refunds.create({
+        payment_intent: (booking as any).stripe_payment_intent ?? undefined,
+        charge: !(booking as any).stripe_payment_intent ? (booking as any).stripe_charge_id : undefined,
+        amount: amountCents,
+        reason: "requested_by_customer",
+        metadata: { bookingId, sitter_reason: reason ?? "" },
+      });
+    };
+
+    let refund: any;
+    try {
+      refund = await tryRefund(resolvedEnv);
+    } catch (e: any) {
+      // If Stripe says the resource doesn't exist in this env, try the other env.
+      const code = e?.raw?.code ?? e?.code;
+      if (code === "resource_missing") {
+        const other: StripeEnv = resolvedEnv === "live" ? "sandbox" : "live";
+        console.log(`refund-payment: ${resolvedEnv} missing intent, retrying in ${other}`);
+        refund = await tryRefund(other);
+        resolvedEnv = other;
+      } else {
+        throw e;
+      }
+    }
 
     const refunded = refund.amount;
     const remaining = Math.max(0, ((booking as any).payment_amount_cents ?? 0) - refunded);
