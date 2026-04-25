@@ -108,6 +108,30 @@ export default function SitterClientProfile() {
     toast({ title: "Saved", description: "Internal notes updated." });
   };
 
+  const exportClientInvoicesCsv = () => {
+    if (invoices.length === 0) {
+      toast({ title: "No invoices to export" });
+      return;
+    }
+    const clientName = profile?.full_name?.replace(/[^a-zA-Z0-9-]+/g, "-").toLowerCase() ?? "client";
+    const rows = invoices.map((i: any) => {
+      const status = derivedStatus(i);
+      const balance = (i.total_cents ?? 0) - (i.amount_paid_cents ?? 0);
+      return {
+        "Invoice #": i.invoice_number,
+        "Client": profile?.full_name ?? "",
+        "Status": status,
+        "Issued": i.created_at ? new Date(i.created_at).toISOString().slice(0, 10) : "",
+        "Due": i.due_date ?? "",
+        "Total": formatCentsForCsv(i.total_cents),
+        "Paid": formatCentsForCsv(i.amount_paid_cents),
+        "Balance": formatCentsForCsv(balance),
+      };
+    });
+    downloadCsv(`yodawg-${clientName}-invoices-${todayStamp()}.csv`, rows);
+    toast({ title: "Exported", description: `${rows.length} invoice${rows.length === 1 ? "" : "s"} downloaded.` });
+  };
+
   if (loading) {
     return <SitterShell><div className="p-6 text-sm text-muted-foreground">Loading…</div></SitterShell>;
   }
