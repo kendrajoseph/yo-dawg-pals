@@ -95,8 +95,52 @@ Deno.serve(async (req) => {
         stripe_charge_id: typeof intent.latest_charge === "string" ? intent.latest_charge : null,
         payment_amount_cents: total,
       }).eq("id", bookingId);
+
+      // Update related invoice
+      const { data: inv } = await admin.from("invoices")
+        .select("id, total_cents").eq("booking_id", bookingId)
+        .order("created_at", { ascending: false }).limit(1).maybeSingle();
+      if (inv) {
+        await admin.from("invoices").update({
+          status: "paid",
+          amount_paid_cents: (inv as any).total_cents,
+          paid_at: new Date().toISOString(),
+        }).eq("id", (inv as any).id);
+      }
+
+      await admin.from("payment_events").insert({
+        booking_id: bookingId,
+        invoice_id: (inv as any)?.id ?? null,
+        kind: "charge_succeeded",
+        channel: "stripe_off_session",
+        amount_cents: owed,
+        created_by: user.id,
+        metadata: { stripe_payment_intent: intent.id },
+      });
+
+      try {
+        await admin.functions.invoke("send-payment-receipt", {
+          body: {
+            invoiceId: (inv as any)?.id ?? undefined,
+            bookingId,
+            amountPaidCents: owed,
+            paymentMethod: "Saved card",
+            paidAt: new Date().toISOString(),
+          },
+        });
+      } catch (e) { console.error("receipt email failed", e); }
+
       return json({ ok: true, status: intent.status, amount: owed });
     }
+
+    await admin.from("payment_events").insert({
+      booking_id: bookingId,
+      kind: "charge_failed",
+      channel: "stripe_off_session",
+      amount_cents: owed,
+      created_by: user.id,
+      metadata: { stripe_payment_intent: intent.id, status: intent.status },
+    });
 
     return json({ ok: false, status: intent.status, requires_action: intent.status === "requires_action" }, 402);
   } catch (e: any) {
