@@ -29,6 +29,8 @@ export default function SitterMessages() {
   const [threads, setThreads] = useState<Thread[]>([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState("");
+  const [composeOpen, setComposeOpen] = useState(false);
+  const [reloadKey, setReloadKey] = useState(0);
 
   useEffect(() => {
     if (!user?.id) return;
@@ -64,7 +66,7 @@ export default function SitterMessages() {
     };
     load();
     return () => { cancelled = true; };
-  }, [user?.id]);
+  }, [user?.id, reloadKey]);
 
   const filtered = useMemo(() => {
     if (!search.trim()) return threads;
