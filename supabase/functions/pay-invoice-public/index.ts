@@ -2,7 +2,7 @@
 // Stripe Checkout client_secret so the payer can complete payment inline.
 import { corsHeaders } from "npm:@supabase/supabase-js@2/cors";
 import { createClient } from "npm:@supabase/supabase-js@2";
-import { z } from "npm:zod@3.24.1";
+import { z } from "https://esm.sh/zod@3.23.8";
 import { type StripeEnv, createStripeClient } from "../_shared/stripe.ts";
 
 const bodySchema = z.object({
