@@ -172,7 +172,7 @@ export function MessageComposer({
 
         <div>
           <Label>Message</Label>
-          <Textarea value={message} maxLength={1200} onChange={(e) => setMessage(e.target.value)} className="min-h-32" placeholder={audience === "broadcast" ? "Shared note for all selected clients…" : "Personal note…"} />
+          <Textarea value={message} maxLength={1200} onChange={(e) => setMessage(e.target.value)} className="min-h-32" />
         </div>
 
         <div className="flex flex-wrap items-center gap-3 rounded-md border border-border bg-muted/40 p-3 text-sm">
