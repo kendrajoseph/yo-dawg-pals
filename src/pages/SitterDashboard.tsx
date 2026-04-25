@@ -2,6 +2,7 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { addDays, endOfWeek, format, startOfWeek } from "date-fns";
 import { Link } from "react-router-dom";
 import {
+  AlertTriangle,
   BellRing,
   CalendarDays,
   CalendarOff,
@@ -18,8 +19,11 @@ import {
   Megaphone,
   MessageSquare,
   Minus,
+  MoreVertical,
   Pencil,
   Plus,
+  Receipt,
+  Search,
   Send,
   ShieldCheck,
   Smartphone,
@@ -28,18 +32,22 @@ import {
   Trash2,
   UserRound,
   Users,
+  Wallet,
   X,
   Zap,
 } from "lucide-react";
 
 import SiteFooter from "@/components/SiteFooter";
 import SiteNav from "@/components/SiteNav";
+import { PaymentDrawer, type PaymentDrawerBooking } from "@/components/payments/PaymentDrawer";
+import { derivedStatus, formatCents, statusBadgeClass, type Invoice } from "@/lib/invoices";
 import { Button } from "@/components/ui/button";
 import { Calendar } from "@/components/ui/calendar";
 import { Card } from "@/components/ui/card";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
@@ -477,7 +485,10 @@ const SitterDashboard = () => {
   const [fitAlerts, setFitAlerts] = useState<FitAlert[]>([]);
   const [savingClientProfile, setSavingClientProfile] = useState(false);
   const [chargingBookingId, setChargingBookingId] = useState<string | null>(null);
-  const [paymentsFilter, setPaymentsFilter] = useState<"all" | "outstanding" | "paid">("outstanding");
+  const [paymentsFilter, setPaymentsFilter] = useState<"all" | "outstanding" | "overdue" | "paid" | "refunded">("outstanding");
+  const [paymentsSearch, setPaymentsSearch] = useState("");
+  const [paymentDrawerBookingId, setPaymentDrawerBookingId] = useState<string | null>(null);
+  const [invoicesByBooking, setInvoicesByBooking] = useState<Record<string, Invoice>>({});
   const [blockAlertOpen, setBlockAlertOpen] = useState(false);
   const [blockAlertContext, setBlockAlertContext] = useState<{ date: string; reason: string } | null>(null);
   const [blockAlertChannels, setBlockAlertChannels] = useState({ email: true, sms: false });
@@ -576,6 +587,22 @@ const SitterDashboard = () => {
     setAvailability(nextAvailability);
     setBlocked((blockedDates ?? []) as Blocked[]);
     setBookings(nextBookings);
+
+    // Load invoices for these bookings (latest per booking)
+    if (nextBookings.length > 0) {
+      const { data: invoiceRows } = await db
+        .from("invoices")
+        .select("*")
+        .in("booking_id", nextBookings.map((b) => b.id))
+        .order("created_at", { ascending: false });
+      const map: Record<string, Invoice> = {};
+      for (const inv of (invoiceRows ?? []) as Invoice[]) {
+        if (!map[inv.booking_id]) map[inv.booking_id] = inv;
+      }
+      setInvoicesByBooking(map);
+    } else {
+      setInvoicesByBooking({});
+    }
     setServices(nextServices);
     setServiceVariants((variantRows ?? []) as ServiceVariant[]);
     setWalkWindows((walkWindowRows ?? []) as WalkWindow[]);
@@ -3645,68 +3672,187 @@ const SitterDashboard = () => {
           </TabsContent>
 
           <TabsContent value="payments" className="mt-6 space-y-6">
-            <Card className="border border-border p-5 shadow-soft">
-              <div className="flex flex-wrap items-start justify-between gap-3">
-                <div className="flex items-start gap-3">
-                  <div className="grid h-11 w-11 place-items-center rounded-md bg-accent text-accent-foreground">
-                    <CreditCard className="h-5 w-5" />
+            {(() => {
+              // Build augmented rows + stats
+              const rows = bookings.map((b) => {
+                const inv = invoicesByBooking[b.id] ?? null;
+                const total = inv?.total_cents ?? b.total_cents ?? 0;
+                const paid = inv?.amount_paid_cents ?? b.payment_amount_cents ?? 0;
+                const owed = Math.max(0, total - paid);
+                const refunded = !!(b as any).refund_id;
+                const baseStatus = inv ? derivedStatus(inv) : (b.payment_status ?? (b.paid_at ? "paid" : "outstanding"));
+                const status = refunded ? "refunded" : baseStatus;
+                return { booking: b, inv, total, paid, owed, status };
+              });
+              const now = new Date();
+              const monthStart = new Date(now.getFullYear(), now.getMonth(), 1);
+              const stats = rows.reduce(
+                (acc, r) => {
+                  if (r.status !== "paid" && r.status !== "refunded" && r.status !== "void") acc.outstanding += r.owed;
+                  if (r.status === "overdue") acc.overdue += r.owed;
+                  if (r.booking.paid_at && new Date(r.booking.paid_at) >= monthStart) acc.paidMonth += r.paid;
+                  return acc;
+                },
+                { outstanding: 0, overdue: 0, paidMonth: 0 },
+              );
+
+              const search = paymentsSearch.trim().toLowerCase();
+              const filtered = rows
+                .filter((r) => {
+                  if (paymentsFilter === "all") return true;
+                  return r.status === paymentsFilter;
+                })
+                .filter((r) => {
+                  if (!search) return true;
+                  const owner = profileDetails[r.booking.customer_id]?.full_name?.toLowerCase() ?? "";
+                  const svc = (r.booking.service_variants?.name ?? r.booking.services?.name ?? "").toLowerCase();
+                  const num = r.inv?.invoice_number?.toLowerCase() ?? "";
+                  return owner.includes(search) || svc.includes(search) || num.includes(search);
+                })
+                .sort((a, b) => (b.booking.start_at || "").localeCompare(a.booking.start_at || ""));
+
+              return (
+                <>
+                  <div className="grid grid-cols-1 gap-3 md:grid-cols-3">
+                    <Card className="border border-border p-4 shadow-soft">
+                      <div className="flex items-center gap-3">
+                        <div className="grid h-10 w-10 place-items-center rounded-md bg-highlight text-highlight-foreground">
+                          <Wallet className="h-5 w-5" />
+                        </div>
+                        <div>
+                          <p className="text-[11px] uppercase text-muted-foreground">Outstanding</p>
+                          <p className="font-display text-xl text-primary">{formatCents(stats.outstanding)}</p>
+                        </div>
+                      </div>
+                    </Card>
+                    <Card className="border border-border p-4 shadow-soft">
+                      <div className="flex items-center gap-3">
+                        <div className="grid h-10 w-10 place-items-center rounded-md bg-red-100 text-red-700">
+                          <AlertTriangle className="h-5 w-5" />
+                        </div>
+                        <div>
+                          <p className="text-[11px] uppercase text-muted-foreground">Overdue</p>
+                          <p className="font-display text-xl text-primary">{formatCents(stats.overdue)}</p>
+                        </div>
+                      </div>
+                    </Card>
+                    <Card className="border border-border p-4 shadow-soft">
+                      <div className="flex items-center gap-3">
+                        <div className="grid h-10 w-10 place-items-center rounded-md bg-emerald-100 text-emerald-700">
+                          <Receipt className="h-5 w-5" />
+                        </div>
+                        <div>
+                          <p className="text-[11px] uppercase text-muted-foreground">Paid this month</p>
+                          <p className="font-display text-xl text-primary">{formatCents(stats.paidMonth)}</p>
+                        </div>
+                      </div>
+                    </Card>
                   </div>
-                  <div>
-                    <h2 className="font-display text-xl uppercase text-primary">Payments</h2>
-                    <p className="text-sm text-muted-foreground">Track who owes what and recharge a saved card with one click.</p>
-                  </div>
-                </div>
-                <div className="flex gap-2">
-                  {(["outstanding", "paid", "all"] as const).map((key) => (
-                    <Button key={key} type="button" size="sm" variant={paymentsFilter === key ? "default" : "outline"} className="font-display uppercase" onClick={() => setPaymentsFilter(key)}>
-                      {key}
-                    </Button>
-                  ))}
-                </div>
-              </div>
-              {(() => {
-                const rows = bookings
-                  .filter((b) => {
-                    const status = b.payment_status ?? (b.paid_at ? "paid" : "outstanding");
-                    if (paymentsFilter === "all") return true;
-                    return status === paymentsFilter;
-                  })
-                  .sort((a, b) => (b.start_at || "").localeCompare(a.start_at || ""));
-                if (rows.length === 0) {
-                  return <p className="mt-6 text-sm text-muted-foreground">No bookings match this filter.</p>;
-                }
-                return (
-                  <ul className="mt-5 divide-y divide-border rounded-md border border-border bg-card">
-                    {rows.map((b) => {
-                      const status = b.payment_status ?? (b.paid_at ? "paid" : "outstanding");
-                      const owner = profileDetails[b.customer_id]?.full_name ?? "Customer";
-                      const serviceName = b.service_variants?.name ?? b.services?.name ?? "Booking";
-                      const total = b.total_cents ?? 0;
-                      const paid = b.payment_amount_cents ?? 0;
-                      const owed = Math.max(0, total - paid);
-                      return (
-                        <li key={b.id} className="flex flex-wrap items-center justify-between gap-3 px-4 py-3 text-sm">
-                          <div className="min-w-0">
-                            <p className="font-display text-sm uppercase text-primary">{owner} · {serviceName}</p>
-                            <p className="text-xs text-muted-foreground">{format(new Date(b.start_at), "EEE, MMM d · p")} · ${(total / 100).toFixed(2)} total{paid ? ` · $${(paid / 100).toFixed(2)} paid` : ""}</p>
-                          </div>
-                          <div className="flex items-center gap-3">
-                            <span className={cn("rounded px-2 py-0.5 text-[10px] font-display uppercase", status === "paid" ? "bg-accent text-accent-foreground" : status === "refunded" ? "bg-muted text-muted-foreground" : "bg-highlight text-highlight-foreground")}>{status}</span>
-                            {status !== "paid" && owed > 0 && (
-                              <Button size="sm" variant="outline" className="font-display uppercase" disabled={chargingBookingId === b.id} onClick={() => chargeSavedCard(b.id)}>
-                                <Zap className="h-3 w-3" /> {chargingBookingId === b.id ? "Charging…" : `Charge $${(owed / 100).toFixed(2)}`}
-                              </Button>
-                            )}
-                          </div>
-                        </li>
-                      );
-                    })}
-                  </ul>
-                );
-              })()}
-              <p className="mt-4 text-xs text-muted-foreground">Recharge uses the card the client saved at their last checkout.</p>
-            </Card>
+
+                  <Card className="border border-border p-5 shadow-soft">
+                    <div className="flex flex-wrap items-start justify-between gap-3">
+                      <div className="flex items-start gap-3">
+                        <div className="grid h-11 w-11 place-items-center rounded-md bg-accent text-accent-foreground">
+                          <CreditCard className="h-5 w-5" />
+                        </div>
+                        <div>
+                          <h2 className="font-display text-xl uppercase text-primary">Accounts &amp; payments</h2>
+                          <p className="text-sm text-muted-foreground">Click a row to manage invoice, send reminders, or charge a card.</p>
+                        </div>
+                      </div>
+                      <div className="flex flex-wrap items-center gap-2">
+                        <div className="relative">
+                          <Search className="pointer-events-none absolute left-2 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+                          <Input value={paymentsSearch} onChange={(e) => setPaymentsSearch(e.target.value)} placeholder="Search client, service, INV…" className="h-9 w-56 pl-8" />
+                        </div>
+                        <div className="flex gap-1">
+                          {(["outstanding", "overdue", "paid", "refunded", "all"] as const).map((key) => (
+                            <Button key={key} type="button" size="sm" variant={paymentsFilter === key ? "default" : "outline"} className="font-display uppercase" onClick={() => setPaymentsFilter(key)}>
+                              {key}
+                            </Button>
+                          ))}
+                        </div>
+                      </div>
+                    </div>
+
+                    {filtered.length === 0 ? (
+                      <p className="mt-6 text-sm text-muted-foreground">No bookings match this filter.</p>
+                    ) : (
+                      <ul className="mt-5 divide-y divide-border rounded-md border border-border bg-card">
+                        {filtered.map(({ booking: b, inv, total, paid, owed, status }) => {
+                          const owner = profileDetails[b.customer_id]?.full_name ?? "Customer";
+                          const serviceName = b.service_variants?.name ?? b.services?.name ?? "Booking";
+                          return (
+                            <li key={b.id} className="group">
+                              <button
+                                type="button"
+                                onClick={() => setPaymentDrawerBookingId(b.id)}
+                                className="flex w-full flex-wrap items-center justify-between gap-3 px-4 py-3 text-left text-sm transition-colors hover:bg-muted/40"
+                              >
+                                <div className="min-w-0 flex-1">
+                                  <p className="font-display text-sm uppercase text-primary">{owner} · {serviceName}</p>
+                                  <p className="text-xs text-muted-foreground">
+                                    {format(new Date(b.start_at), "EEE, MMM d · p")} · {formatCents(total)} total
+                                    {paid ? ` · ${formatCents(paid)} paid` : ""}
+                                    {inv?.invoice_number ? ` · ${inv.invoice_number}` : ""}
+                                    {inv?.due_date ? ` · due ${format(new Date(inv.due_date + "T12:00:00"), "MMM d")}` : ""}
+                                  </p>
+                                </div>
+                                <div className="flex items-center gap-3">
+                                  <span className={cn("rounded border px-2 py-0.5 text-[10px] font-display uppercase", statusBadgeClass(status))}>{status}</span>
+                                  {status !== "paid" && owed > 0 && (
+                                    <span className="font-display text-sm text-clay">{formatCents(owed)}</span>
+                                  )}
+                                  <DropdownMenu>
+                                    <DropdownMenuTrigger asChild>
+                                      <Button
+                                        size="icon"
+                                        variant="ghost"
+                                        aria-label="Quick actions"
+                                        onClick={(e) => e.stopPropagation()}
+                                        className="h-8 w-8"
+                                      >
+                                        <MoreVertical className="h-4 w-4" />
+                                      </Button>
+                                    </DropdownMenuTrigger>
+                                    <DropdownMenuContent align="end" onClick={(e) => e.stopPropagation()}>
+                                      <DropdownMenuItem onClick={() => setPaymentDrawerBookingId(b.id)}>
+                                        Open details
+                                      </DropdownMenuItem>
+                                      {owed > 0 && (
+                                        <DropdownMenuItem
+                                          disabled={chargingBookingId === b.id}
+                                          onClick={() => chargeSavedCard(b.id)}
+                                        >
+                                          <Zap className="h-4 w-4" /> {chargingBookingId === b.id ? "Charging…" : `Charge ${formatCents(owed)}`}
+                                        </DropdownMenuItem>
+                                      )}
+                                      {inv?.public_token && (
+                                        <DropdownMenuItem
+                                          onClick={() => {
+                                            void navigator.clipboard.writeText(`${window.location.origin}/pay/${inv.public_token}`);
+                                            toast({ title: "Payment link copied" });
+                                          }}
+                                        >
+                                          Copy pay link
+                                        </DropdownMenuItem>
+                                      )}
+                                    </DropdownMenuContent>
+                                  </DropdownMenu>
+                                </div>
+                              </button>
+                            </li>
+                          );
+                        })}
+                      </ul>
+                    )}
+                    <p className="mt-4 text-xs text-muted-foreground">Recharge uses the card the client saved at their last checkout.</p>
+                  </Card>
+                </>
+              );
+            })()}
           </TabsContent>
+
 
 
           <TabsContent value="alerts" className="mt-6 space-y-6">
@@ -4087,6 +4233,34 @@ const SitterDashboard = () => {
           )}
         </DialogContent>
       </Dialog>
+      {(() => {
+        const b = paymentDrawerBookingId ? bookings.find((x) => x.id === paymentDrawerBookingId) : null;
+        if (!b) return null;
+        const drawerBooking: PaymentDrawerBooking = {
+          id: b.id,
+          customer_id: b.customer_id,
+          total_cents: b.total_cents ?? null,
+          payment_amount_cents: b.payment_amount_cents ?? null,
+          payment_status: b.payment_status ?? null,
+          paid_at: b.paid_at ?? null,
+          start_at: b.start_at,
+          end_at: b.end_at,
+          refund_id: (b as any).refund_id ?? null,
+          stripe_payment_intent: (b as any).stripe_payment_intent ?? null,
+          stripe_charge_id: (b as any).stripe_charge_id ?? null,
+          service_label: b.service_variants?.name ?? b.services?.name ?? "Booking",
+          customer_name: profileDetails[b.customer_id]?.full_name ?? "Customer",
+        };
+        return (
+          <PaymentDrawer
+            open={!!paymentDrawerBookingId}
+            onOpenChange={(o) => { if (!o) setPaymentDrawerBookingId(null); }}
+            booking={drawerBooking}
+            hasSavedCard={false}
+            onChanged={() => { void load(); }}
+          />
+        );
+      })()}
       <SiteFooter />
     </main>
   );
