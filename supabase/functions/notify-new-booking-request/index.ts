@@ -184,9 +184,11 @@ Deno.serve(async (req) => {
       return json({ ok: true, smsSent: false, reason: "Sitter phone number is missing" });
     }
 
+    const appUrl = Deno.env.get("APP_URL") ?? "https://yodawg.ca";
+    const reviewUrl = `${appUrl.replace(/\/+$/, "")}/sitter/requests/${booking.id}`;
     const smsBody = totalCount > 1
-      ? `YoDawg: New request from ${customerName} (${totalCount} bookings) starting with ${serviceName} for ${petName} · ${timing}.`
-      : `YoDawg: New request from ${customerName} for ${petName} · ${serviceName} · ${timing}.`;
+      ? `YoDawg: New request from ${customerName} (${totalCount} bookings) starting with ${serviceName} for ${petName} · ${timing}. Review: ${reviewUrl}`
+      : `YoDawg: New request from ${customerName} for ${petName} · ${serviceName} · ${timing}. Review: ${reviewUrl}`;
     const twilioResponse = await fetch(`${GATEWAY_URL}/Messages.json`, {
       method: "POST",
       headers: {

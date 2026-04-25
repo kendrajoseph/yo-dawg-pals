@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { Link, useParams } from "react-router-dom";
 import { format } from "date-fns";
-import { ArrowLeft, PawPrint, Stethoscope, Phone, AlertTriangle, KeyRound, Heart, ShieldCheck, MessageSquare } from "lucide-react";
+import { ArrowLeft, PawPrint, Stethoscope, Phone, AlertTriangle, KeyRound, Heart, ShieldCheck, MessageSquare, CheckCircle2, XCircle, Circle } from "lucide-react";
 import { SitterShell } from "@/components/sitter/SitterShell";
 import { EmptyState } from "@/components/sitter/EmptyState";
 import { Card } from "@/components/ui/card";
@@ -11,6 +11,9 @@ import { Button } from "@/components/ui/button";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { MessageComposer } from "@/components/sitter/MessageComposer";
+import { setPetServiceFit } from "@/lib/approveBooking";
+import { toast } from "sonner";
+import { cn } from "@/lib/utils";
 
 function Field({ label, value, mono }: { label: string; value: string | number | null | undefined; mono?: boolean }) {
   if (value === null || value === undefined || value === "") return null;
@@ -39,14 +42,17 @@ export default function SitterPetProfile() {
   const [tags, setTags] = useState<any[]>([]);
   const [bookings, setBookings] = useState<any[]>([]);
   const [alerts, setAlerts] = useState<any[]>([]);
+  const [services, setServices] = useState<any[]>([]);
+  const [approvals, setApprovals] = useState<Record<string, { status: string; notes: string | null }>>({});
   const [loading, setLoading] = useState(true);
   const [composeOpen, setComposeOpen] = useState(false);
+  const [savingId, setSavingId] = useState<string | null>(null);
 
   useEffect(() => {
     if (!id || !user?.id) return;
     let cancelled = false;
     (async () => {
-      const [petRes, tagsRes, bookingsRes, alertsRes] = await Promise.all([
+      const [petRes, tagsRes, bookingsRes, alertsRes, servicesRes, approvalsRes] = await Promise.all([
         supabase.from("pets").select("*, profiles:owner_id(id, full_name, phone, mobile_phone, sms_opt_in)").eq("id", id).maybeSingle(),
         supabase.from("pet_tag_assignments").select("tag:tag_id(label, slug, visibility)").eq("pet_id", id),
         supabase.from("bookings")
@@ -54,16 +60,35 @@ export default function SitterPetProfile() {
           .eq("sitter_id", user.id).eq("pet_id", id)
           .order("start_at", { ascending: false }).limit(20),
         supabase.from("pet_fit_alerts").select("*").eq("pet_id", id).order("created_at", { ascending: false }),
+        supabase.from("services").select("id, name, slug").eq("is_active", true).order("name"),
+        supabase.from("sitter_pet_approvals").select("service_id, status, notes").eq("sitter_id", user.id).eq("pet_id", id),
       ]);
       if (cancelled) return;
       setPet(petRes.data);
       setTags(tagsRes.data ?? []);
       setBookings(bookingsRes.data ?? []);
       setAlerts(alertsRes.data ?? []);
+      setServices(servicesRes.data ?? []);
+      const map: Record<string, { status: string; notes: string | null }> = {};
+      (approvalsRes.data ?? []).forEach((a: any) => { map[a.service_id] = { status: a.status, notes: a.notes }; });
+      setApprovals(map);
       setLoading(false);
     })();
     return () => { cancelled = true; };
   }, [id, user?.id]);
+
+  const updateFit = async (serviceId: string, status: "approved" | "declined" | "pending") => {
+    if (!user?.id || !id) return;
+    setSavingId(serviceId);
+    const r = await setPetServiceFit(user.id, id, serviceId, status);
+    setSavingId(null);
+    if (!r.ok) {
+      toast.error(r.error ?? "Couldn't save");
+      return;
+    }
+    setApprovals((prev) => ({ ...prev, [serviceId]: { status, notes: prev[serviceId]?.notes ?? null } }));
+    toast.success(`Marked ${status}`);
+  };
 
   if (loading) return <SitterShell><div className="p-6 text-sm text-muted-foreground">Loading…</div></SitterShell>;
   if (!pet) return <SitterShell><EmptyState title="Pet not found" /></SitterShell>;
@@ -166,6 +191,69 @@ export default function SitterPetProfile() {
             {pet.entry_instructions && <p className="mt-2 whitespace-pre-wrap text-sm">{pet.entry_instructions}</p>}
           </Card>
         )}
+
+        <Card className="border border-border p-5 shadow-soft lg:col-span-2">
+          <h3 className="mb-1 inline-flex items-center gap-2 font-display text-lg text-primary">
+            <ShieldCheck className="h-4 w-4" />Pet fit decisions
+          </h3>
+          <p className="mb-3 text-xs text-muted-foreground">
+            Approve or decline {pet.name} for each service. Declined services won't allow new bookings.
+          </p>
+          {services.length === 0 ? (
+            <p className="text-sm text-muted-foreground">No active services.</p>
+          ) : (
+            <ul className="divide-y divide-border">
+              {services.map((s) => {
+                const current = approvals[s.id]?.status ?? "pending";
+                const isSaving = savingId === s.id;
+                return (
+                  <li key={s.id} className="flex flex-wrap items-center justify-between gap-2 py-2.5">
+                    <div className="flex items-center gap-2">
+                      <span className="text-sm font-medium">{s.name}</span>
+                      <Badge
+                        variant="outline"
+                        className={cn(
+                          "capitalize",
+                          current === "approved" && "border-emerald-300 bg-emerald-50 text-emerald-900",
+                          current === "declined" && "border-red-300 bg-red-50 text-red-900",
+                        )}
+                      >
+                        {current}
+                      </Badge>
+                    </div>
+                    <div className="flex items-center gap-1">
+                      <Button
+                        size="sm"
+                        variant={current === "approved" ? "default" : "outline"}
+                        disabled={isSaving}
+                        onClick={() => updateFit(s.id, "approved")}
+                      >
+                        <CheckCircle2 className="mr-1 h-3.5 w-3.5" />Approve
+                      </Button>
+                      <Button
+                        size="sm"
+                        variant={current === "declined" ? "destructive" : "outline"}
+                        disabled={isSaving}
+                        onClick={() => updateFit(s.id, "declined")}
+                      >
+                        <XCircle className="mr-1 h-3.5 w-3.5" />Decline
+                      </Button>
+                      <Button
+                        size="sm"
+                        variant="ghost"
+                        disabled={isSaving || current === "pending"}
+                        onClick={() => updateFit(s.id, "pending")}
+                        title="Reset to pending"
+                      >
+                        <Circle className="h-3.5 w-3.5" />
+                      </Button>
+                    </div>
+                  </li>
+                );
+              })}
+            </ul>
+          )}
+        </Card>
 
         <Card className="border border-border p-5 shadow-soft lg:col-span-2">
           <h3 className="mb-3 font-display text-lg text-primary">Recent bookings</h3>
