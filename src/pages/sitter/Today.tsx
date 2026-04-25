@@ -332,7 +332,7 @@ export default function SitterToday() {
         <DialogContent>
           <DialogHeader>
             <DialogTitle>
-              {updateTarget?.kind === "pickup" ? "Send pickup update" : "Send drop-off update"}
+              {updateTarget ? `Send ${kindLabel[updateTarget.kind].toLowerCase()} update` : "Send update"}
             </DialogTitle>
             <DialogDescription>
               Sends a text and email to {updateTarget?.booking.pets?.name ?? "the pet"}'s owner. Add an optional note for anything important.
