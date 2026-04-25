@@ -83,6 +83,24 @@ const Auth = () => {
     navigate(from, { replace: true });
   };
 
+  const handleForgotPassword = async () => {
+    const email = form.email.trim();
+    if (!email || !z.string().email().safeParse(email).success) {
+      toast({ title: "Enter your email first", description: "Type the email above, then tap forgot password.", variant: "destructive" });
+      return;
+    }
+    setLoading(true);
+    const { error } = await supabase.auth.resetPasswordForEmail(email, {
+      redirectTo: `${window.location.origin}/reset-password`,
+    });
+    setLoading(false);
+    if (error) {
+      toast({ title: "Couldn't send reset email", description: error.message, variant: "destructive" });
+      return;
+    }
+    toast({ title: "Check your inbox", description: "We sent a reset link to " + email });
+  };
+
   const handleGoogle = async () => {
     setLoading(true);
     const result = await lovable.auth.signInWithOAuth("google", {
@@ -145,6 +163,14 @@ const Auth = () => {
                 <Button type="submit" disabled={loading} className="w-full h-11 font-display uppercase shadow-pop-accent">
                   {loading ? "Signing in…" : "Sign in"}
                 </Button>
+                <button
+                  type="button"
+                  onClick={handleForgotPassword}
+                  disabled={loading}
+                  className="block w-full text-center text-xs text-muted-foreground underline-offset-2 hover:underline disabled:opacity-50"
+                >
+                  Forgot password?
+                </button>
               </form>
             </TabsContent>
 
