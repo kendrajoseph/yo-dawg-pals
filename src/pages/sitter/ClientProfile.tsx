@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { Link, useParams } from "react-router-dom";
 import { format } from "date-fns";
-import { ArrowLeft, Mail, Phone, PawPrint, CalendarDays, CreditCard, MessageSquare, Star, Save } from "lucide-react";
+import { ArrowLeft, Mail, Phone, PawPrint, CalendarDays, CreditCard, MessageSquare, Star, Save, Download } from "lucide-react";
 import { SitterShell } from "@/components/sitter/SitterShell";
 import { EmptyState } from "@/components/sitter/EmptyState";
 import { Card } from "@/components/ui/card";
