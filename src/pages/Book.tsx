@@ -1,6 +1,6 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { Link, useLocation, useNavigate, useSearchParams } from "react-router-dom";
-import { addDays, format, isSameDay, startOfDay } from "date-fns";
+import { addDays, differenceInCalendarDays, format, isSameDay, startOfDay } from "date-fns";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import SiteNav from "@/components/SiteNav";
@@ -9,13 +9,14 @@ import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Calendar } from "@/components/ui/calendar";
 import { Checkbox } from "@/components/ui/checkbox";
-import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Input } from "@/components/ui/input";
 import { toast } from "@/hooks/use-toast";
-import { ArrowLeft, ArrowRight, CalendarDays, Check, Clock, MoonStar, PawPrint, Plus, ShieldCheck, Sparkles, Trash2 } from "lucide-react";
+import { ArrowLeft, ArrowRight, CalendarDays, Check, MoonStar, PawPrint, Plus, Sparkles, Trash2 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { DAYS, formatPriceWithDecimals, minutesToTime, applySiblingDiscount, calculateBoardingTotalCents } from "@/lib/booking";
 
@@ -84,17 +85,16 @@ type BundleItem = {
   serviceId: string | null;
   variantId: string | null;
   requestedDate: string;
-  requestedEndDate: string;
+  requestedEndDate: string; // for boarding: pick-up date; for repeats: until date
   slot: number | null;
   windowId: string | null;
-  petId: string | null;
+  petIds: string[]; // multi-pet
   notes: string;
   repeatFrequency: RepeatFrequency;
   repeatDays: number[];
-  repeatInterval: number;
 };
 
-const STEPS = ["Services", "Schedule", "Pet", "Review"] as const;
+const STEPS = ["Services", "Schedule", "Pets", "Review"] as const;
 const WALK_REQUEST_SLUGS = new Set(["solo-walk", "group-walk"]);
 const TERMS_VERSION = "2026-04-22";
 
@@ -106,11 +106,10 @@ const createBundleItem = (seed?: Partial<BundleItem>): BundleItem => ({
   requestedEndDate: "",
   slot: null,
   windowId: null,
-  petId: null,
+  petIds: [],
   notes: "",
   repeatFrequency: "none",
   repeatDays: [],
-  repeatInterval: 1,
   ...seed,
 });
 
@@ -124,9 +123,7 @@ const repeatLabelMap: Record<Exclude<RepeatFrequency, "none">, string> = {
 const getRepeatSummary = (item: BundleItem) => {
   if (item.repeatFrequency === "none") return null;
 
-  if (item.repeatFrequency === "daily") {
-    return item.repeatInterval > 1 ? `Every ${item.repeatInterval} days` : "Daily";
-  }
+  if (item.repeatFrequency === "daily") return "Daily";
 
   if (item.repeatFrequency === "monthly") {
     const day = item.requestedDate ? new Date(`${item.requestedDate}T12:00:00`).getDate() : null;
@@ -138,33 +135,59 @@ const getRepeatSummary = (item: BundleItem) => {
   return `${repeatLabelMap[item.repeatFrequency]} on ${dayLabel}`;
 };
 
-const getBundleSummary = ({
+const getBoardingNights = (item: BundleItem) => {
+  if (!item.requestedDate || !item.requestedEndDate) return 1;
+  const start = new Date(`${item.requestedDate}T00:00:00`);
+  const end = new Date(`${item.requestedEndDate}T00:00:00`);
+  const nights = differenceInCalendarDays(end, start);
+  return Math.max(1, nights);
+};
+
+// Compute the per-pet line totals for a bundle item.
+// position = 0,1,2... within same service slug across the entire bundle.
+const computeLines = ({
   item,
   service,
   variant,
-  pet,
-  selectedWindow,
+  pets,
+  petPositionStartByService,
 }: {
   item: BundleItem;
   service: Service | null;
   variant: ServiceVariant | null;
-  pet: Pet | undefined;
-  selectedWindow: WalkWindow | null;
-}) => {
-  if (!service || !variant) return "Choose a service";
-  if (!item.requestedDate) return `${variant.name} · no schedule yet`;
+  pets: Pet[];
+  petPositionStartByService: Map<string, number>;
+}): Array<{ petId: string; petName: string; cents: number; isSibling: boolean; nights?: number }> => {
+  if (!service || !variant) return [];
+  const petsForItem = item.petIds
+    .map((id) => pets.find((p) => p.id === id))
+    .filter((p): p is Pet => Boolean(p));
+  if (petsForItem.length === 0) return [];
 
-  const dayLabel = format(new Date(`${item.requestedDate}T12:00:00`), "EEE, MMM d");
-  const timing = service.slug === "boarding"
-    ? `${dayLabel} · ${minutesToTime(service.boarding_checkin_minute ?? 12 * 60)}`
-    : WALK_REQUEST_SLUGS.has(service.slug) && selectedWindow
-      ? `${dayLabel} · ${selectedWindow.window_label}`
-      : item.slot != null
-        ? `${dayLabel} · ${minutesToTime(item.slot)}`
-        : `${dayLabel} · flexible`;
+  // Base price per pet (boarding accounts for nights)
+  let basePerPetCents = variant.price_cents;
+  let nights: number | undefined;
+  if (service.slug === "boarding") {
+    nights = getBoardingNights(item);
+    const extraNightVariant = (service.variants || []).find((v) => v.slug === "boarding-extra-night");
+    const extraCents = extraNightVariant?.price_cents ?? 6000;
+    basePerPetCents = calculateBoardingTotalCents(variant.price_cents, extraCents, nights);
+  }
 
-  const repeatSummary = getRepeatSummary(item);
-  return [variant.name, timing, repeatSummary, pet?.name ? `for ${pet.name}` : null].filter(Boolean).join(" · ");
+  const startPos = petPositionStartByService.get(service.slug) ?? 0;
+  const discountPct = variant.sibling_discount_percent ?? 0;
+
+  return petsForItem.map((pet, idx) => {
+    const position = startPos + idx;
+    const cents = applySiblingDiscount(basePerPetCents, position, discountPct);
+    return {
+      petId: pet.id,
+      petName: pet.name,
+      cents,
+      isSibling: position > 0 && discountPct > 0,
+      nights,
+    };
+  });
 };
 
 const Book = () => {
@@ -190,6 +213,13 @@ const Book = () => {
   const [bundleNotes, setBundleNotes] = useState("");
   const [acceptedTerms, setAcceptedTerms] = useState(false);
   const [submitting, setSubmitting] = useState(false);
+  const submittingRef = useRef(false);
+  const [confirmation, setConfirmation] = useState<{
+    lines: Array<{ serviceName: string; petName: string; timing: string; recurrence?: string | null; priceLabel?: string | null }>;
+    totalLabel: string;
+    firstBookingId: string | null;
+    bundle: boolean;
+  } | null>(null);
 
   useEffect(() => {
     (async () => {
@@ -223,7 +253,10 @@ const Book = () => {
 
       const nextServices = ((serviceRows ?? []) as Omit<Service, "variants">[]).map((row) => ({
         ...row,
-        variants: (variantsByService.get(row.id) ?? []).sort((a, b) => a.sort_order - b.sort_order),
+        // Hide the "boarding-extra-night" variant from the picker — it's a pricing rule, not a user choice.
+        variants: (variantsByService.get(row.id) ?? [])
+          .filter((v) => v.slug !== "boarding-extra-night")
+          .sort((a, b) => a.sort_order - b.sort_order),
       }));
 
       setServices(nextServices);
@@ -306,6 +339,7 @@ const Book = () => {
   const activeService = activeItem?.serviceId ? serviceMap.get(activeItem.serviceId) ?? null : null;
   const activeVariant = activeItem?.variantId ? variantMap.get(activeItem.variantId) ?? null : activeService?.variants[0] ?? null;
   const activeDate = activeItem?.requestedDate ? new Date(`${activeItem.requestedDate}T12:00:00`) : undefined;
+  const activeEndDate = activeItem?.requestedEndDate ? new Date(`${activeItem.requestedEndDate}T12:00:00`) : undefined;
   const isActiveWalkWindowRequest = !!activeService && WALK_REQUEST_SLUGS.has(activeService.slug);
   const isActiveBoarding = activeService?.scheduling_mode === "boarding" || activeService?.slug === "boarding";
   const activeUsesExactSlots = Boolean(activeService && !isActiveWalkWindowRequest && !isActiveBoarding);
@@ -373,24 +407,59 @@ const Book = () => {
     return output;
   }, [activeDate, activeService, activeUsesExactSlots, activeVariant, availabilityForActiveService, blocked, existing, sitterId]);
 
-  const bundleSummaries = useMemo(
-    () =>
-      bundleItems.map((item) => {
-        const service = item.serviceId ? serviceMap.get(item.serviceId) ?? null : null;
-        const variant = item.variantId ? variantMap.get(item.variantId) ?? null : null;
-        const pet = pets.find((candidate) => candidate.id === item.petId);
-        const selectedWindow = walkWindows.find((window) => window.id === item.windowId) ?? null;
-        return {
-          item,
-          service,
-          variant,
-          pet,
-          selectedWindow,
-          summary: getBundleSummary({ item, service, variant, pet, selectedWindow }),
-        };
-      }),
-    [bundleItems, pets, serviceMap, variantMap, walkWindows],
+  // Pre-compute, for the entire bundle, the position of each pet within each service slug
+  // so sibling discount applies correctly across multiple bundle items targeting the same service.
+  const positionStartByItem = useMemo(() => {
+    const counters = new Map<string, number>();
+    const out = new Map<string, Map<string, number>>(); // itemId -> Map(slug -> startPos)
+    for (const item of bundleItems) {
+      const service = item.serviceId ? serviceMap.get(item.serviceId) ?? null : null;
+      if (!service) continue;
+      const m = new Map<string, number>();
+      m.set(service.slug, counters.get(service.slug) ?? 0);
+      out.set(item.id, m);
+      counters.set(service.slug, (counters.get(service.slug) ?? 0) + item.petIds.length);
+    }
+    return out;
+  }, [bundleItems, serviceMap]);
+
+  const allLines = useMemo(() => {
+    return bundleItems.map((item) => {
+      const service = item.serviceId ? serviceMap.get(item.serviceId) ?? null : null;
+      const variant = item.variantId ? variantMap.get(item.variantId) ?? null : null;
+      const lines = computeLines({
+        item,
+        service,
+        variant,
+        pets,
+        petPositionStartByService: positionStartByItem.get(item.id) ?? new Map(),
+      });
+      return { item, service, variant, lines };
+    });
+  }, [bundleItems, pets, positionStartByItem, serviceMap, variantMap]);
+
+  const grandTotalCents = useMemo(
+    () => allLines.reduce((acc, group) => acc + group.lines.reduce((a, l) => a + l.cents, 0), 0),
+    [allLines],
   );
+
+  const getBundleSummaryText = (item: BundleItem, service: Service | null, variant: ServiceVariant | null) => {
+    if (!service || !variant) return "Choose a service";
+    if (!item.requestedDate) return `${variant.name} · no schedule yet`;
+    const dayLabel = format(new Date(`${item.requestedDate}T12:00:00`), "EEE, MMM d");
+    const window = walkWindows.find((w) => w.id === item.windowId) ?? null;
+    const timing = service.slug === "boarding"
+      ? `${dayLabel} → ${item.requestedEndDate ? format(new Date(`${item.requestedEndDate}T12:00:00`), "EEE, MMM d") : "?"} (${getBoardingNights(item)} night${getBoardingNights(item) === 1 ? "" : "s"})`
+      : WALK_REQUEST_SLUGS.has(service.slug) && window
+        ? `${dayLabel} · ${window.window_label}`
+        : item.slot != null
+          ? `${dayLabel} · ${minutesToTime(item.slot)}`
+          : `${dayLabel} · flexible`;
+    const repeatSummary = getRepeatSummary(item);
+    const petCount = item.petIds.length;
+    const petLabel = petCount > 0 ? `${petCount} pet${petCount === 1 ? "" : "s"}` : "no pet yet";
+    return [variant.name, timing, repeatSummary, petLabel].filter(Boolean).join(" · ");
+  };
 
   const patchBundleItem = (itemId: string, patch: Partial<BundleItem>) => {
     setBundleItems((current) => current.map((item) => (item.id === itemId ? { ...item, ...patch } : item)));
@@ -407,7 +476,6 @@ const Book = () => {
       windowId: null,
       repeatFrequency: "none",
       repeatDays: [],
-      repeatInterval: 1,
     });
   };
 
@@ -444,13 +512,28 @@ const Book = () => {
           : []
       : item?.repeatDays ?? [];
 
+    // For boarding, default pick-up to next day if not set or now invalid.
+    const service = item?.serviceId ? serviceMap.get(item.serviceId) : null;
+    let nextEnd = item?.requestedEndDate ?? "";
+    if (service?.slug === "boarding" && nextDate) {
+      const oneNight = format(addDays(nextDate, 1), "yyyy-MM-dd");
+      if (!nextEnd || nextEnd <= dateValue) nextEnd = oneNight;
+    } else if (item?.repeatFrequency === "none") {
+      nextEnd = "";
+    }
+
     patchBundleItem(itemId, {
       requestedDate: dateValue,
-      requestedEndDate: item?.repeatFrequency === "none" ? "" : item?.requestedEndDate ?? "",
+      requestedEndDate: nextEnd,
       repeatDays: nextRepeatDays,
       slot: null,
       windowId: null,
     });
+  };
+
+  const setBoardingPickup = (itemId: string, nextDate?: Date) => {
+    const dateValue = nextDate ? format(nextDate, "yyyy-MM-dd") : "";
+    patchBundleItem(itemId, { requestedEndDate: dateValue });
   };
 
   const toggleRepeatDay = (itemId: string, weekday: number) => {
@@ -467,7 +550,6 @@ const Book = () => {
     const dateWeekday = item.requestedDate ? new Date(`${item.requestedDate}T12:00:00`).getDay() : undefined;
     patchBundleItem(itemId, {
       repeatFrequency: value,
-      repeatInterval: 1,
       requestedEndDate: value === "none" ? "" : item.requestedEndDate,
       repeatDays:
         value === "weekly" || value === "biweekly"
@@ -477,6 +559,15 @@ const Book = () => {
               ? [dateWeekday]
               : []
           : [],
+    });
+  };
+
+  const togglePetForItem = (itemId: string, petId: string) => {
+    const item = bundleItemMap.get(itemId);
+    if (!item) return;
+    const has = item.petIds.includes(petId);
+    patchBundleItem(itemId, {
+      petIds: has ? item.petIds.filter((id) => id !== petId) : [...item.petIds, petId],
     });
   };
 
@@ -496,6 +587,17 @@ const Book = () => {
     return !availabilityForActiveService.some((row) => row.sitter_id === sitterId && row.weekday === day.getDay());
   };
 
+  const getBoardingPickupDisabled = (day: Date) => {
+    const today = startOfDay(new Date());
+    if (day < today) return true;
+    if (!activeItem?.requestedDate) return true;
+    const drop = new Date(`${activeItem.requestedDate}T00:00:00`);
+    if (day <= drop) return true;
+    if (!sitterId) return true;
+    const isBlockedDay = blocked.some((row) => row.sitter_id === sitterId && isSameDay(new Date(`${row.blocked_date}T12:00:00`), day));
+    return isBlockedDay;
+  };
+
   const validateServiceStep = () => {
     if (bundleItems.length === 0) return "Add at least one service request";
     const incomplete = bundleItems.some((item) => !item.serviceId || !item.variantId);
@@ -507,11 +609,16 @@ const Book = () => {
       const service = item.serviceId ? serviceMap.get(item.serviceId) ?? null : null;
       if (!service) return "Choose a service for each request first";
       if (!item.requestedDate) return `Add a date for ${service.name}`;
-      if (service.slug !== "boarding" && WALK_REQUEST_SLUGS.has(service.slug) && !item.windowId) return `Choose a preferred window for ${service.name}`;
-      if (service.slug !== "boarding" && !WALK_REQUEST_SLUGS.has(service.slug) && item.slot == null) return `Choose a time for ${service.name}`;
-      if ((item.repeatFrequency === "weekly" || item.repeatFrequency === "biweekly") && item.repeatDays.length === 0) return `Pick repeat days for ${service.name}`;
-      if (item.requestedEndDate && item.requestedEndDate < item.requestedDate) return `Repeat end date must be after the first date for ${service.name}`;
-      if (service.slug === "boarding" && item.repeatFrequency !== "none") return "Boarding requests are one-off for now";
+      if (service.slug === "boarding") {
+        if (!item.requestedEndDate) return `Add a pick-up date for ${service.name}`;
+        if (item.requestedEndDate <= item.requestedDate) return `Pick-up must be after drop-off for ${service.name}`;
+        if (item.repeatFrequency !== "none") return "Boarding stays use a drop-off and pick-up date instead of a recurring schedule.";
+      } else {
+        if (WALK_REQUEST_SLUGS.has(service.slug) && !item.windowId) return `Choose a preferred window for ${service.name}`;
+        if (!WALK_REQUEST_SLUGS.has(service.slug) && item.slot == null) return `Choose a time for ${service.name}`;
+        if ((item.repeatFrequency === "weekly" || item.repeatFrequency === "biweekly") && item.repeatDays.length === 0) return `Pick repeat days for ${service.name}`;
+        if (item.requestedEndDate && item.requestedEndDate < item.requestedDate) return `Repeat end date must be after the first date for ${service.name}`;
+      }
     }
     return null;
   };
@@ -519,7 +626,7 @@ const Book = () => {
   const validatePetStep = () => {
     for (const item of bundleItems) {
       const service = item.serviceId ? serviceMap.get(item.serviceId) ?? null : null;
-      if (!item.petId) return `Choose a pet for ${service?.name ?? "each request"}`;
+      if (item.petIds.length === 0) return `Choose at least one pet for ${service?.name ?? "each request"}`;
     }
     return null;
   };
@@ -532,26 +639,17 @@ const Book = () => {
 
   const back = () => setStep((current) => Math.max(current - 1, 0));
 
-  const buildBookingPayload = (item: BundleItem, position: number, requestGroupId: string, sameServicePosition = 0) => {
+  const buildBookingPayload = (
+    item: BundleItem,
+    petId: string,
+    totalCents: number,
+    bundlePosition: number,
+    requestGroupId: string,
+  ) => {
     const service = item.serviceId ? serviceMap.get(item.serviceId) ?? null : null;
     const variant = item.variantId ? variantMap.get(item.variantId) ?? null : null;
     const selectedWindow = item.windowId ? walkWindows.find((window) => window.id === item.windowId) ?? null : null;
-    if (!user || !service || !variant || !item.petId || !item.requestedDate || !sitterId) return null;
-
-    // Boarding tiered pricing: $80 first night + $60 each additional night
-    let totalCents = variant.price_cents;
-    if (service.slug === "boarding" && item.requestedDate) {
-      const start = new Date(`${item.requestedDate}T00:00:00`);
-      const end = item.requestedEndDate ? new Date(`${item.requestedEndDate}T00:00:00`) : start;
-      const nights = Math.max(1, Math.round((end.getTime() - start.getTime()) / (1000 * 60 * 60 * 24)) || 1);
-      const extraNightVariant = (service.variants || []).find((v) => v.slug === "boarding-extra-night");
-      const extraCents = extraNightVariant?.price_cents ?? 6000;
-      totalCents = calculateBoardingTotalCents(variant.price_cents, extraCents, nights);
-    }
-
-    // Sibling discount: 50% off second+ dog for group walks / boarding
-    const discountPct = variant.sibling_discount_percent ?? 0;
-    totalCents = applySiblingDiscount(totalCents, sameServicePosition, discountPct);
+    if (!user || !service || !variant || !item.requestedDate || !sitterId) return null;
 
     const paymentAmountCents = variant.payment_mode === "free" ? 0 : variant.payment_mode === "deposit" ? Math.round(totalCents * 0.25) : totalCents;
     const depositCents = variant.payment_mode === "deposit" ? paymentAmountCents : variant.payment_mode === "full" ? totalCents : 0;
@@ -567,8 +665,7 @@ const Book = () => {
       const checkoutMinute = service.boarding_checkout_minute ?? 12 * 60;
       const startDate = new Date(`${item.requestedDate}T00:00:00`);
       startDate.setMinutes(checkinMinute);
-      const endDate = new Date(addDays(new Date(`${item.requestedDate}T00:00:00`), 1));
-      endDate.setHours(0, 0, 0, 0);
+      const endDate = new Date(`${item.requestedEndDate || item.requestedDate}T00:00:00`);
       endDate.setMinutes(checkoutMinute);
       startAt = startDate.toISOString();
       endAt = endDate.toISOString();
@@ -603,14 +700,13 @@ const Book = () => {
       ? null
       : {
           frequency: item.repeatFrequency,
-          interval: item.repeatInterval,
           weekdays: item.repeatDays,
         };
 
     return {
       customer_id: user.id,
       sitter_id: sitterId,
-      pet_id: item.petId,
+      pet_id: petId,
       service_id: service.id,
       service_variant_id: variant.id,
       start_at: startAt,
@@ -627,18 +723,21 @@ const Book = () => {
       request_group_id: requestGroupId,
       request_group_label: null,
       requested_date: item.requestedDate,
-      requested_end_date: item.repeatFrequency === "none" ? null : item.requestedEndDate || null,
+      requested_end_date: service.slug === "boarding"
+        ? item.requestedEndDate || null
+        : item.repeatFrequency === "none" ? null : item.requestedEndDate || null,
       requested_window_label: requestedWindowLabel,
       requested_window_start_minute: requestedWindowStartMinute,
       requested_window_end_minute: requestedWindowEndMinute,
       recurrence_label: recurrenceLabel,
       recurrence_pattern: recurrencePattern,
-      bundle_position: position,
+      bundle_position: bundlePosition,
     };
   };
 
   const submit = async () => {
     if (!user || !sitterId) return;
+    if (submittingRef.current) return; // hard guard against double-click / StrictMode double-fire
     const serviceError = validateServiceStep();
     const scheduleError = validateScheduleStep();
     const petError = validatePetStep();
@@ -651,63 +750,115 @@ const Book = () => {
       return;
     }
 
+    submittingRef.current = true;
     setSubmitting(true);
 
-    const { data: groupData, error: groupError } = await db
-      .from("booking_request_groups")
-      .insert({
-        customer_id: user.id,
-        sitter_id: sitterId,
-        label: null,
-        notes: bundleNotes.trim() || null,
-        status: "requested",
-      })
-      .select("id")
-      .single();
+    try {
+      const { data: groupData, error: groupError } = await db
+        .from("booking_request_groups")
+        .insert({
+          customer_id: user.id,
+          sitter_id: sitterId,
+          label: null,
+          notes: bundleNotes.trim() || null,
+          status: "requested",
+        })
+        .select("id")
+        .single();
 
-    if (groupError || !groupData?.id) {
+      if (groupError || !groupData?.id) {
+        throw new Error(groupError?.message ?? "Couldn't create request group");
+      }
+
+      // Build one booking row per (bundle item × pet), with sibling discount applied.
+      const payloads: any[] = [];
+      let bundlePosition = 0;
+      for (const group of allLines) {
+        for (const line of group.lines) {
+          const payload = buildBookingPayload(group.item, line.petId, line.cents, bundlePosition++, groupData.id);
+          if (payload) payloads.push(payload);
+        }
+      }
+
+      if (payloads.length === 0) {
+        throw new Error("Please pick at least one pet for each service.");
+      }
+
+      const { data, error } = await db.from("bookings").insert(payloads).select("id");
+      if (error || !data?.length) {
+        throw new Error(error?.message ?? "Couldn't save request");
+      }
+
+      // Build email summary lines from in-memory data (so we don't need to round-trip).
+      const emailLines = allLines.flatMap(({ item, service, variant, lines }) => {
+        if (!service || !variant) return [];
+        const dateLabel = item.requestedDate ? format(new Date(`${item.requestedDate}T12:00:00`), "EEE, MMM d") : "TBD";
+        const window = walkWindows.find((w) => w.id === item.windowId) ?? null;
+        const baseTiming = service.slug === "boarding" && item.requestedEndDate
+          ? `${dateLabel} → ${format(new Date(`${item.requestedEndDate}T12:00:00`), "EEE, MMM d")} · ${getBoardingNights(item)} night${getBoardingNights(item) === 1 ? "" : "s"}`
+          : window
+            ? `${dateLabel} · ${window.window_label}`
+            : item.slot != null
+              ? `${dateLabel} · ${minutesToTime(item.slot)}`
+              : dateLabel;
+        const recurrence = getRepeatSummary(item);
+        return lines.map((line) => ({
+          serviceName: variant.name,
+          petName: line.isSibling ? `${line.petName} (sibling 50% off)` : line.petName,
+          timing: baseTiming,
+          recurrence,
+          priceLabel: formatPriceWithDecimals(line.cents),
+        }));
+      });
+      const totalLabel = formatPriceWithDecimals(grandTotalCents);
+
+      // ONE email + ONE sitter notification per request group.
+      const firstBookingId = data[0].id as string;
+      await Promise.all([
+        supabase.functions.invoke("notify-new-booking-request", {
+          body: { bookingId: firstBookingId, requestGroupId: groupData.id, bookingCount: data.length },
+        }),
+        supabase.functions.invoke("booking-workflow", {
+          body: {
+            bookingId: firstBookingId,
+            action: "request_received",
+            requestGroupId: groupData.id,
+            lines: emailLines,
+            totalLabel,
+            notes: bundleNotes.trim() || null,
+          },
+        }),
+      ]);
+
+      // Show warm confirmation modal instead of navigating immediately.
+      setConfirmation({
+        lines: emailLines,
+        totalLabel,
+        firstBookingId,
+        bundle: data.length > 1,
+      });
+    } catch (err: any) {
+      toast({ title: "Couldn't save request", description: err?.message ?? "Please try again.", variant: "destructive" });
+    } finally {
+      submittingRef.current = false;
       setSubmitting(false);
-      toast({ title: "Couldn't save request", description: groupError?.message ?? "Please try again.", variant: "destructive" });
-      return;
     }
-
-    const serviceCounts = new Map<string, number>();
-    const bookingPayloads = bundleItems
-      .map((item, index) => {
-        const key = item.serviceId ?? "_";
-        const sameServicePosition = serviceCounts.get(key) ?? 0;
-        serviceCounts.set(key, sameServicePosition + 1);
-        return buildBookingPayload(item, index, groupData.id, sameServicePosition);
-      })
-      .filter(Boolean);
-
-    const { data, error } = await db.from("bookings").insert(bookingPayloads).select("id");
-    setSubmitting(false);
-
-    if (error || !data?.length) {
-      toast({ title: "Couldn't save request", description: error?.message ?? "Please try again.", variant: "destructive" });
-      return;
-    }
-
-    await Promise.all(
-      data.map((booking: { id: string }) =>
-        Promise.all([
-          supabase.functions.invoke("notify-new-booking-request", {
-            body: { bookingId: booking.id },
-          }),
-          supabase.functions.invoke("booking-workflow", {
-            body: { bookingId: booking.id, action: "request_received" },
-          }),
-        ]),
-      ),
-    );
-
-    navigate(`/booking/${data[0].id}/success${data.length > 1 ? "?bundle=1" : ""}`);
   };
 
   const reviewCopy = bundleItems.length > 1
     ? "Each service in this request is included in one submission."
     : "Your request details are included below.";
+
+  const closeConfirmation = (goToBooking: boolean) => {
+    const id = confirmation?.firstBookingId;
+    const wasBundle = confirmation?.bundle;
+    setConfirmation(null);
+    if (goToBooking && id) {
+      navigate(`/booking/${id}/success${wasBundle ? "?bundle=1" : ""}`);
+    } else {
+      navigate("/account");
+    }
+  };
 
   return (
     <main className="min-h-screen bg-background texture-grain">
@@ -744,6 +895,7 @@ const Book = () => {
           <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
             <div>
               <h2 className="font-display text-2xl uppercase text-primary">Bundle builder</h2>
+              <p className="mt-1 text-xs text-muted-foreground">All prices include tax.</p>
             </div>
             <Button type="button" onClick={addBundleItem} variant="outline" className="border-2 border-primary font-display uppercase">
               <Plus className="h-4 w-4" /> Add another service
@@ -751,44 +903,40 @@ const Book = () => {
           </div>
 
           <div className="mt-5 grid gap-3 lg:grid-cols-2">
-            {bundleSummaries.map(({ item, service, summary }) => (
-              <button
-                key={item.id}
-                type="button"
-                onClick={() => setActiveItemId(item.id)}
-                className={cn(
-                  "border-2 p-4 text-left transition-all",
-                  activeItemId === item.id ? "border-primary bg-highlight shadow-pop-sm" : "border-primary bg-card hover:-translate-y-0.5 hover:bg-muted",
-                )}
-              >
-                <div className="flex items-start justify-between gap-3">
-                  <div>
-                    <div className="font-display text-base uppercase text-primary">{service?.name ?? `Service ${bundleItems.findIndex((candidate) => candidate.id === item.id) + 1}`}</div>
-                    <p className="mt-1 text-sm text-foreground/75">{summary}</p>
-                  </div>
-                  {bundleItems.length > 1 && (
-                    <span
-                      role="button"
-                      tabIndex={0}
-                      onClick={(event) => {
-                        event.stopPropagation();
-                        removeBundleItem(item.id);
-                      }}
-                      onKeyDown={(event) => {
-                        if (event.key === "Enter" || event.key === " ") {
-                          event.preventDefault();
-                          removeBundleItem(item.id);
-                        }
-                      }}
-                      className="text-muted-foreground transition-colors hover:text-destructive"
-                      aria-label="Remove request"
-                    >
-                      <Trash2 className="h-4 w-4" />
-                    </span>
+            {bundleItems.map((item) => {
+              const service = item.serviceId ? serviceMap.get(item.serviceId) ?? null : null;
+              const variant = item.variantId ? variantMap.get(item.variantId) ?? null : null;
+              return (
+                <button
+                  key={item.id}
+                  type="button"
+                  onClick={() => setActiveItemId(item.id)}
+                  className={cn(
+                    "border-2 p-4 text-left transition-all",
+                    activeItemId === item.id ? "border-primary bg-highlight shadow-pop-sm" : "border-primary bg-card hover:-translate-y-0.5 hover:bg-muted",
                   )}
-                </div>
-              </button>
-            ))}
+                >
+                  <div className="flex items-start justify-between gap-3">
+                    <div>
+                      <div className="font-display text-base uppercase text-primary">{service?.name ?? `Service ${bundleItems.findIndex((c) => c.id === item.id) + 1}`}</div>
+                      <p className="mt-1 text-sm text-foreground/75">{getBundleSummaryText(item, service, variant)}</p>
+                    </div>
+                    {bundleItems.length > 1 && (
+                      <span
+                        role="button"
+                        tabIndex={0}
+                        onClick={(event) => { event.stopPropagation(); removeBundleItem(item.id); }}
+                        onKeyDown={(event) => { if (event.key === "Enter" || event.key === " ") { event.preventDefault(); removeBundleItem(item.id); } }}
+                        className="text-muted-foreground transition-colors hover:text-destructive"
+                        aria-label="Remove request"
+                      >
+                        <Trash2 className="h-4 w-4" />
+                      </span>
+                    )}
+                  </div>
+                </button>
+              );
+            })}
           </div>
 
           {step === 0 && activeItem && (
@@ -807,15 +955,11 @@ const Book = () => {
                               <div className="flex-1">
                                 <div className="flex flex-wrap items-baseline justify-between gap-2">
                                   <span className="font-display text-2xl uppercase">{svc.name}</span>
-                                  <span className="text-xs uppercase text-muted-foreground">
-                                    {svc.approval_required ? "Manual review" : "Instant booking"}
-                                  </span>
                                 </div>
                                 <p className="mt-2 text-sm text-foreground/75">{svc.description}</p>
                                 <div className="mt-3 flex flex-wrap gap-2 text-xs text-muted-foreground">
-                                  {svc.requires_pet_approval && <span className="inline-flex items-center gap-1"><ShieldCheck className="h-3.5 w-3.5" /> Pet approval</span>}
                                   {svc.scheduling_mode === "boarding" && <span className="inline-flex items-center gap-1"><MoonStar className="h-3.5 w-3.5" /> Noon to noon</span>}
-                                  {svc.turnaround_buffer_minutes > 0 && <span>Protected scheduling window</span>}
+                                  <span className="inline-flex items-center gap-1"><Sparkles className="h-3.5 w-3.5" /> Tax included</span>
                                 </div>
                               </div>
                             </div>
@@ -825,6 +969,7 @@ const Book = () => {
                         <div className="mt-4 grid gap-2 sm:grid-cols-2 lg:grid-cols-3">
                           {svc.variants.map((variant) => {
                             const activeVariantCard = activeItem.variantId === variant.id;
+                            const showFromPrefix = svc.slug === "boarding";
                             return (
                               <button
                                 key={variant.id}
@@ -840,9 +985,19 @@ const Book = () => {
                               >
                                 <div className="font-display text-base uppercase">{variant.name}</div>
                                 <div className={cn("mt-1 text-sm", activeVariantCard ? "text-tag-foreground/80" : "text-foreground/75")}>
-                                  {formatPriceWithDecimals(variant.price_cents)}
+                                  {showFromPrefix ? "From " : ""}{formatPriceWithDecimals(variant.price_cents)}
                                   <span className="ml-1 text-xs opacity-70">{variant.unit_label}</span>
                                 </div>
+                                {svc.slug === "boarding" && (
+                                  <div className={cn("mt-1 text-[11px]", activeVariantCard ? "text-tag-foreground/80" : "text-muted-foreground")}>
+                                    +$60 each additional night
+                                  </div>
+                                )}
+                                {(variant.sibling_discount_percent ?? 0) > 0 && (
+                                  <div className={cn("mt-1 text-[11px]", activeVariantCard ? "text-tag-foreground/80" : "text-muted-foreground")}>
+                                    50% off each sibling
+                                  </div>
+                                )}
                               </button>
                             );
                           })}
@@ -865,92 +1020,121 @@ const Book = () => {
           {step === 1 && activeItem && activeService && activeVariant && (
             <div className="mt-6">
               <h3 className="font-display text-2xl uppercase">
-                {isActiveBoarding ? "Pick your drop-off day" : isActiveWalkWindowRequest ? "Pick a day & preferred window" : "Pick a day & time"}
+                {isActiveBoarding ? "Pick drop-off and pick-up days" : isActiveWalkWindowRequest ? "Pick a day & preferred window" : "Pick a day & time"}
               </h3>
               {!sitterId && <p className="mt-3 text-sm text-clay">No availability is set yet — check back soon.</p>}
-              <div className="mt-4 grid gap-6 xl:grid-cols-[auto,1fr]">
-                <div className="border-2 border-primary bg-card">
-                  <Calendar
-                    mode="single"
-                    selected={activeDate}
-                    onSelect={(nextDate) => setRequestedDate(activeItem.id, nextDate)}
-                    disabled={getDayDisabled}
-                    className={cn("pointer-events-auto p-3")}
-                  />
-                </div>
-                <div>
-                  <p className="font-display text-sm uppercase text-muted-foreground">
-                    {activeDate ? format(activeDate, "EEEE, MMM d") : "Select a date"}
-                  </p>
-                  <p className="mt-2 max-w-xl text-sm text-foreground/75">
-                    {isActiveBoarding
-                      ? `Check-in ${minutesToTime(activeService.boarding_checkin_minute ?? 12 * 60)} · checkout ${minutesToTime(activeService.boarding_checkout_minute ?? 12 * 60)} next day`
-                      : `${activeVariant.duration_minutes} min${activeService.extra_time_fee_cents && activeService.extra_time_increment_minutes ? ` · ${formatPriceWithDecimals(activeService.extra_time_fee_cents)} / ${activeService.extra_time_increment_minutes} min add-on` : ""}`}
-                  </p>
 
-                  {isActiveBoarding ? (
-                    <div className="mt-4 border-2 border-primary bg-card p-4">
-                      <div className="font-display text-lg uppercase text-primary">Boarding timing</div>
-                      <p className="mt-2 text-sm text-foreground/75">
-                        {activeDate
-                          ? `${format(activeDate, "EEE, MMM d")} at ${minutesToTime(activeService.boarding_checkin_minute ?? 12 * 60)} → ${format(addDays(activeDate, 1), "EEE, MMM d")} at ${minutesToTime(activeService.boarding_checkout_minute ?? 12 * 60)}`
-                          : "Select a day to preview the noon-to-noon stay."}
+              {isActiveBoarding ? (
+                <div className="mt-4 grid gap-6 xl:grid-cols-2">
+                  <div>
+                    <p className="font-display text-sm uppercase text-muted-foreground">Drop-off</p>
+                    <div className="mt-2 border-2 border-primary bg-card">
+                      <Calendar
+                        mode="single"
+                        selected={activeDate}
+                        onSelect={(nextDate) => setRequestedDate(activeItem.id, nextDate)}
+                        disabled={getDayDisabled}
+                        className={cn("pointer-events-auto p-3")}
+                      />
+                    </div>
+                    <p className="mt-2 text-xs text-muted-foreground">Check-in {minutesToTime(activeService.boarding_checkin_minute ?? 12 * 60)}.</p>
+                  </div>
+                  <div>
+                    <p className="font-display text-sm uppercase text-muted-foreground">Pick-up</p>
+                    <div className="mt-2 border-2 border-primary bg-card">
+                      <Calendar
+                        mode="single"
+                        selected={activeEndDate}
+                        onSelect={(nextDate) => setBoardingPickup(activeItem.id, nextDate)}
+                        disabled={getBoardingPickupDisabled}
+                        className={cn("pointer-events-auto p-3")}
+                      />
+                    </div>
+                    <p className="mt-2 text-xs text-muted-foreground">Checkout {minutesToTime(activeService.boarding_checkout_minute ?? 12 * 60)}.</p>
+                  </div>
+                  {activeItem.requestedDate && activeItem.requestedEndDate && (
+                    <div className="border-2 border-primary bg-highlight p-4 xl:col-span-2">
+                      <div className="font-display text-lg uppercase text-primary">
+                        {getBoardingNights(activeItem)} night{getBoardingNights(activeItem) === 1 ? "" : "s"} · {format(new Date(`${activeItem.requestedDate}T12:00:00`), "EEE, MMM d")} → {format(new Date(`${activeItem.requestedEndDate}T12:00:00`), "EEE, MMM d")}
+                      </div>
+                      <p className="mt-1 text-sm text-foreground/75">
+                        {formatPriceWithDecimals(activeVariant.price_cents)} first night + ${(((services.find((s)=>s.slug==="boarding")?.variants.find((v)=>v.slug==="boarding-extra-night") as any)?.price_cents ?? 6000) / 100).toFixed(2)} × {getBoardingNights(activeItem) - 1} additional night{getBoardingNights(activeItem) - 1 === 1 ? "" : "s"} = {formatPriceWithDecimals(calculateBoardingTotalCents(activeVariant.price_cents, ((services.find((s)=>s.slug==="boarding")?.variants.find((v)=>v.slug==="boarding-extra-night") as any)?.price_cents ?? 6000), getBoardingNights(activeItem)))} per pet (tax included).
                       </p>
                     </div>
-                  ) : isActiveWalkWindowRequest ? (
-                    <>
-                      {activeDate && activeWindowOptions.length === 0 && <p className="mt-3 text-sm text-clay">No request windows are open for this day.</p>}
-                      <div className="mt-3 grid gap-2 sm:grid-cols-2">
-                        {activeWindowOptions.map((window) => {
-                          const active = activeItem.windowId === window.id;
-                          const requestCount = requestCountByWindow.get(`${format(activeDate ?? new Date(), "yyyy-MM-dd")}-${window.window_label}`) ?? 0;
-                          const remaining = Math.max((window.max_bookings ?? 1) - requestCount, 0);
-                          return (
+                  )}
+                </div>
+              ) : (
+                <div className="mt-4 grid gap-6 xl:grid-cols-[auto,1fr]">
+                  <div className="border-2 border-primary bg-card">
+                    <Calendar
+                      mode="single"
+                      selected={activeDate}
+                      onSelect={(nextDate) => setRequestedDate(activeItem.id, nextDate)}
+                      disabled={getDayDisabled}
+                      className={cn("pointer-events-auto p-3")}
+                    />
+                  </div>
+                  <div>
+                    <p className="font-display text-sm uppercase text-muted-foreground">
+                      {activeDate ? format(activeDate, "EEEE, MMM d") : "Select a date"}
+                    </p>
+                    <p className="mt-2 max-w-xl text-sm text-foreground/75">
+                      {`${activeVariant.duration_minutes} min${activeService.extra_time_fee_cents && activeService.extra_time_increment_minutes ? ` · ${formatPriceWithDecimals(activeService.extra_time_fee_cents)} / ${activeService.extra_time_increment_minutes} min add-on` : ""}`}
+                    </p>
+
+                    {isActiveWalkWindowRequest ? (
+                      <>
+                        {activeDate && activeWindowOptions.length === 0 && <p className="mt-3 text-sm text-clay">No request windows are open for this day.</p>}
+                        <div className="mt-3 grid gap-2 sm:grid-cols-2">
+                          {activeWindowOptions.map((window) => {
+                            const active = activeItem.windowId === window.id;
+                            const requestCount = requestCountByWindow.get(`${format(activeDate ?? new Date(), "yyyy-MM-dd")}-${window.window_label}`) ?? 0;
+                            const remaining = Math.max((window.max_bookings ?? 1) - requestCount, 0);
+                            return (
+                              <button
+                                key={window.id}
+                                type="button"
+                                onClick={() => patchBundleItem(activeItem.id, { windowId: window.id })}
+                                className={cn(
+                                  "border-2 border-primary p-3 text-left transition-all",
+                                  active ? "bg-tag text-tag-foreground shadow-pop-accent" : "bg-card hover:-translate-y-0.5 hover:bg-muted",
+                                )}
+                              >
+                                <div className="font-display text-base uppercase">{window.window_label}</div>
+                                <div className={cn("mt-1 text-xs", active ? "text-tag-foreground/80" : "text-muted-foreground")}>
+                                  {minutesToTime(window.start_minute)}–{minutesToTime(window.end_minute)}
+                                </div>
+                                <div className={cn("mt-2 text-[11px] uppercase", active ? "text-tag-foreground/80" : "text-muted-foreground")}>
+                                  {remaining} spot{remaining === 1 ? "" : "s"} left in this block
+                                </div>
+                              </button>
+                            );
+                          })}
+                        </div>
+                      </>
+                    ) : (
+                      <>
+                        {activeDate && activeSlots.length === 0 && <p className="mt-3 text-sm text-clay">No times open this day.</p>}
+                        <div className="mt-3 grid grid-cols-3 gap-2 sm:grid-cols-4">
+                          {activeSlots.map((minute) => (
                             <button
-                              key={window.id}
+                              key={minute}
                               type="button"
-                              onClick={() => patchBundleItem(activeItem.id, { windowId: window.id })}
+                              onClick={() => patchBundleItem(activeItem.id, { slot: minute })}
                               className={cn(
-                                "border-2 border-primary p-3 text-left transition-all",
-                                active ? "bg-tag text-tag-foreground shadow-pop-accent" : "bg-card hover:-translate-y-0.5 hover:bg-muted",
+                                "border-2 border-primary px-2 py-2 font-display text-xs uppercase transition-all",
+                                activeItem.slot === minute
+                                  ? "-translate-y-0.5 bg-tag text-tag-foreground shadow-pop-accent"
+                                  : "bg-card hover:-translate-y-0.5 hover:bg-accent hover:text-accent-foreground",
                               )}
                             >
-                              <div className="font-display text-base uppercase">{window.window_label}</div>
-                              <div className={cn("mt-1 text-xs", active ? "text-tag-foreground/80" : "text-muted-foreground")}>
-                                {minutesToTime(window.start_minute)}–{minutesToTime(window.end_minute)}
-                              </div>
-                              <div className={cn("mt-2 text-[11px] uppercase", active ? "text-tag-foreground/80" : "text-muted-foreground")}>
-                                {remaining} spot{remaining === 1 ? "" : "s"} left in this block
-                              </div>
+                              {minutesToTime(minute)}
                             </button>
-                          );
-                        })}
-                      </div>
-                    </>
-                  ) : (
-                    <>
-                      {activeDate && activeSlots.length === 0 && <p className="mt-3 text-sm text-clay">No times open this day.</p>}
-                      <div className="mt-3 grid grid-cols-3 gap-2 sm:grid-cols-4">
-                        {activeSlots.map((minute) => (
-                          <button
-                            key={minute}
-                            type="button"
-                            onClick={() => patchBundleItem(activeItem.id, { slot: minute })}
-                            className={cn(
-                              "border-2 border-primary px-2 py-2 font-display text-xs uppercase transition-all",
-                              activeItem.slot === minute
-                                ? "-translate-y-0.5 bg-tag text-tag-foreground shadow-pop-accent"
-                                : "bg-card hover:-translate-y-0.5 hover:bg-accent hover:text-accent-foreground",
-                            )}
-                          >
-                            {minutesToTime(minute)}
-                          </button>
-                        ))}
-                      </div>
-                    </>
-                  )}
+                          ))}
+                        </div>
+                      </>
+                    )}
 
-                  {!isActiveBoarding && (
                     <div className="mt-6 space-y-4 border-2 border-primary bg-muted/40 p-4">
                       <div className="flex flex-col gap-4 md:flex-row md:items-end md:justify-between">
                         <div className="flex-1">
@@ -963,7 +1147,7 @@ const Book = () => {
                               <SelectItem value="none">One-off request</SelectItem>
                               <SelectItem value="daily">Daily</SelectItem>
                               <SelectItem value="weekly">Weekly</SelectItem>
-                              <SelectItem value="biweekly">Biweekly</SelectItem>
+                              <SelectItem value="biweekly">Biweekly (every other week)</SelectItem>
                               <SelectItem value="monthly">Monthly</SelectItem>
                             </SelectContent>
                           </Select>
@@ -975,13 +1159,6 @@ const Book = () => {
                           </div>
                         )}
                       </div>
-
-                      {activeItem.repeatFrequency === "daily" && (
-                        <div className="max-w-xs">
-                          <Label>Repeat every</Label>
-                          <Input type="number" min={1} max={30} value={activeItem.repeatInterval} onChange={(event) => patchBundleItem(activeItem.id, { repeatInterval: Math.max(1, Number(event.target.value) || 1) })} />
-                        </div>
-                      )}
 
                       {(activeItem.repeatFrequency === "weekly" || activeItem.repeatFrequency === "biweekly") && (
                         <div>
@@ -1005,7 +1182,7 @@ const Book = () => {
                             })}
                           </div>
                           <p className="mt-2 text-xs text-muted-foreground">
-                            {activeItem.repeatFrequency === "biweekly" ? "This request repeats every other week on the selected days." : "This request repeats weekly on the selected days."}
+                            {activeItem.repeatFrequency === "biweekly" ? "Repeats every other week on the selected days." : "Repeats weekly on the selected days."}
                           </p>
                         </div>
                       )}
@@ -1014,20 +1191,16 @@ const Book = () => {
                         <p className="text-xs text-muted-foreground">Monthly repeats use day {new Date(`${activeItem.requestedDate}T12:00:00`).getDate()} of each month.</p>
                       )}
                     </div>
-                  )}
+                  </div>
                 </div>
-              </div>
+              )}
             </div>
           )}
 
           {step === 2 && activeItem && activeService && (
             <div className="mt-6">
               <h3 className="font-display text-2xl uppercase">Who&apos;s coming?</h3>
-              {activeService.requires_pet_approval && (
-                <div className="mt-3 border-2 border-primary bg-muted px-4 py-3 text-sm text-foreground/75">
-                  Pet fit is reviewed for this service before the booking is confirmed.
-                </div>
-              )}
+              <p className="mt-1 text-sm text-foreground/75">Pick one or more pets — siblings get 50% off on group walks and boarding.</p>
               {pets.length === 0 ? (
                 <Card className="mt-4 -rotate-1 border-2 border-primary bg-highlight p-6 text-center shadow-pop">
                   <PawPrint className="mx-auto h-8 w-8 text-clay" />
@@ -1037,32 +1210,35 @@ const Book = () => {
                   </Button>
                 </Card>
               ) : (
-                <RadioGroup value={activeItem.petId ?? ""} onValueChange={(value) => patchBundleItem(activeItem.id, { petId: value })} className="mt-4 grid gap-3 sm:grid-cols-2">
-                  {pets.map((pet) => (
-                    <label
-                      key={pet.id}
-                      className={cn(
-                        "flex cursor-pointer items-center gap-3 border-2 border-primary p-3",
-                        activeItem.petId === pet.id ? "bg-highlight" : "bg-card hover:bg-muted",
-                      )}
-                    >
-                      <RadioGroupItem value={pet.id} />
-                      <div className="h-12 w-12 overflow-hidden border-2 border-primary bg-muted">
-                        {pet.photo_url ? (
-                          <img src={pet.photo_url} alt={pet.name} className="h-full w-full object-cover" />
-                        ) : (
-                          <div className="grid h-full w-full place-items-center">
-                            <PawPrint className="h-5 w-5 opacity-40" />
-                          </div>
+                <div className="mt-4 grid gap-3 sm:grid-cols-2">
+                  {pets.map((pet) => {
+                    const checked = activeItem.petIds.includes(pet.id);
+                    return (
+                      <label
+                        key={pet.id}
+                        className={cn(
+                          "flex cursor-pointer items-center gap-3 border-2 border-primary p-3",
+                          checked ? "bg-highlight" : "bg-card hover:bg-muted",
                         )}
-                      </div>
-                      <div className="flex-1">
-                        <div className="font-display text-lg uppercase leading-tight">{pet.name}</div>
-                        <div className="text-xs text-muted-foreground">{pet.breed}</div>
-                      </div>
-                    </label>
-                  ))}
-                </RadioGroup>
+                      >
+                        <Checkbox checked={checked} onCheckedChange={() => togglePetForItem(activeItem.id, pet.id)} />
+                        <div className="h-12 w-12 overflow-hidden border-2 border-primary bg-muted">
+                          {pet.photo_url ? (
+                            <img src={pet.photo_url} alt={pet.name} className="h-full w-full object-cover" />
+                          ) : (
+                            <div className="grid h-full w-full place-items-center">
+                              <PawPrint className="h-5 w-5 opacity-40" />
+                            </div>
+                          )}
+                        </div>
+                        <div className="flex-1">
+                          <div className="font-display text-lg uppercase leading-tight">{pet.name}</div>
+                          <div className="text-xs text-muted-foreground">{pet.breed}</div>
+                        </div>
+                      </label>
+                    );
+                  })}
+                </div>
               )}
               <div className="mt-5">
                 <Label>Care notes (optional)</Label>
@@ -1081,56 +1257,57 @@ const Book = () => {
             <div className="mt-6">
               <h3 className="font-display text-2xl uppercase">Review</h3>
               <div className="mt-4 space-y-4">
-                {bundleSummaries.map(({ item, service, variant, pet, selectedWindow }) => (
+                {allLines.map(({ item, service, variant, lines }) => (
                   <div key={item.id} className="border-2 border-primary bg-card p-4">
                     <div className="flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between">
                       <div>
                         <div className="font-display text-xl uppercase text-primary">{variant?.name ?? service?.name ?? "Service"}</div>
-                        <p className="mt-1 text-sm text-foreground/80">{pet?.name ? `For ${pet.name}` : "Pet not selected yet"}</p>
-                      </div>
-                      <div className="text-left sm:text-right">
-                        <div className="font-display text-lg uppercase">{variant ? formatPriceWithDecimals(variant.price_cents) : ""}</div>
+                        <p className="mt-1 text-sm text-foreground/80">
+                          {service?.slug === "boarding" && item.requestedDate && item.requestedEndDate
+                            ? `${format(new Date(`${item.requestedDate}T12:00:00`), "EEE, MMM d")} → ${format(new Date(`${item.requestedEndDate}T12:00:00`), "EEE, MMM d")} · ${getBoardingNights(item)} night${getBoardingNights(item) === 1 ? "" : "s"}`
+                            : item.requestedDate
+                              ? `${format(new Date(`${item.requestedDate}T12:00:00`), "EEE, MMM d")}${item.windowId ? ` · ${walkWindows.find((w) => w.id === item.windowId)?.window_label ?? ""}` : item.slot != null ? ` · ${minutesToTime(item.slot)}` : ""}`
+                              : "Pending schedule"}
+                          {getRepeatSummary(item) ? ` · ${getRepeatSummary(item)}` : ""}
+                        </p>
                       </div>
                     </div>
-                    <dl className="mt-4 divide-y-2 divide-primary/15 border-2 border-primary bg-muted/40 text-sm">
-                      <div className="flex items-center justify-between gap-4 p-3">
-                        <dt className="font-display text-xs uppercase tracking-wide text-muted-foreground">Requested timing</dt>
-                        <dd className="text-right font-display text-base uppercase">
-                          {service?.slug === "boarding"
-                            ? `${format(new Date(`${item.requestedDate}T12:00:00`), "EEE, MMM d")} · ${minutesToTime(service.boarding_checkin_minute ?? 12 * 60)}`
-                            : WALK_REQUEST_SLUGS.has(service?.slug ?? "") && selectedWindow
-                              ? `${format(new Date(`${item.requestedDate}T12:00:00`), "EEE, MMM d")} · ${selectedWindow.window_label}`
-                              : item.slot != null
-                                ? `${format(new Date(`${item.requestedDate}T12:00:00`), "EEE, MMM d")} · ${minutesToTime(item.slot)}`
-                                : "Pending schedule"}
-                        </dd>
-                      </div>
-                      <div className="flex items-center justify-between gap-4 p-3">
-                        <dt className="font-display text-xs uppercase tracking-wide text-muted-foreground">Repeat</dt>
-                        <dd className="text-right font-display text-base uppercase">{getRepeatSummary(item) ?? "One-off"}</dd>
-                      </div>
-                      {item.requestedEndDate && (
-                        <div className="flex items-center justify-between gap-4 p-3">
-                          <dt className="font-display text-xs uppercase tracking-wide text-muted-foreground">Through</dt>
-                          <dd className="text-right font-display text-base uppercase">{format(new Date(`${item.requestedEndDate}T12:00:00`), "EEE, MMM d")}</dd>
-                        </div>
+                    <ul className="mt-4 divide-y-2 divide-primary/15 border-2 border-primary bg-muted/40 text-sm">
+                      {lines.length === 0 && (
+                        <li className="p-3 text-muted-foreground">No pets selected for this service.</li>
                       )}
-                      {item.notes && (
-                        <div className="flex items-center justify-between gap-4 p-3">
-                          <dt className="font-display text-xs uppercase tracking-wide text-muted-foreground">Notes</dt>
-                          <dd className="max-w-[70%] text-right text-sm text-foreground/80">{item.notes}</dd>
-                        </div>
-                      )}
-                    </dl>
+                      {lines.map((line) => (
+                        <li key={line.petId} className="flex items-center justify-between gap-4 p-3">
+                          <span className="font-display text-base">
+                            {line.petName}
+                            {line.isSibling && <span className="ml-2 text-xs uppercase text-clay">sibling 50% off</span>}
+                          </span>
+                          <span className="font-display text-base">{formatPriceWithDecimals(line.cents)}</span>
+                        </li>
+                      ))}
+                    </ul>
+                    {item.notes && (
+                      <p className="mt-3 text-xs text-muted-foreground"><span className="font-display uppercase">Notes:</span> {item.notes}</p>
+                    )}
                   </div>
                 ))}
               </div>
+
+              <div className="mt-5 border-2 border-primary bg-highlight p-5">
+                <div className="flex items-baseline justify-between gap-3">
+                  <span className="font-display text-lg uppercase text-primary">Estimated total if approved</span>
+                  <span className="font-display text-3xl text-primary">{formatPriceWithDecimals(grandTotalCents)}</span>
+                </div>
+                <p className="mt-1 text-xs text-muted-foreground">All prices include tax. You won't be charged until Anneke confirms your request.</p>
+              </div>
+
               <p className="mt-4 text-xs text-muted-foreground">{reviewCopy}</p>
+
               <div className="mt-5 rounded-md border border-border bg-muted/40 p-4">
                 <label className="flex items-start gap-3 text-sm text-foreground/85">
                   <Checkbox checked={acceptedTerms} onCheckedChange={(checked) => setAcceptedTerms(checked === true)} className="mt-0.5" />
                   <span>
-                    I have read and agree to the <Link to="/terms" target="_blank" rel="noreferrer" className="font-medium text-primary underline underline-offset-4">Terms &amp; Conditions</Link>, including the liability, veterinary authorization, cancellation, and release provisions.
+                    I agree to the <Link to="/terms" target="_blank" rel="noreferrer" className="font-medium text-primary underline underline-offset-4">Terms &amp; Conditions</Link>. All prices include tax. Submitting a request doesn't charge my card — Anneke will review and be in touch.
                   </span>
                 </label>
               </div>
@@ -1147,7 +1324,7 @@ const Book = () => {
               </Button>
             ) : (
               <Button onClick={submit} disabled={submitting || !acceptedTerms} className="bg-tag font-display uppercase text-tag-foreground shadow-pop-accent transition-transform hover:-translate-y-0.5">
-                {submitting ? "Saving…" : <>Send request <Check className="h-4 w-4" /></>}
+                {submitting ? "Sending…" : <>Submit request <Check className="h-4 w-4" /></>}
               </Button>
             )}
           </div>
@@ -1156,9 +1333,46 @@ const Book = () => {
         <p className="mt-6 inline-flex -rotate-1 items-center gap-2 font-tag text-lg text-tag">
           <CalendarDays className="h-4 w-4" /> showing the next 120 days · live booking calendar
         </p>
-        <p className="mt-2 text-xs text-muted-foreground">Weekly, biweekly, daily, and monthly repeats are supported for walks and visits. Boarding stays stay one-off for now.</p>
+        <p className="mt-2 text-xs text-muted-foreground">Weekly, biweekly, daily, and monthly repeats are supported for walks and visits. Boarding stays use a drop-off and pick-up date.</p>
       </section>
       <SiteFooter />
+
+      <Dialog open={!!confirmation} onOpenChange={(open) => { if (!open) closeConfirmation(false); }}>
+        <DialogContent className="max-w-lg">
+          <DialogHeader>
+            <DialogTitle className="font-display text-2xl uppercase text-primary">Thanks — your request is in! 🐾</DialogTitle>
+            <DialogDescription>
+              Anneke will personally review your request and be in touch soon — keep an eye on your inbox for a confirmation email.
+            </DialogDescription>
+          </DialogHeader>
+
+          {confirmation && (
+            <div className="space-y-3">
+              <ul className="divide-y divide-border rounded-md border border-border bg-muted/40 text-sm">
+                {confirmation.lines.map((line, idx) => (
+                  <li key={idx} className="flex flex-col gap-0.5 p-3 sm:flex-row sm:items-center sm:justify-between">
+                    <div>
+                      <div className="font-display text-sm">{line.serviceName} <span className="text-muted-foreground">· {line.petName}</span></div>
+                      <div className="text-xs text-muted-foreground">{line.timing}{line.recurrence ? ` · ${line.recurrence}` : ""}</div>
+                    </div>
+                    {line.priceLabel && <div className="font-display text-sm text-primary">{line.priceLabel}</div>}
+                  </li>
+                ))}
+              </ul>
+              <div className="flex items-baseline justify-between rounded-md border-2 border-primary bg-highlight px-4 py-3">
+                <span className="font-display text-sm uppercase text-primary">Estimated total if approved</span>
+                <span className="font-display text-xl text-primary">{confirmation.totalLabel}</span>
+              </div>
+              <p className="text-xs text-muted-foreground">All prices include tax. You won't be charged until Anneke confirms.</p>
+            </div>
+          )}
+
+          <DialogFooter className="gap-2">
+            <Button variant="outline" onClick={() => closeConfirmation(false)}>Close</Button>
+            <Button onClick={() => closeConfirmation(true)} className="bg-tag font-display uppercase text-tag-foreground">View my request</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </main>
   );
 };

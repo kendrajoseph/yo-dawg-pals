@@ -287,7 +287,12 @@ serve(async (req) => {
     const { data: authData, error: authError } = await supabase.auth.getUser(authHeader);
     if (authError || !authData.user) return json({ error: "Unauthorized" }, 401);
 
-    const { action, bookingId, scheduledStartAt, scheduledEndAt, groupLabel, internalNotes, appUrl } = await req.json();
+    const reqBody = await req.json();
+    const { action, bookingId, scheduledStartAt, scheduledEndAt, groupLabel, internalNotes, appUrl } = reqBody;
+    const requestSummaryLines = reqBody.lines as Array<Record<string, any>> | undefined;
+    const requestTotalLabel = reqBody.totalLabel as string | undefined;
+    const requestNotes = reqBody.notes as string | undefined;
+    const requestGroupId = reqBody.requestGroupId as string | undefined;
     if (!action || !bookingId) return json({ error: "Missing action or bookingId" }, 400);
 
     const { data: booking, error: bookingError } = await supabase
@@ -317,16 +322,25 @@ serve(async (req) => {
       if (!isCustomer) return json({ error: "Forbidden" }, 403);
       if (!customerEmail) return json({ error: "Missing customer email" }, 400);
 
+      // Caller passes pre-formatted summary lines + total so we send ONE consolidated email
+      // per request group (not one per booking).
       await supabase.functions.invoke("send-transactional-email", {
         headers: { Authorization: `Bearer ${serviceRoleKey}` },
         body: {
           templateName: "walk-request-received",
           recipientEmail: customerEmail,
-          idempotencyKey: `walk-request-${bookingId}`,
+          idempotencyKey: `walk-request-${requestGroupId || bookingId}`,
           templateData: {
             customerName,
-            serviceName: (booking.services as any)?.name || "Walk",
-            petName: (booking.pets as any)?.name || "your dog",
+            lines: requestSummaryLines && requestSummaryLines.length > 0 ? requestSummaryLines : [{
+              serviceName: (booking.services as any)?.name || "Walk",
+              petName: (booking.pets as any)?.name || "your dog",
+              timing: booking.scheduled_start_at
+                ? new Date(booking.scheduled_start_at).toLocaleString("en-CA", { weekday: "short", month: "short", day: "numeric", hour: "numeric", minute: "2-digit" })
+                : "TBD",
+            }],
+            totalLabel: requestTotalLabel,
+            notes: requestNotes,
           },
         },
       });

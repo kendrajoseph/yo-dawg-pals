@@ -1,191 +1,146 @@
-## Why the current backend feels messy
+## Booking Flow Overhaul
 
-Right now `SitterDashboard.tsx` is a **4,269-line single file** with **8 sibling tabs** all on one level: Overview, Day view, Playbook, Clients, Schedule, Care, Payments, Alerts. Every tab is a kitchen-sink page and there is no clear primary surface — the operator has to hunt across tabs to do one job (e.g., approve a request → confirm schedule → notify client → invoice).
-
-Independently-owned service businesses on tools like **Jobber, Housecall Pro, Square Appointments, Honeybook, and Squire** consistently use a different shape:
-
-1. A **Today / Run-the-day** screen as the home surface (what's happening now)
-2. A **dedicated work object** for each thing that moves through a pipeline (Request → Booking → Visit → Invoice)
-3. **Side navigation, not tabs**, with badges for things that need attention
-4. **Detail drawers/pages** for each record, instead of inline editing inside a tab
-5. **Settings tucked away**, not mixed with daily work
-
-We'll adopt that shape.
+A focused pass over `src/pages/Book.tsx`, the request-confirmation email, and the request-notification edge function to fix bugs, clean up copy, and add the missing multi-night / multi-pet capabilities.
 
 ---
 
-## Proposed new structure
+### 1. Boarding multi-night support
 
-### 1. Persistent left rail (replaces the 8-tab strip)
+**Problem:** Boarding logic in `buildBookingPayload` already calculates `$70 first night + $60 each additional night`, but the UI never lets the user pick a checkout date — boarding is forced to one-off and the calendar only captures a single drop-off day.
+
+**Fix:**
+- Show a second calendar (or date input) on the Schedule step when the active service is boarding: "Drop-off date" and "Pick-up date".
+- `requested_end_date` is set from the pick-up date.
+- Live preview: "3 nights · Apr 25 → Apr 28 · $190 total (incl. tax)".
+- Disable past/blocked pick-up dates and require pick-up ≥ drop-off + 1 day.
+- Existing pricing function (`calculateBoardingTotalCents`) already handles this correctly.
+
+---
+
+### 2. Multi-pet selection per request (with sibling discount)
+
+**Problem:** Each bundle item only takes one pet. To request a Group Walk or Boarding for two siblings the user has to manually add another bundle item.
+
+**Fix:**
+- On the Pet step, change pet selection from radio (one) to checkbox (many).
+- On submit, fan out: one `bookings` row per (bundle item × pet), all sharing one `request_group_id`.
+- Apply 50% sibling discount automatically to the 2nd+ pet within the same service slug per request (using existing `applySiblingDiscount` and `service_variants.sibling_discount_percent`).
+- Show per-pet pricing breakdown on the Review step.
+
+---
+
+### 3. Show total customer will pay if approved
+
+On the Review step, render a clear order summary:
 
 ```text
-┌─────────────────┐
-│  Yodawg         │
-│                 │
-│ ▶ Today         │ ← default landing
-│   Inbox    (3)  │ ← requests + approvals + alerts in one queue
-│   Calendar      │
-│   Clients       │
-│   Pets          │
-│   Invoices (2)  │
-│   Messages      │
-│ ─────────────── │
-│   Reports       │
-│   Settings   ▾  │
-│      Services   │
-│      Availability│
-│      Reminders  │
-│      Branding   │
-└─────────────────┘
+Group Walk · Biscuit          $30.00
+Group Walk · Mochi (50% off)  $15.00
+Boarding · Mochi (3 nights)  $190.00
+─────────────────────────────────────
+Estimated total              $235.00  (all prices include tax)
+Due if approved              $235.00
 ```
 
-Badges show counts of items needing action. Settings collapses everything that today lives in "Schedule" + "Playbook" + parts of "Alerts" but is really configuration, not daily work.
-
-### 2. Today (new home)
-
-A single scannable screen that answers "what do I need to do right now?":
-
-- **At-a-glance row**: 4 KPI tiles — Today's visits · Outstanding $ · Overdue $ · Unread messages
-- **Run-of-show timeline**: chronological list of today's visits with status pills (Upcoming / In progress / Done), one-tap "Mark complete + send update"
-- **Needs your attention** card: collapsed list of the top ~5 items from Inbox (a new request, a pet awaiting approval, an overdue invoice) with inline accept/decline
-- **Quick actions** (sticky): New booking · New invoice · Block a date · Message a client
-
-This replaces today's "Overview" + "Day view" + parts of "Playbook".
-
-### 3. Inbox (unified queue)
-
-Today, the operator must check Overview for requests, Care/Alerts for messages, and Clients for pet approvals. Consolidate these into one **Inbox** with filter chips:
-
-- All · Booking requests · Pet approvals · Client messages · Payment issues
-
-Each row opens a side drawer with full context and the relevant actions (approve, reply, charge, etc.). Mirrors how Front, Honeybook, and Jobber inboxes work.
-
-### 4. Calendar (replaces "Schedule" tab)
-
-The current Schedule tab mixes three things: viewing bookings, editing weekly availability, and managing walk windows. Split them:
-
-- **Calendar page** = day/week/month view of confirmed bookings only. Click a booking → drawer with reschedule, cancel, message, invoice actions.
-- **Availability + walk windows + blocked dates** move to `Settings → Availability`. They are configuration, not daily work.
-
-### 5. Clients (richer record, not a list dump)
-
-- List view stays, with search + star rating filter.
-- Clicking a client opens a **client profile page** (not an inline panel) with tabs *inside* the client record: Overview · Pets · Bookings · Invoices · Messages · Notes. This is the Honeybook/Jobber pattern and dramatically reduces noise on the top-level Clients screen.
-
-### 6. Pets (promoted to top-level)
-
-Pets are first-class for a pet-care business. Today they're buried under Clients. Surface as their own nav item with: pending approvals callout at the top, full pet directory with temperament tags, fit-alert log.
-
-### 7. Invoices (renamed from "Payments")
-
-Operators think in *invoices*, not *payments*. Keeps the recently-built drawer + KPI tiles, but:
-
-- Add a **default sub-tab nav inside the page**: Outstanding · Overdue · Drafts · Paid · Refunded · All (replaces filter chips with persistent tabs — easier to scan)
-- Promote a **"+ New invoice"** primary button top-right
-- Add a **Reminders** quick view for what auto-cron will send next
-- Move `reminder_settings` editor to `Settings → Reminders`
-
-### 8. Messages (was "Care")
-
-Conversation list ↔ thread view (like SMS apps). Each thread is per client; bookings show as inline cards inside the thread. The current "send broadcast / templates" tools move into a "Compose" button.
-
-### 9. Reports (new)
-
-A small but high-value page: Revenue this month, Top services, Bookings by service, Cancellation rate, Outstanding A/R aging. Independently-owned businesses use this for monthly reflection — currently impossible.
-
-### 10. Settings (consolidated)
-
-Everything operational-config goes here, with sub-pages:
-- Services & pricing (variants editor)
-- Availability (weekly slots, walk windows, blocked dates)
-- Reminders (cadence + tone)
-- Templates (email + SMS)
-- Branding (logo, colors on invoices)
-- Team & roles
-- Billing & Stripe connection
+Plus a small note: "You'll only be charged if Anneke approves your request."
 
 ---
 
-## Visual & interaction principles
+### 4. Email confirmation with request details
 
-- **One primary action per screen**, top-right (e.g., "+ New booking" on Calendar, "+ New invoice" on Invoices)
-- **Drawers for editing, pages for reading.** Stop putting forms inline in lists.
-- **Status pills are colored, sparingly**: green=done/paid, amber=action needed, red=overdue, neutral=informational. No more than 3 colors at once on screen.
-- **Consistent record header**: every detail page shares a header with avatar/name + status + quick actions, so the operator builds muscle memory.
-- **Empty states with a next action**, not just "no data".
-- **Mobile**: left rail collapses to a bottom tab bar showing Today · Inbox · Calendar · Clients · More.
+**Problem:** `walk-request-received.tsx` is generic ("thanks for reaching out"). No request details.
 
----
+**Fix:** Update the template to accept and render:
+- Customer name, pet names, service(s) requested
+- Requested date(s), time window, recurrence
+- Estimated total
+- A friendly note: "Anneke will review and reach out within 24 hours."
 
-## Technical refactor plan
-
-The 4,269-line `SitterDashboard.tsx` becomes a router with route-level pages. No new tables required — this is purely a UX/structure overhaul over the existing data model.
-
-### New route structure (under `/sitter`)
-```text
-/sitter                  → Today
-/sitter/inbox            → Inbox (default: all)
-/sitter/calendar         → Calendar (day/week/month)
-/sitter/clients          → Clients list
-/sitter/clients/:id      → Client profile (with internal tabs)
-/sitter/pets             → Pets directory
-/sitter/pets/:id         → Pet profile
-/sitter/invoices         → Invoices list (default: outstanding)
-/sitter/invoices/:id     → opens PaymentDrawer over list
-/sitter/messages         → Messages
-/sitter/messages/:id     → Thread
-/sitter/reports          → Reports
-/sitter/settings/*       → Settings sub-pages
-```
-
-### File layout
-```text
-src/pages/sitter/
-  layout.tsx              ← left rail + topbar + outlet
-  Today.tsx
-  Inbox.tsx
-  Calendar.tsx
-  Clients.tsx
-  ClientProfile.tsx
-  Pets.tsx
-  PetProfile.tsx
-  Invoices.tsx            ← reuses existing PaymentDrawer
-  Messages.tsx
-  Reports.tsx
-  settings/
-    Services.tsx
-    Availability.tsx      ← all schedule-config moved here
-    Reminders.tsx
-    Templates.tsx
-    Branding.tsx
-src/components/sitter/
-  SitterShell.tsx         ← left rail nav + badges
-  RecordHeader.tsx        ← shared detail-page header
-  StatusPill.tsx
-  EmptyState.tsx
-  KpiTile.tsx
-```
-
-### Migration approach (no big-bang)
-1. Build `SitterShell` + new routes in parallel; keep the old `/sitter-dashboard` URL as a redirect to `/sitter`
-2. Move logic out of `SitterDashboard.tsx` one tab at a time into its corresponding new page, deleting code from the monolith as we go
-3. Reuse existing components verbatim where possible: `PaymentDrawer`, `MarkPaidDialog`, `RefundDialog`, `SendReminderDialog`, `InvoiceLineItemsEditor`, `PetProfilesManager`
-4. Replace flat-tab badge counts with a single `useSitterCounts()` hook that powers nav badges everywhere
-5. Delete `SitterDashboard.tsx` once all 8 tabs have a new home
-
-### Estimated scope
-- ~12 new page files, ~5 new shared components, 1 hook
-- Net code reduction: the monolith shrinks from ~4,300 lines to ~0; new pages average ~200–400 lines each (much easier to read and modify)
-- No DB migrations, no edge-function changes, no breaking changes to existing public routes (`/pay/:token` etc.)
+Update `booking-workflow` `request_received` action to send **one** consolidated email per `request_group_id` (not one per booking) with all bundle details, and pass that `templateData`.
 
 ---
 
-## What you get
+### 5. Fix duplicate booking requests
 
-- A landing screen that **tells you what to do**, not one that asks you to choose a tab
-- **One queue** for everything that needs attention, instead of three places to check
-- **Records that feel like records** (client page, pet page, invoice page) with consistent headers and actions
-- **Settings out of the way** so daily work isn't visually competing with config screens
-- A foundation that scales: adding "Quotes", "Subscriptions", "Recurring jobs", or a second sitter later is now a new nav item, not another tab squeezed onto the strip
+**Root cause:** `submit()` loops over every inserted booking and invokes both `notify-new-booking-request` and `booking-workflow:request_received` per row. With a multi-pet/multi-service bundle this creates N sitter notifications and N customer emails for a single submission.
 
-If you approve, I'll execute the migration in the order above — `SitterShell` + Today + Inbox first (biggest UX win), then Calendar, then progressively move the rest.
+**Fix:**
+- Send sitter notification **once per `request_group_id`** (group payload, not per booking) — update `notify-new-booking-request` to accept `requestGroupId` and look up all bookings in the group.
+- Send customer "request received" email **once per group**.
+- Add an idempotency guard at the start of `submit()` (`if (submitting) return;`) and disable the button immediately on first click (already done via state but add a ref-based latch to defeat any StrictMode double-fire in dev).
+
+---
+
+### 6. Bundle Builder cosmetic cleanup
+
+In step 0 (service picker):
+- Remove "Pet approval" badge.
+- Remove "Protected scheduling window" badge.
+- Remove the "Manual review" / "Instant booking" pill in the service header (this is the source of "approved by anneke before payment opens" framing).
+- Replace with a single subtle line under each service description: "All prices include tax."
+
+Remove the small "Manual review · approved before payment" copy anywhere it appears in the schedule and review steps.
+
+---
+
+### 7. Single disclaimer + "Submit request" button
+
+Step 3 (Review) currently has the T&C checkbox. Replace the trailing controls:
+
+- One disclaimer block above the button:
+  > "By submitting you agree to the [Terms & Conditions](/terms). All prices include tax. Submitting a request doesn't charge your card — Anneke will review and confirm."
+- Change the button label from **"Send request"** to **"Submit request"**.
+- Remove the "Continue" → "Send request" wording mismatch on prior steps (keep "Continue" for steps 0–2, "Submit request" only on step 3).
+
+---
+
+### 8. Warm confirmation pop-up after submission
+
+Replace the immediate `navigate(...)` with a modal dialog that shows:
+- Friendly heading: "Thanks — your request is in! 🐾"
+- Bullet list of what was requested (services, pets, dates, estimated total)
+- "Anneke will personally review your request and be in touch soon. Keep an eye on your inbox!"
+- Two buttons: **View my requests** (→ `/account` or `/booking/:id/success`) and **Close**.
+
+The confirmation email continues to send in parallel.
+
+---
+
+### 9. Fix the broken weekly / biweekly / daily "Repeat every" field
+
+**Problem:** When repeat is `weekly` or `biweekly`, the UI shows `repeatInterval` ("Repeat every N days") but the field is meaningless because the cadence is already encoded by the frequency name. For `daily`, the field works but is rarely needed.
+
+**Fix:**
+- Remove the `repeatInterval` numeric input entirely.
+- Keep the frequency Select (One-off, Daily, Weekly, Biweekly, Monthly).
+- Keep the day-of-week chips for Weekly/Biweekly.
+- Keep the "Until (optional)" end date.
+- Update `recurrence_pattern` payload to omit `interval`.
+- Update `getRepeatSummary` to drop the "Every N days" branch.
+
+---
+
+### 10. Booking flow audit findings (also addressed)
+
+- `validateScheduleStep` blocks boarding repeats — leave that, but fix the message to: "Boarding stays use a drop-off and pick-up date instead of a recurring schedule."
+- The bottom hint "Weekly, biweekly, daily, and monthly repeats are supported…" remains accurate.
+- `existing` bookings query filters out `requested` from calendar conflict counting only via the boundary loop — verified this is correct, no change needed.
+- `notify-new-booking-request` already deduplicates via `sitter_notifications` — keep that, just switch the keying to `request_group_id` once available.
+
+---
+
+### Technical Details
+
+**Files to edit**
+- `src/pages/Book.tsx` — multi-night UI, multi-pet checkbox, totals, repeat-field cleanup, copy changes, confirmation modal, idempotency latch.
+- `src/lib/booking.ts` — small helper to compute group total cents (sum across bundle items × pets with sibling discount).
+- `supabase/functions/_shared/transactional-email-templates/walk-request-received.tsx` — accept request details, render summary table, friendlier copy.
+- `supabase/functions/_shared/transactional-email-templates/registry.ts` — no change (template name same).
+- `supabase/functions/booking-workflow/index.ts` — `request_received` action: accept `requestGroupId`, fetch all group bookings, send one email with consolidated details. Deploy.
+- `supabase/functions/notify-new-booking-request/index.ts` — accept `requestGroupId`, dedupe by group, send one SMS + one sitter notification per group. Deploy.
+
+**No database migration required** — `request_group_id`, `requested_end_date`, `sibling_discount_percent`, and boarding extra-night variant already exist.
+
+**Behavioural contract**
+- One submission → one `request_group` row → N booking rows (one per bundle-item × pet) → exactly one sitter SMS + one sitter notification + one customer email.
+- Modal stays open until the user dismisses; email and notifications fire in the background.
