@@ -83,7 +83,20 @@ type ServiceAlertRow = {
   pin_to_profile: boolean;
 };
 
-const kindLabel: Record<BookingUpdateRow["kind"], string> = {
+type CustomerInvoiceRow = {
+  id: string;
+  invoice_number: string;
+  status: string;
+  total_cents: number;
+  subtotal_cents: number;
+  amount_paid_cents: number;
+  due_date: string | null;
+  created_at: string;
+  paid_at: string | null;
+  sent_at: string | null;
+  public_token: string;
+  notes: string | null;
+};
   pickup: "Picked up",
   dropoff: "Dropped off",
   note: "Care note",
