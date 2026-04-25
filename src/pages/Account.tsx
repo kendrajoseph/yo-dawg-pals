@@ -287,6 +287,9 @@ const Account = () => {
           </div>
         </Card>
 
+        <div className="mt-8">
+          <PaymentSettings />
+        </div>
         <div className="mt-8 grid gap-4 lg:grid-cols-[1fr,1fr]">
           <Card className="border-4 border-primary p-5 shadow-pop sm:p-6">
             <div className="flex items-start gap-3">
