@@ -313,11 +313,58 @@ const Book = () => {
     }
   }, [activeItemId, bundleItems]);
 
+  // Persist the in-progress booking draft to localStorage so users coming back
+  // from sign up land back where they left off.
+  const DRAFT_KEY = "yodawg.bookingDraft.v1";
+  const draftLoadedRef = useRef(false);
+
+  // Load draft once when services are available.
+  useEffect(() => {
+    if (draftLoadedRef.current) return;
+    if (services.length === 0) return;
+    try {
+      const raw = localStorage.getItem(DRAFT_KEY);
+      if (!raw) { draftLoadedRef.current = true; return; }
+      const draft = JSON.parse(raw) as { bundleItems?: BundleItem[]; bundleNotes?: string; step?: number; ts?: number };
+      // Drop drafts older than 7 days
+      if (draft.ts && Date.now() - draft.ts > 1000 * 60 * 60 * 24 * 7) {
+        localStorage.removeItem(DRAFT_KEY);
+        draftLoadedRef.current = true;
+        return;
+      }
+      if (Array.isArray(draft.bundleItems) && draft.bundleItems.length > 0) {
+        setBundleItems(draft.bundleItems);
+        setActiveItemId(draft.bundleItems[0]?.id ?? null);
+      }
+      if (typeof draft.bundleNotes === "string") setBundleNotes(draft.bundleNotes);
+      if (typeof draft.step === "number") setStep(Math.min(Math.max(draft.step, 0), STEPS.length - 1));
+    } catch {
+      // ignore corrupt draft
+    } finally {
+      draftLoadedRef.current = true;
+    }
+  }, [services.length]);
+
+  // Save draft whenever it changes (only after initial load).
+  useEffect(() => {
+    if (!draftLoadedRef.current) return;
+    if (bundleItems.length === 0) return;
+    try {
+      localStorage.setItem(DRAFT_KEY, JSON.stringify({
+        bundleItems, bundleNotes, step, ts: Date.now(),
+      }));
+    } catch { /* quota exceeded — ignore */ }
+  }, [bundleItems, bundleNotes, step]);
+
   useEffect(() => {
     if (!authLoading && !user && step >= 2) {
+      // Save draft before redirecting so it can be restored after sign up.
+      try {
+        localStorage.setItem(DRAFT_KEY, JSON.stringify({ bundleItems, bundleNotes, step, ts: Date.now() }));
+      } catch { /* ignore */ }
       navigate("/auth", { state: { from: `${location.pathname}${location.search}` } });
     }
-  }, [authLoading, location.pathname, location.search, navigate, step, user]);
+  }, [authLoading, location.pathname, location.search, navigate, step, user, bundleItems, bundleNotes]);
 
   const bundleItemMap = useMemo(() => new Map(bundleItems.map((item) => [item.id, item])), [bundleItems]);
   const serviceMap = useMemo(() => new Map(services.map((service) => [service.id, service])), [services]);
