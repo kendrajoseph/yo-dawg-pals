@@ -94,7 +94,9 @@ export default function SitterCalendar() {
       <div className="mb-6 flex flex-wrap items-end justify-between gap-3">
         <div>
           <h1 className="font-display text-3xl text-primary">Calendar</h1>
-          <p className="text-sm text-muted-foreground">Confirmed bookings only — manage availability in Settings.</p>
+          <p className="text-sm text-muted-foreground">
+            Confirmed bookings (solid) and pending requests (dashed). Manage availability in Settings.
+          </p>
         </div>
         <div className="flex items-center gap-2">
           <Tabs value={view} onValueChange={(v) => setView(v as View)}>
@@ -141,11 +143,26 @@ export default function SitterCalendar() {
                 >
                   <div className={cn("text-xs font-medium", isToday && "text-primary")}>{format(d, "d")}</div>
                   <div className="mt-1 space-y-0.5">
-                    {list.slice(0, 3).map((b) => (
-                      <div key={b.id} className="truncate rounded bg-primary/10 px-1.5 py-0.5 text-[10px] text-primary">
-                        {format(new Date(b.scheduled_start_at ?? b.start_at), "h:mm a")} {b.pets?.name}
-                      </div>
-                    ))}
+                    {list.slice(0, 3).map((b) => {
+                      const isRequested = b.status === "requested";
+                      const timeLabel = isRequested
+                        ? (b.requested_window_label ?? "Pending")
+                        : format(new Date(b.scheduled_start_at ?? b.start_at), "h:mm a");
+                      return (
+                        <div
+                          key={b.id}
+                          className={cn(
+                            "truncate rounded px-1.5 py-0.5 text-[10px]",
+                            isRequested
+                              ? "border border-dashed border-amber-400 bg-amber-50 text-amber-900"
+                              : "bg-primary/10 text-primary",
+                          )}
+                          title={isRequested ? "Pending request — tap to review" : undefined}
+                        >
+                          {timeLabel} {b.pets?.name}
+                        </div>
+                      );
+                    })}
                     {list.length > 3 && <div className="text-[10px] text-muted-foreground">+{list.length - 3} more</div>}
                   </div>
                 </button>
@@ -166,12 +183,27 @@ export default function SitterCalendar() {
                   <div className="mt-2 space-y-1">
                     {list.length === 0 ? (
                       <div className="text-[11px] text-muted-foreground">—</div>
-                    ) : list.map((b) => (
-                      <div key={b.id} className="rounded bg-primary/10 px-1.5 py-1 text-[11px] text-primary">
-                        <div className="font-medium">{format(new Date(b.scheduled_start_at ?? b.start_at), "h:mm a")}</div>
-                        <div className="truncate">{b.pets?.name}</div>
-                      </div>
-                    ))}
+                    ) : list.map((b) => {
+                      const isRequested = b.status === "requested";
+                      return (
+                        <div
+                          key={b.id}
+                          className={cn(
+                            "rounded px-1.5 py-1 text-[11px]",
+                            isRequested
+                              ? "border border-dashed border-amber-400 bg-amber-50 text-amber-900"
+                              : "bg-primary/10 text-primary",
+                          )}
+                        >
+                          <div className="font-medium">
+                            {isRequested
+                              ? (b.requested_window_label ?? "Pending")
+                              : format(new Date(b.scheduled_start_at ?? b.start_at), "h:mm a")}
+                          </div>
+                          <div className="truncate">{b.pets?.name}</div>
+                        </div>
+                      );
+                    })}
                   </div>
                 </button>
               );
@@ -203,19 +235,45 @@ function DayList({ bookings }: { bookings: Booking[] }) {
   }
   return (
     <ul className="divide-y divide-border">
-      {bookings.map((b) => (
-        <li key={b.id} className="flex items-center gap-3 py-3">
-          <div className="w-20 text-right">
-            <div className="font-display text-sm text-primary">{format(new Date(b.scheduled_start_at ?? b.start_at), "h:mm a")}</div>
-            <div className="text-[11px] text-muted-foreground">{format(new Date(b.scheduled_end_at ?? b.end_at), "h:mm a")}</div>
-          </div>
-          <div className="min-w-0 flex-1">
-            <div className="truncate font-medium">{b.services?.name ?? "Service"}</div>
-            <div className="truncate text-xs text-muted-foreground">{b.profiles?.full_name ?? "Client"} · {b.pets?.name ?? "Pet"}</div>
-          </div>
-          <Badge variant="outline" className="capitalize">{b.status.replace(/_/g, " ")}</Badge>
-        </li>
-      ))}
+      {bookings.map((b) => {
+        const isRequested = b.status === "requested";
+        const href = isRequested ? `/sitter/requests/${b.id}` : `/sitter/bookings/${b.id}`;
+        return (
+          <li key={b.id} className="py-1">
+            <Link
+              to={href}
+              className={cn(
+                "flex items-center gap-3 rounded-md px-2 py-2 transition-colors hover:bg-muted",
+                isRequested && "ring-1 ring-dashed ring-amber-400/60",
+              )}
+            >
+              <div className="w-20 text-right">
+                {isRequested ? (
+                  <>
+                    <div className="font-display text-sm text-amber-900">{b.requested_window_label ?? "Pending"}</div>
+                    <div className="text-[11px] text-muted-foreground">Tap to review</div>
+                  </>
+                ) : (
+                  <>
+                    <div className="font-display text-sm text-primary">{format(new Date(b.scheduled_start_at ?? b.start_at), "h:mm a")}</div>
+                    <div className="text-[11px] text-muted-foreground">{format(new Date(b.scheduled_end_at ?? b.end_at), "h:mm a")}</div>
+                  </>
+                )}
+              </div>
+              <div className="min-w-0 flex-1">
+                <div className="truncate font-medium">{b.services?.name ?? "Service"}</div>
+                <div className="truncate text-xs text-muted-foreground">{b.profiles?.full_name ?? "Client"} · {b.pets?.name ?? "Pet"}</div>
+              </div>
+              <Badge
+                variant="outline"
+                className={cn("capitalize", isRequested && "border-amber-400 bg-amber-50 text-amber-900")}
+              >
+                {b.status.replace(/_/g, " ")}
+              </Badge>
+            </Link>
+          </li>
+        );
+      })}
     </ul>
   );
 }
