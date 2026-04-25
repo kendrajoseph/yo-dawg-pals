@@ -1,182 +1,191 @@
-# Payments Tab Upgrade — Invoices, Receipts, Reminders
+## Why the current backend feels messy
 
-Turns the current read-only list into a workable A/R inbox. Every row is clickable and opens a detail drawer with full payment actions.
+Right now `SitterDashboard.tsx` is a **4,269-line single file** with **8 sibling tabs** all on one level: Overview, Day view, Playbook, Clients, Schedule, Care, Payments, Alerts. Every tab is a kitchen-sink page and there is no clear primary surface — the operator has to hunt across tabs to do one job (e.g., approve a request → confirm schedule → notify client → invoice).
 
----
+Independently-owned service businesses on tools like **Jobber, Housecall Pro, Square Appointments, Honeybook, and Squire** consistently use a different shape:
 
-## 1. New Row Behavior — Clickable + Action Menu
+1. A **Today / Run-the-day** screen as the home surface (what's happening now)
+2. A **dedicated work object** for each thing that moves through a pipeline (Request → Booking → Visit → Invoice)
+3. **Side navigation, not tabs**, with badges for things that need attention
+4. **Detail drawers/pages** for each record, instead of inline editing inside a tab
+5. **Settings tucked away**, not mixed with daily work
 
-Each booking row in the Payments tab becomes:
-- **Whole row clickable** → opens a side **Booking Payment Drawer** (right-side sheet).
-- **Inline kebab "⋯" menu** on the right for fast actions without opening the drawer:
-  - Send invoice
-  - Send receipt
-  - Send reminder
-  - Charge saved card
-  - Mark paid manually (cash / e-transfer)
-  - Issue refund (full or partial)
-  - Edit amount / add line item
-  - Copy public payment link
-  - View history
-
-Status pill colors: `paid` (green), `outstanding` (amber), `overdue` (red, auto when invoice past due), `refunded` (grey), `partial` (blue).
+We'll adopt that shape.
 
 ---
 
-## 2. Booking Payment Drawer
+## Proposed new structure
 
-Opens on row click. Three sections:
+### 1. Persistent left rail (replaces the 8-tab strip)
 
-### A. Summary
-- Client name, service, date/time
-- Total · Paid · Outstanding · Refunded
-- Saved-card status (last 4 + brand) or "no card on file"
-- Stripe payment intent / charge ID (linkable)
-
-### B. Line Items (editable)
-- Base service price
-- Extra time fee
-- Late pickup fee
-- Sibling discount
-- Custom add-ons (sitter can add: "extra walk", "supplies", "tip credit", etc.)
-- Each line: label, qty, unit price, total. Inline edit + delete.
-- Recalculates total on save.
-
-### C. Activity timeline
-- Every invoice sent, receipt sent, reminder sent, charge attempt, refund, manual mark-paid — with timestamp, channel (email/SMS), and who triggered it.
-
----
-
-## 3. Invoices
-
-- **Generate invoice** from a booking → creates an `invoices` row with line items snapshot, due date (default = booking start - 24h, configurable), invoice number (`INV-YYYY-####`).
-- **Send invoice email** via `send-transactional-email` using new template `invoice-issued`. Includes:
-  - Itemized breakdown
-  - Total + due date
-  - "Pay now" button → public payment page (Stripe Checkout, off-session if card on file, else hosted checkout)
-- **Public payment link**: `/pay/:invoiceToken` route, no login required, opens Stripe Checkout. Token is single-use-resettable.
-- Invoice status: `draft` → `sent` → `paid` / `overdue` / `void`.
-
-## 4. Receipts
-
-- Auto-sent on successful payment (webhook + manual charge) via new template `payment-receipt`.
-- Includes: receipt number, amount paid, payment method (card brand + last 4), date, line items, refund policy link.
-- Manual "Resend receipt" from drawer or kebab.
-
-## 5. Reminders
-
-- **Manual**: kebab → "Send reminder" — uses template `payment-reminder`. Sitter picks tone preset (Friendly / Firm / Final notice) and channel (Email + optional SMS via `send-client-message`).
-- **Automated**: optional toggle per invoice + global default. Cadence: 3 days before due, day of due, 3 days overdue, 7 days overdue. Configurable in a small "Reminders" settings card at top of Payments tab.
-- Reminder log stored so we don't double-send.
-
-## 6. Refunds
-
-- Full or partial via Stripe API (new edge function `refund-payment`).
-- Updates `bookings.refund_id`, creates timeline entry, optionally sends `refund-issued` email.
-
-## 7. Manual Payment Recording
-
-- "Mark as paid" dialog: amount, method (cash/etransfer/other), reference note. Updates `payment_status` + `payment_amount_cents` and records in timeline. No Stripe call.
-
----
-
-## 8. Top-of-Tab Dashboard
-
-Replace the simple filter bar with:
-- **Stat tiles**: Outstanding total $, Overdue total $, Paid this month $, Avg days to pay
-- **Filters**: status (all/outstanding/overdue/paid/refunded), date range, client search
-- **Bulk actions** (checkbox per row): Send reminders to selected, Export CSV
-- **Reminders settings** collapsible card
-
----
-
-## 9. Database Changes
-
-New tables:
-```
-invoices (id, booking_id, sitter_id, customer_id, invoice_number, status,
-          subtotal_cents, total_cents, amount_paid_cents, due_date,
-          public_token, sent_at, paid_at, voided_at, notes, created_at, updated_at)
-
-invoice_line_items (id, invoice_id, label, quantity, unit_price_cents,
-                    total_cents, kind, sort_order, created_at)
-  -- kind: 'service' | 'extra_time' | 'late_fee' | 'discount' | 'custom' | 'tip'
-
-payment_events (id, booking_id, invoice_id, kind, channel, amount_cents,
-                metadata, created_by, created_at)
-  -- kind: 'invoice_sent' | 'reminder_sent' | 'receipt_sent' | 'charge_attempt'
-  --       | 'charge_succeeded' | 'charge_failed' | 'refund' | 'manual_paid' | 'voided'
-
-reminder_settings (sitter_id PK, auto_enabled, cadence jsonb, default_tone)
+```text
+┌─────────────────┐
+│  Yodawg         │
+│                 │
+│ ▶ Today         │ ← default landing
+│   Inbox    (3)  │ ← requests + approvals + alerts in one queue
+│   Calendar      │
+│   Clients       │
+│   Pets          │
+│   Invoices (2)  │
+│   Messages      │
+│ ─────────────── │
+│   Reports       │
+│   Settings   ▾  │
+│      Services   │
+│      Availability│
+│      Reminders  │
+│      Branding   │
+└─────────────────┘
 ```
 
-RLS: sitter-scoped (Anneke email gate, matching existing pattern). Customers can SELECT their own invoices via `customer_id`. Public payment page reads invoice by `public_token` through a SECURITY DEFINER RPC (no direct table access).
+Badges show counts of items needing action. Settings collapses everything that today lives in "Schedule" + "Playbook" + parts of "Alerts" but is really configuration, not daily work.
 
-Add to `bookings`:
-- `payment_status` extends to support `partial` and `overdue` (already text, just new values).
+### 2. Today (new home)
 
-## 10. Edge Functions
+A single scannable screen that answers "what do I need to do right now?":
 
-- `create-invoice` — generates invoice + line items from a booking, optionally sends email.
-- `send-invoice-email` — wraps `send-transactional-email` with `invoice-issued` template.
-- `send-payment-reminder` — same wrap, `payment-reminder` template, supports SMS via Twilio.
-- `send-payment-receipt` — `payment-receipt` template; called by webhook + manual.
-- `refund-payment` — Stripe refund (full/partial), updates booking + invoice, emits event.
-- `pay-invoice-public` — public endpoint, validates `public_token`, returns Stripe Checkout URL.
-- `process-reminder-cron` — scheduled (daily) using existing `pg_cron` pattern; reads `reminder_settings` + outstanding invoices.
-- Update `payments-webhook` to: create receipt event, send receipt email, mark invoice paid, handle partial payments.
-- Update `charge-saved-card` to record `payment_events` and trigger receipt.
+- **At-a-glance row**: 4 KPI tiles — Today's visits · Outstanding $ · Overdue $ · Unread messages
+- **Run-of-show timeline**: chronological list of today's visits with status pills (Upcoming / In progress / Done), one-tap "Mark complete + send update"
+- **Needs your attention** card: collapsed list of the top ~5 items from Inbox (a new request, a pet awaiting approval, an overdue invoice) with inline accept/decline
+- **Quick actions** (sticky): New booking · New invoice · Block a date · Message a client
 
-## 11. New Email Templates (transactional)
+This replaces today's "Overview" + "Day view" + parts of "Playbook".
 
-In `supabase/functions/_shared/transactional-email-templates/`:
-- `invoice-issued.tsx` — itemized invoice + Pay Now button
-- `payment-receipt.tsx` — receipt with line items + payment method
-- `payment-reminder.tsx` — accepts `tone` prop (friendly/firm/final), pulled from preset copy
-- `refund-issued.tsx` — refund confirmation
+### 3. Inbox (unified queue)
 
-All four registered in `registry.ts`. Branded with existing Yo Dawg styling (cream bg, navy headers, font-display).
+Today, the operator must check Overview for requests, Care/Alerts for messages, and Clients for pet approvals. Consolidate these into one **Inbox** with filter chips:
 
-## 12. Public Payment Page
+- All · Booking requests · Pet approvals · Client messages · Payment issues
 
-New route `/pay/:token`:
-- Read-only invoice view (line items, total, due date, business info)
-- "Pay $X" button → calls `pay-invoice-public` → redirects to Stripe Checkout
-- Success/cancel return URLs map back to `/pay/:token?status=paid|cancelled`
-- No auth required.
+Each row opens a side drawer with full context and the relevant actions (approve, reply, charge, etc.). Mirrors how Front, Honeybook, and Jobber inboxes work.
 
-## 13. UI Files Touched
+### 4. Calendar (replaces "Schedule" tab)
 
-- `src/pages/SitterDashboard.tsx` — Payments tab rewrite, drawer, dialogs, kebab menu
-- `src/components/payments/PaymentDrawer.tsx` (new)
-- `src/components/payments/InvoiceLineItemsEditor.tsx` (new)
-- `src/components/payments/SendReminderDialog.tsx` (new)
-- `src/components/payments/RefundDialog.tsx` (new)
-- `src/components/payments/MarkPaidDialog.tsx` (new)
-- `src/pages/PublicInvoice.tsx` (new) + route in `src/App.tsx`
-- `src/lib/invoices.ts` (new) — helpers for totals, status derivation, formatting
+The current Schedule tab mixes three things: viewing bookings, editing weekly availability, and managing walk windows. Split them:
+
+- **Calendar page** = day/week/month view of confirmed bookings only. Click a booking → drawer with reschedule, cancel, message, invoice actions.
+- **Availability + walk windows + blocked dates** move to `Settings → Availability`. They are configuration, not daily work.
+
+### 5. Clients (richer record, not a list dump)
+
+- List view stays, with search + star rating filter.
+- Clicking a client opens a **client profile page** (not an inline panel) with tabs *inside* the client record: Overview · Pets · Bookings · Invoices · Messages · Notes. This is the Honeybook/Jobber pattern and dramatically reduces noise on the top-level Clients screen.
+
+### 6. Pets (promoted to top-level)
+
+Pets are first-class for a pet-care business. Today they're buried under Clients. Surface as their own nav item with: pending approvals callout at the top, full pet directory with temperament tags, fit-alert log.
+
+### 7. Invoices (renamed from "Payments")
+
+Operators think in *invoices*, not *payments*. Keeps the recently-built drawer + KPI tiles, but:
+
+- Add a **default sub-tab nav inside the page**: Outstanding · Overdue · Drafts · Paid · Refunded · All (replaces filter chips with persistent tabs — easier to scan)
+- Promote a **"+ New invoice"** primary button top-right
+- Add a **Reminders** quick view for what auto-cron will send next
+- Move `reminder_settings` editor to `Settings → Reminders`
+
+### 8. Messages (was "Care")
+
+Conversation list ↔ thread view (like SMS apps). Each thread is per client; bookings show as inline cards inside the thread. The current "send broadcast / templates" tools move into a "Compose" button.
+
+### 9. Reports (new)
+
+A small but high-value page: Revenue this month, Top services, Bookings by service, Cancellation rate, Outstanding A/R aging. Independently-owned businesses use this for monthly reflection — currently impossible.
+
+### 10. Settings (consolidated)
+
+Everything operational-config goes here, with sub-pages:
+- Services & pricing (variants editor)
+- Availability (weekly slots, walk windows, blocked dates)
+- Reminders (cadence + tone)
+- Templates (email + SMS)
+- Branding (logo, colors on invoices)
+- Team & roles
+- Billing & Stripe connection
 
 ---
 
-## Out of Scope (call out for follow-ups)
+## Visual & interaction principles
 
-- Recurring/subscription billing
-- Multi-currency
-- Tax line items (GST/PST) — can add as a `kind: 'tax'` line later
-- Customer-facing self-serve invoice list inside `/account` (this plan only adds the public token page)
+- **One primary action per screen**, top-right (e.g., "+ New booking" on Calendar, "+ New invoice" on Invoices)
+- **Drawers for editing, pages for reading.** Stop putting forms inline in lists.
+- **Status pills are colored, sparingly**: green=done/paid, amber=action needed, red=overdue, neutral=informational. No more than 3 colors at once on screen.
+- **Consistent record header**: every detail page shares a header with avatar/name + status + quick actions, so the operator builds muscle memory.
+- **Empty states with a next action**, not just "no data".
+- **Mobile**: left rail collapses to a bottom tab bar showing Today · Inbox · Calendar · Clients · More.
 
 ---
 
-## Build Order
+## Technical refactor plan
 
-1. DB migrations (invoices, line_items, payment_events, reminder_settings) + RLS
-2. Email templates + registry
-3. Edge functions (create-invoice, send-invoice-email, send-payment-reminder, send-payment-receipt, refund-payment, pay-invoice-public)
-4. Update `payments-webhook` + `charge-saved-card` to emit events + receipts
-5. Payment Drawer + dialogs (UI)
-6. Payments tab rewrite (stats, filters, clickable rows, kebab menu, bulk actions)
-7. Public `/pay/:token` page + route
-8. Reminder cron job
-9. End-to-end test with a sandbox Stripe booking
+The 4,269-line `SitterDashboard.tsx` becomes a router with route-level pages. No new tables required — this is purely a UX/structure overhaul over the existing data model.
 
-Reply **"go"** to build all of it, or call out anything to cut/add first.
+### New route structure (under `/sitter`)
+```text
+/sitter                  → Today
+/sitter/inbox            → Inbox (default: all)
+/sitter/calendar         → Calendar (day/week/month)
+/sitter/clients          → Clients list
+/sitter/clients/:id      → Client profile (with internal tabs)
+/sitter/pets             → Pets directory
+/sitter/pets/:id         → Pet profile
+/sitter/invoices         → Invoices list (default: outstanding)
+/sitter/invoices/:id     → opens PaymentDrawer over list
+/sitter/messages         → Messages
+/sitter/messages/:id     → Thread
+/sitter/reports          → Reports
+/sitter/settings/*       → Settings sub-pages
+```
+
+### File layout
+```text
+src/pages/sitter/
+  layout.tsx              ← left rail + topbar + outlet
+  Today.tsx
+  Inbox.tsx
+  Calendar.tsx
+  Clients.tsx
+  ClientProfile.tsx
+  Pets.tsx
+  PetProfile.tsx
+  Invoices.tsx            ← reuses existing PaymentDrawer
+  Messages.tsx
+  Reports.tsx
+  settings/
+    Services.tsx
+    Availability.tsx      ← all schedule-config moved here
+    Reminders.tsx
+    Templates.tsx
+    Branding.tsx
+src/components/sitter/
+  SitterShell.tsx         ← left rail nav + badges
+  RecordHeader.tsx        ← shared detail-page header
+  StatusPill.tsx
+  EmptyState.tsx
+  KpiTile.tsx
+```
+
+### Migration approach (no big-bang)
+1. Build `SitterShell` + new routes in parallel; keep the old `/sitter-dashboard` URL as a redirect to `/sitter`
+2. Move logic out of `SitterDashboard.tsx` one tab at a time into its corresponding new page, deleting code from the monolith as we go
+3. Reuse existing components verbatim where possible: `PaymentDrawer`, `MarkPaidDialog`, `RefundDialog`, `SendReminderDialog`, `InvoiceLineItemsEditor`, `PetProfilesManager`
+4. Replace flat-tab badge counts with a single `useSitterCounts()` hook that powers nav badges everywhere
+5. Delete `SitterDashboard.tsx` once all 8 tabs have a new home
+
+### Estimated scope
+- ~12 new page files, ~5 new shared components, 1 hook
+- Net code reduction: the monolith shrinks from ~4,300 lines to ~0; new pages average ~200–400 lines each (much easier to read and modify)
+- No DB migrations, no edge-function changes, no breaking changes to existing public routes (`/pay/:token` etc.)
+
+---
+
+## What you get
+
+- A landing screen that **tells you what to do**, not one that asks you to choose a tab
+- **One queue** for everything that needs attention, instead of three places to check
+- **Records that feel like records** (client page, pet page, invoice page) with consistent headers and actions
+- **Settings out of the way** so daily work isn't visually competing with config screens
+- A foundation that scales: adding "Quotes", "Subscriptions", "Recurring jobs", or a second sitter later is now a new nav item, not another tab squeezed onto the strip
+
+If you approve, I'll execute the migration in the order above — `SitterShell` + Today + Inbox first (biggest UX win), then Calendar, then progressively move the rest.
