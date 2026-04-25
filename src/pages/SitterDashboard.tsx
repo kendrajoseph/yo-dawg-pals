@@ -3896,8 +3896,9 @@ const SitterDashboard = () => {
                     <Input type="datetime-local" value={alertDraft.startsAt} onChange={(event) => setAlertDraft((current) => ({ ...current, startsAt: event.target.value }))} />
                   </div>
                   <div>
-                    <Label>Ends (optional)</Label>
+                    <Label>Auto-delete on</Label>
                     <Input type="datetime-local" value={alertDraft.endsAt} onChange={(event) => setAlertDraft((current) => ({ ...current, endsAt: event.target.value }))} />
+                    <p className="mt-1 text-xs text-muted-foreground">Alert is permanently removed after this time. Leave blank to auto-expire end of start day.</p>
                   </div>
                 </div>
 
