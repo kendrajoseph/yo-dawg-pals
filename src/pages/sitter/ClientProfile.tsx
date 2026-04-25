@@ -25,6 +25,15 @@ export default function SitterClientProfile() {
   const [invoices, setInvoices] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
 
+  // Internal admin profile (rating + private notes — only visible to Anneke/admins)
+  const [adminProfileId, setAdminProfileId] = useState<string | null>(null);
+  const [starRating, setStarRating] = useState<number>(3);
+  const [internalNotes, setInternalNotes] = useState<string>("");
+  const [savedRating, setSavedRating] = useState<number>(3);
+  const [savedNotes, setSavedNotes] = useState<string>("");
+  const [savingAdmin, setSavingAdmin] = useState(false);
+  const dirty = starRating !== savedRating || internalNotes !== savedNotes;
+
   useEffect(() => {
     if (!id || !user?.id) return;
     let cancelled = false;
