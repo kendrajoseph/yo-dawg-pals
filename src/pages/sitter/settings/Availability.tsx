@@ -13,7 +13,7 @@ import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { toast } from "@/hooks/use-toast";
-import { DAYS, minutesToTime, timeToMinutes } from "@/lib/booking";
+import { DAYS, minutesToTime, minutesToTime24, timeToMinutes } from "@/lib/booking";
 import { cn } from "@/lib/utils";
 
 type Service = { id: string; name: string; slug: string };
