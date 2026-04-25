@@ -1,6 +1,18 @@
 import { useEffect, useMemo, useState } from "react";
 import { format } from "date-fns";
-import { CreditCard, Search } from "lucide-react";
+import { CreditCard, Search, Trash2 } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
+import { toast } from "sonner";
 import { SitterShell } from "@/components/sitter/SitterShell";
 import { KpiTile } from "@/components/sitter/KpiTile";
 import { EmptyState } from "@/components/sitter/EmptyState";
