@@ -259,7 +259,7 @@ const Profile = () => {
                     <p className="font-tag text-xl text-clay">
                       {uploading ? "uploading…" : "tap the camera to change"}
                     </p>
-                    <p className="text-xs text-muted-foreground">PNG or JPG, up to 5MB</p>
+                    <p className="text-xs text-muted-foreground">PNG or JPG, up to 8MB</p>
                   </div>
                 </div>
 
