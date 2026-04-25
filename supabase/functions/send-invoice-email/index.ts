@@ -45,8 +45,14 @@ Deno.serve(async (req) => {
 
     const payUrl = `${PUBLIC_BASE}/pay/${(invoice as any).public_token}`;
 
-    const { error: sendErr } = await admin.functions.invoke("send-transactional-email", {
-      body: {
+    const sendRes = await fetch(`${url}/functions/v1/send-transactional-email`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${service}`,
+        apikey: service,
+      },
+      body: JSON.stringify({
         templateName: "invoice-issued",
         recipientEmail,
         idempotencyKey: `invoice-${invoice.id}-${Date.now()}`,
@@ -63,9 +69,14 @@ Deno.serve(async (req) => {
           payUrl,
           notes: (invoice as any).notes ?? "",
         },
-      },
+      }),
     });
-    if (sendErr) return json({ error: sendErr.message }, 500);
+    if (!sendRes.ok) {
+      const errText = await sendRes.text();
+      console.error("send-transactional-email failed", sendRes.status, errText);
+      return json({ error: `Email send failed: ${errText}` }, 500);
+    }
+    await sendRes.text();
 
     await admin.from("invoices").update({
       status: (invoice as any).status === "draft" ? "sent" : (invoice as any).status,
