@@ -49,7 +49,7 @@ const Auth = () => {
       email: parsed.data.email,
       password: parsed.data.password,
       options: {
-        emailRedirectTo: `${window.location.origin}/account`,
+        emailRedirectTo: `${window.location.origin}${from}`,
         data: { full_name: parsed.data.fullName },
       },
     });
