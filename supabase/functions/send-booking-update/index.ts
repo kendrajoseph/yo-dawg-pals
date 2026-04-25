@@ -149,7 +149,11 @@ Deno.serve(async (req) => {
         ? `Anneke just picked up ${petName} for ${serviceName}.`
         : kind === "dropoff"
           ? `Anneke just dropped off ${petName}.`
-          : `Anneke sent a quick update about ${petName}.`;
+          : kind === "arrived"
+            ? `Anneke has arrived at your home to care for ${petName}.`
+            : kind === "departed"
+              ? `Anneke has finished the visit with ${petName} and is heading out.`
+              : `Anneke sent a quick update about ${petName}.`;
 
     const cleanNote = note?.trim() || null;
     const smsBody = cleanNote ? `${defaultMessage} ${cleanNote}` : defaultMessage;
