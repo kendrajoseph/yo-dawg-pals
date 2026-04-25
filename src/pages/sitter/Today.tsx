@@ -280,6 +280,40 @@ export default function SitterToday() {
           <Button variant="outline" className="justify-start" asChild><Link to="/sitter/settings/availability">Block a date</Link></Button>
         </div>
       </Card>
+
+      <Dialog open={!!updateTarget} onOpenChange={(open) => { if (!open) { setUpdateTarget(null); setUpdateNote(""); } }}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>
+              {updateTarget?.kind === "pickup" ? "Send pickup update" : "Send drop-off update"}
+            </DialogTitle>
+            <DialogDescription>
+              Sends a text and email to {updateTarget?.booking.pets?.name ?? "the pet"}'s owner. Add an optional note for anything important.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-2">
+            <Label htmlFor="quick-note">Optional note</Label>
+            <Textarea
+              id="quick-note"
+              value={updateNote}
+              onChange={(e) => setUpdateNote(e.target.value)}
+              placeholder=""
+              rows={3}
+            />
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => { setUpdateTarget(null); setUpdateNote(""); }} disabled={sending}>
+              Cancel
+            </Button>
+            <Button
+              onClick={() => updateTarget && sendQuickUpdate(updateTarget.booking, updateTarget.kind, updateNote)}
+              disabled={sending}
+            >
+              {sending ? "Sending…" : "Send update"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </SitterShell>
   );
 }
