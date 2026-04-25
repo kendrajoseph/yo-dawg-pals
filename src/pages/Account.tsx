@@ -125,11 +125,12 @@ const Account = () => {
   const [cancellingId, setCancellingId] = useState<string | null>(null);
   const [deletingId, setDeletingId] = useState<string | null>(null);
   const [deletingMessageId, setDeletingMessageId] = useState<string | null>(null);
+  const [invoices, setInvoices] = useState<CustomerInvoiceRow[]>([]);
 
   const load = async () => {
     if (!user) return;
 
-    const [{ data: bookingData }, { data: profileData }, { data: messageData }, { data: alertData }] = await Promise.all([
+    const [{ data: bookingData }, { data: profileData }, { data: messageData }, { data: alertData }, { data: invoiceData }] = await Promise.all([
       db
         .from("bookings")
         .select("id, start_at, end_at, status, total_cents, deposit_cents, payment_amount_cents, extra_time_fee_cents, late_pickup_fee_cents, notes, booking_kind, requested_date, requested_window_label, scheduled_start_at, sitter_id, services(name, slug), service_variants(name), pets(name)")
@@ -138,6 +139,7 @@ const Account = () => {
       db.from("profiles").select("mobile_phone, sms_opt_in").eq("id", user.id).maybeSingle(),
       db.from("client_messages").select("id, subject, message, kind, send_email, send_sms, delivered_email_at, delivered_sms_at, booking_id, created_at").eq("customer_id", user.id).order("created_at", { ascending: false }).limit(8),
       db.from("service_alerts").select("id, title, message, kind, starts_at, ends_at, pin_to_profile").eq("is_active", true).order("starts_at", { ascending: false }).limit(6),
+      db.from("invoices").select("id, invoice_number, status, total_cents, subtotal_cents, amount_paid_cents, due_date, created_at, paid_at, sent_at, public_token, notes").eq("customer_id", user.id).order("created_at", { ascending: false }),
     ]);
 
     const nextBookings = (bookingData ?? []) as BookingRow[];
