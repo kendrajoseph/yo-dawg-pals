@@ -97,6 +97,8 @@ type CustomerInvoiceRow = {
   public_token: string;
   notes: string | null;
 };
+
+const kindLabel: Record<BookingUpdateRow["kind"], string> = {
   pickup: "Picked up",
   dropoff: "Dropped off",
   note: "Care note",
