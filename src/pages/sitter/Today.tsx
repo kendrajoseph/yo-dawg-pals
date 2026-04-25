@@ -1,0 +1,222 @@
+import { useEffect, useMemo, useState } from "react";
+import { Link, useNavigate } from "react-router-dom";
+import { format } from "date-fns";
+import { CalendarPlus, CalendarCheck, CreditCard, Inbox as InboxIcon, MessageSquarePlus, AlertTriangle, Clock3 } from "lucide-react";
+import { SitterShell } from "@/components/sitter/SitterShell";
+import { KpiTile } from "@/components/sitter/KpiTile";
+import { EmptyState } from "@/components/sitter/EmptyState";
+import { Card } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
+import { supabase } from "@/integrations/supabase/client";
+import { useAuth } from "@/hooks/useAuth";
+import { formatCents } from "@/lib/invoices";
+
+type TodayBooking = {
+  id: string;
+  scheduled_start_at: string | null;
+  scheduled_end_at: string | null;
+  start_at: string;
+  end_at: string;
+  status: string;
+  pets: { name: string } | null;
+  services: { name: string } | null;
+};
+
+type InboxItem = {
+  kind: "request" | "approval";
+  id: string;
+  title: string;
+  subtitle: string;
+};
+
+export default function SitterToday() {
+  const { user } = useAuth();
+  const navigate = useNavigate();
+  const [todayBookings, setTodayBookings] = useState<TodayBooking[]>([]);
+  const [inboxPreview, setInboxPreview] = useState<InboxItem[]>([]);
+  const [outstandingCents, setOutstandingCents] = useState(0);
+  const [overdueCents, setOverdueCents] = useState(0);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    if (!user?.id) return;
+    let cancelled = false;
+
+    const load = async () => {
+      const sitterId = user.id;
+      const start = new Date();
+      start.setHours(0, 0, 0, 0);
+      const end = new Date();
+      end.setHours(23, 59, 59, 999);
+
+      const [bookingsRes, requestsRes, approvalsRes, invoicesRes] = await Promise.all([
+        supabase.from("bookings")
+          .select("id, scheduled_start_at, scheduled_end_at, start_at, end_at, status, pets(name), services(name)")
+          .eq("sitter_id", sitterId)
+          .gte("start_at", start.toISOString())
+          .lte("start_at", end.toISOString())
+          .not("status", "in", "(cancelled,refunded)")
+          .order("start_at", { ascending: true }),
+        supabase.from("bookings")
+          .select("id, customer_id, services(name), pets(name), requested_date, requested_window_label")
+          .eq("sitter_id", sitterId).eq("status", "requested")
+          .order("created_at", { ascending: false }).limit(5),
+        supabase.from("pet_fit_alerts")
+          .select("id, title, message, pet_id, pets:pet_id(name)")
+          .eq("is_resolved", false).order("created_at", { ascending: false }).limit(5),
+        supabase.from("invoices")
+          .select("total_cents, amount_paid_cents, due_date, status")
+          .eq("sitter_id", sitterId)
+          .in("status", ["sent", "overdue", "partial"]),
+      ]);
+
+      if (cancelled) return;
+
+      setTodayBookings((bookingsRes.data ?? []) as any);
+
+      const inbox: InboxItem[] = [];
+      for (const r of (requestsRes.data ?? []) as any[]) {
+        const when = r.requested_date ? format(new Date(r.requested_date), "MMM d") : "Date TBD";
+        inbox.push({
+          kind: "request",
+          id: r.id,
+          title: `New request: ${r.services?.name ?? "Service"} for ${r.pets?.name ?? "pet"}`,
+          subtitle: `${when}${r.requested_window_label ? ` · ${r.requested_window_label}` : ""}`,
+        });
+      }
+      for (const a of (approvalsRes.data ?? []) as any[]) {
+        inbox.push({
+          kind: "approval",
+          id: a.id,
+          title: `Pet approval: ${a.title}`,
+          subtitle: a.pets?.name ?? "Pet review needed",
+        });
+      }
+      setInboxPreview(inbox.slice(0, 5));
+
+      let outstanding = 0;
+      let overdue = 0;
+      const todayMs = Date.now();
+      for (const inv of (invoicesRes.data ?? []) as any[]) {
+        const owed = (inv.total_cents ?? 0) - (inv.amount_paid_cents ?? 0);
+        outstanding += owed;
+        if (inv.due_date && new Date(inv.due_date + "T23:59:59").getTime() < todayMs) overdue += owed;
+      }
+      setOutstandingCents(outstanding);
+      setOverdueCents(overdue);
+      setLoading(false);
+    };
+
+    load();
+    const t = setInterval(load, 60_000);
+    return () => { cancelled = true; clearInterval(t); };
+  }, [user?.id]);
+
+  const greeting = useMemo(() => {
+    const h = new Date().getHours();
+    if (h < 12) return "Good morning";
+    if (h < 17) return "Good afternoon";
+    return "Good evening";
+  }, []);
+
+  return (
+    <SitterShell
+      action={
+        <>
+          <Button size="sm" variant="outline" asChild><Link to="/sitter/calendar"><CalendarPlus className="mr-1.5 h-4 w-4" />New booking</Link></Button>
+          <Button size="sm" asChild><Link to="/sitter/invoices"><CreditCard className="mr-1.5 h-4 w-4" />New invoice</Link></Button>
+        </>
+      }
+    >
+      <div className="mb-6">
+        <h1 className="font-display text-3xl text-primary sm:text-4xl">{greeting}</h1>
+        <p className="text-sm text-muted-foreground">Here's your day at a glance — {format(new Date(), "EEEE, MMM d")}</p>
+      </div>
+
+      <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+        <KpiTile label="Today's visits" value={loading ? "—" : todayBookings.length} icon={<CalendarCheck className="h-5 w-5" />} />
+        <KpiTile label="Outstanding" value={loading ? "—" : formatCents(outstandingCents)} icon={<CreditCard className="h-5 w-5" />} tone="warning" />
+        <KpiTile label="Overdue" value={loading ? "—" : formatCents(overdueCents)} icon={<AlertTriangle className="h-5 w-5" />} tone={overdueCents > 0 ? "danger" : "default"} />
+        <KpiTile label="Inbox" value={loading ? "—" : inboxPreview.length} icon={<InboxIcon className="h-5 w-5" />} />
+      </div>
+
+      <div className="mt-8 grid gap-6 lg:grid-cols-3">
+        <Card className="border border-border p-5 shadow-soft lg:col-span-2">
+          <div className="mb-4 flex items-center justify-between">
+            <h2 className="font-display text-xl text-primary">Today's run of show</h2>
+            <Button variant="ghost" size="sm" asChild><Link to="/sitter/calendar">Open calendar →</Link></Button>
+          </div>
+          {todayBookings.length === 0 ? (
+            <EmptyState
+              icon={<Clock3 className="h-8 w-8" />}
+              title="Nothing scheduled today"
+              description="Enjoy the quiet, or block off the day in your availability settings."
+            />
+          ) : (
+            <ul className="divide-y divide-border">
+              {todayBookings.map((b) => {
+                const startAt = new Date(b.scheduled_start_at ?? b.start_at);
+                const endAt = new Date(b.scheduled_end_at ?? b.end_at);
+                return (
+                  <li key={b.id} className="flex items-center gap-3 py-3">
+                    <div className="w-16 text-right">
+                      <div className="font-display text-sm text-primary">{format(startAt, "h:mm a")}</div>
+                      <div className="text-[11px] text-muted-foreground">{format(endAt, "h:mm a")}</div>
+                    </div>
+                    <div className="min-w-0 flex-1">
+                      <div className="truncate font-medium">{b.services?.name ?? "Service"}</div>
+                      <div className="truncate text-xs text-muted-foreground">{b.pets?.name ?? "Pet"}</div>
+                    </div>
+                    <Badge variant="outline" className="capitalize">{b.status.replace(/_/g, " ")}</Badge>
+                  </li>
+                );
+              })}
+            </ul>
+          )}
+        </Card>
+
+        <Card className="border border-border p-5 shadow-soft">
+          <div className="mb-4 flex items-center justify-between">
+            <h2 className="font-display text-xl text-primary">Needs your attention</h2>
+            <Button variant="ghost" size="sm" asChild><Link to="/sitter/inbox">Open inbox →</Link></Button>
+          </div>
+          {inboxPreview.length === 0 ? (
+            <EmptyState
+              icon={<InboxIcon className="h-7 w-7" />}
+              title="Inbox zero"
+              description="No requests or approvals waiting."
+            />
+          ) : (
+            <ul className="space-y-2">
+              {inboxPreview.map((item) => (
+                <li key={`${item.kind}-${item.id}`}>
+                  <button
+                    onClick={() => navigate("/sitter/inbox")}
+                    className="w-full rounded-md border border-border p-3 text-left transition-colors hover:bg-muted"
+                  >
+                    <div className="flex items-start gap-2">
+                      <Badge variant="outline" className="capitalize">{item.kind}</Badge>
+                    </div>
+                    <div className="mt-2 text-sm font-medium">{item.title}</div>
+                    <div className="text-xs text-muted-foreground">{item.subtitle}</div>
+                  </button>
+                </li>
+              ))}
+            </ul>
+          )}
+        </Card>
+      </div>
+
+      <Card className="mt-6 border border-border p-5 shadow-soft">
+        <h2 className="mb-3 font-display text-xl text-primary">Quick actions</h2>
+        <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-4">
+          <Button variant="outline" className="justify-start" asChild><Link to="/sitter/calendar"><CalendarPlus className="mr-2 h-4 w-4" />New booking</Link></Button>
+          <Button variant="outline" className="justify-start" asChild><Link to="/sitter/invoices"><CreditCard className="mr-2 h-4 w-4" />New invoice</Link></Button>
+          <Button variant="outline" className="justify-start" asChild><Link to="/sitter/messages"><MessageSquarePlus className="mr-2 h-4 w-4" />Message a client</Link></Button>
+          <Button variant="outline" className="justify-start" asChild><Link to="/sitter/settings/availability">Block a date</Link></Button>
+        </div>
+      </Card>
+    </SitterShell>
+  );
+}

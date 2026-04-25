@@ -1,0 +1,203 @@
+import { useEffect, useMemo, useState } from "react";
+import { format } from "date-fns";
+import { CreditCard, Search } from "lucide-react";
+import { SitterShell } from "@/components/sitter/SitterShell";
+import { KpiTile } from "@/components/sitter/KpiTile";
+import { EmptyState } from "@/components/sitter/EmptyState";
+import { Card } from "@/components/ui/card";
+import { Input } from "@/components/ui/input";
+import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
+import { Badge } from "@/components/ui/badge";
+import { PaymentDrawer, type PaymentDrawerBooking } from "@/components/payments/PaymentDrawer";
+import { derivedStatus, formatCents, statusBadgeClass, type Invoice } from "@/lib/invoices";
+import { supabase } from "@/integrations/supabase/client";
+import { useAuth } from "@/hooks/useAuth";
+
+type InvoiceRow = Invoice & {
+  bookings: {
+    id: string;
+    customer_id: string;
+    start_at: string;
+    end_at: string;
+    payment_status: string | null;
+    payment_amount_cents: number | null;
+    paid_at: string | null;
+    refund_id: string | null;
+    stripe_payment_intent: string | null;
+    stripe_charge_id: string | null;
+    services: { name: string } | null;
+    profiles: { full_name: string | null } | null;
+  } | null;
+};
+
+type StatusTab = "outstanding" | "overdue" | "drafts" | "paid" | "refunded" | "all";
+
+export default function SitterInvoices() {
+  const { user } = useAuth();
+  const [rows, setRows] = useState<InvoiceRow[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [search, setSearch] = useState("");
+  const [tab, setTab] = useState<StatusTab>("outstanding");
+  const [drawerBooking, setDrawerBooking] = useState<PaymentDrawerBooking | null>(null);
+  const [drawerOpen, setDrawerOpen] = useState(false);
+
+  const load = async () => {
+    if (!user?.id) return;
+    setLoading(true);
+    const { data } = await supabase.from("invoices")
+      .select(`*, bookings:booking_id(id, customer_id, start_at, end_at, payment_status, payment_amount_cents, paid_at, refund_id, stripe_payment_intent, stripe_charge_id, services(name), profiles:customer_id(full_name))`)
+      .eq("sitter_id", user.id)
+      .order("created_at", { ascending: false });
+    setRows((data ?? []) as any);
+    setLoading(false);
+  };
+
+  useEffect(() => { load(); }, [user?.id]);
+
+  const enriched = useMemo(() => rows.map((r) => ({
+    ...r,
+    derived: derivedStatus(r),
+    customer_name: r.bookings?.profiles?.full_name ?? "Customer",
+    service_name: r.bookings?.services?.name ?? "Service",
+  })), [rows]);
+
+  const stats = useMemo(() => {
+    let outstanding = 0;
+    let overdue = 0;
+    let paidThisMonth = 0;
+    const now = new Date();
+    const monthStart = new Date(now.getFullYear(), now.getMonth(), 1).getTime();
+    for (const r of enriched) {
+      const owed = (r.total_cents ?? 0) - (r.amount_paid_cents ?? 0);
+      if (["sent", "overdue", "partial"].includes(r.derived)) outstanding += owed;
+      if (r.derived === "overdue") overdue += owed;
+      if (r.status === "paid" && r.paid_at && new Date(r.paid_at).getTime() >= monthStart) {
+        paidThisMonth += r.total_cents ?? 0;
+      }
+    }
+    return { outstanding, overdue, paidThisMonth };
+  }, [enriched]);
+
+  const filtered = useMemo(() => {
+    let list = enriched;
+    if (tab === "outstanding") list = list.filter((r) => ["sent", "partial"].includes(r.derived));
+    else if (tab === "overdue") list = list.filter((r) => r.derived === "overdue");
+    else if (tab === "drafts") list = list.filter((r) => r.status === "draft");
+    else if (tab === "paid") list = list.filter((r) => r.status === "paid");
+    else if (tab === "refunded") list = list.filter((r) => r.status === "void");
+    if (search.trim()) {
+      const q = search.toLowerCase();
+      list = list.filter((r) =>
+        r.invoice_number.toLowerCase().includes(q) ||
+        r.customer_name.toLowerCase().includes(q) ||
+        r.service_name.toLowerCase().includes(q),
+      );
+    }
+    return list;
+  }, [enriched, tab, search]);
+
+  const openRow = (row: typeof enriched[number]) => {
+    if (!row.bookings) return;
+    const b = row.bookings;
+    setDrawerBooking({
+      id: b.id,
+      customer_id: b.customer_id,
+      total_cents: row.total_cents,
+      payment_amount_cents: b.payment_amount_cents,
+      payment_status: b.payment_status,
+      paid_at: b.paid_at,
+      start_at: b.start_at,
+      end_at: b.end_at,
+      refund_id: b.refund_id,
+      stripe_payment_intent: b.stripe_payment_intent,
+      stripe_charge_id: b.stripe_charge_id,
+      service_label: row.service_name,
+      customer_name: row.customer_name,
+    });
+    setDrawerOpen(true);
+  };
+
+  return (
+    <SitterShell>
+      <div className="mb-6 flex items-end justify-between gap-3">
+        <div>
+          <h1 className="font-display text-3xl text-primary">Invoices</h1>
+          <p className="text-sm text-muted-foreground">Manage bills, charges, refunds, and reminders.</p>
+        </div>
+      </div>
+
+      <div className="grid gap-3 sm:grid-cols-3">
+        <KpiTile label="Outstanding" value={formatCents(stats.outstanding)} tone="warning" icon={<CreditCard className="h-5 w-5" />} />
+        <KpiTile label="Overdue" value={formatCents(stats.overdue)} tone={stats.overdue > 0 ? "danger" : "default"} />
+        <KpiTile label="Paid this month" value={formatCents(stats.paidThisMonth)} tone="success" />
+      </div>
+
+      <Card className="mt-6 border border-border p-4 shadow-soft">
+        <div className="mb-3 flex flex-col items-stretch gap-2 sm:flex-row sm:items-center">
+          <div className="relative flex-1">
+            <Search className="pointer-events-none absolute left-2.5 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+            <Input value={search} onChange={(e) => setSearch(e.target.value)} placeholder="Search invoice #, customer, service" className="pl-8" />
+          </div>
+        </div>
+
+        <Tabs value={tab} onValueChange={(v) => setTab(v as StatusTab)}>
+          <TabsList className="grid w-full grid-cols-3 sm:grid-cols-6">
+            <TabsTrigger value="outstanding">Outstanding</TabsTrigger>
+            <TabsTrigger value="overdue">Overdue</TabsTrigger>
+            <TabsTrigger value="drafts">Drafts</TabsTrigger>
+            <TabsTrigger value="paid">Paid</TabsTrigger>
+            <TabsTrigger value="refunded">Refunded</TabsTrigger>
+            <TabsTrigger value="all">All</TabsTrigger>
+          </TabsList>
+          <TabsContent value={tab} className="mt-4">
+            {loading ? (
+              <div className="p-6 text-sm text-muted-foreground">Loading…</div>
+            ) : filtered.length === 0 ? (
+              <EmptyState
+                icon={<CreditCard className="h-8 w-8" />}
+                title={`No ${tab === "all" ? "" : tab + " "}invoices`}
+                description="Invoices appear here as bookings are confirmed and bills are issued."
+              />
+            ) : (
+              <ul className="divide-y divide-border">
+                {filtered.map((r) => {
+                  const owed = (r.total_cents ?? 0) - (r.amount_paid_cents ?? 0);
+                  return (
+                    <li key={r.id}>
+                      <button onClick={() => openRow(r)} className="flex w-full items-center gap-3 px-2 py-3 text-left transition-colors hover:bg-muted">
+                        <div className="min-w-0 flex-1">
+                          <div className="flex items-center gap-2">
+                            <span className="font-medium">{r.invoice_number}</span>
+                            <Badge variant="outline" className={statusBadgeClass(r.derived)}>{r.derived}</Badge>
+                          </div>
+                          <div className="truncate text-xs text-muted-foreground">
+                            {r.customer_name} · {r.service_name}
+                            {r.due_date ? ` · due ${format(new Date(r.due_date), "MMM d")}` : ""}
+                          </div>
+                        </div>
+                        <div className="text-right">
+                          <div className="font-display text-lg text-primary">{formatCents(r.total_cents)}</div>
+                          {owed > 0 && r.status !== "paid" && (
+                            <div className="text-[11px] text-muted-foreground">{formatCents(owed)} owed</div>
+                          )}
+                        </div>
+                      </button>
+                    </li>
+                  );
+                })}
+              </ul>
+            )}
+          </TabsContent>
+        </Tabs>
+      </Card>
+
+      <PaymentDrawer
+        open={drawerOpen}
+        onOpenChange={setDrawerOpen}
+        booking={drawerBooking}
+        hasSavedCard={false}
+        onChanged={load}
+      />
+    </SitterShell>
+  );
+}
