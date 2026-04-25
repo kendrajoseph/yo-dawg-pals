@@ -31,7 +31,46 @@ type TodayBooking = {
   end_at: string;
   status: string;
   pets: { name: string } | null;
-  services: { name: string } | null;
+  services: { name: string; slug: string | null } | null;
+};
+
+type UpdateKind = "pickup" | "dropoff" | "arrived" | "departed";
+
+const kindLabel: Record<UpdateKind, string> = {
+  pickup: "Pickup",
+  dropoff: "Drop-off",
+  arrived: "Arrived",
+  departed: "Left",
+};
+
+const kindToast: Record<UpdateKind, string> = {
+  pickup: "Picked up ✓",
+  dropoff: "Dropped off ✓",
+  arrived: "Arrival sent ✓",
+  departed: "Departure sent ✓",
+};
+
+// Choose the two transition events appropriate for each service type.
+// - Walks (solo, group, dog walking): Anneke picks the pet up from home and drops them back off → pickup / dropoff
+// - Pet sitting (in client's home): Anneke arrives at the client's home and later leaves → arrived / departed
+// - Boarding: the client drops the pet off with Anneke and later picks them back up → dropoff / pickup
+//   (from the client's perspective these are still drop-off and pick-up events, just inverted in time)
+// - Training, meet & greet: in-person session at the client's home → arrived / departed
+const eventsForSlug = (slug: string | null | undefined): [UpdateKind, UpdateKind] | null => {
+  switch (slug) {
+    case "walk":
+    case "solo-walk":
+    case "group-walk":
+      return ["pickup", "dropoff"];
+    case "sitting":
+    case "training":
+    case "meet-and-greet":
+      return ["arrived", "departed"];
+    case "boarding":
+      return ["dropoff", "pickup"];
+    default:
+      return null;
+  }
 };
 
 type InboxItem = {
@@ -49,11 +88,11 @@ export default function SitterToday() {
   const [outstandingCents, setOutstandingCents] = useState(0);
   const [overdueCents, setOverdueCents] = useState(0);
   const [loading, setLoading] = useState(true);
-  const [updateTarget, setUpdateTarget] = useState<{ booking: TodayBooking; kind: "pickup" | "dropoff" } | null>(null);
+  const [updateTarget, setUpdateTarget] = useState<{ booking: TodayBooking; kind: UpdateKind } | null>(null);
   const [updateNote, setUpdateNote] = useState("");
   const [sending, setSending] = useState(false);
 
-  const sendQuickUpdate = async (booking: TodayBooking, kind: "pickup" | "dropoff", note?: string) => {
+  const sendQuickUpdate = async (booking: TodayBooking, kind: UpdateKind, note?: string) => {
     setSending(true);
     const { data, error } = await supabase.functions.invoke("send-booking-update", {
       body: { bookingId: booking.id, kind, note: note?.trim() || undefined, sendSms: true },
@@ -63,7 +102,7 @@ export default function SitterToday() {
       toast({ title: "Couldn't send update", description: error.message, variant: "destructive" });
       return;
     }
-    toast({ title: kind === "pickup" ? "Picked up ✓" : "Dropped off ✓", description: data?.message ?? "Update sent." });
+    toast({ title: kindToast[kind], description: data?.message ?? "Update sent." });
     setUpdateTarget(null);
     setUpdateNote("");
   };
@@ -81,7 +120,7 @@ export default function SitterToday() {
 
       const [bookingsRes, requestsRes, approvalsRes, invoicesRes] = await Promise.all([
         supabase.from("bookings")
-          .select("id, scheduled_start_at, scheduled_end_at, start_at, end_at, status, pets(name), services(name)")
+          .select("id, scheduled_start_at, scheduled_end_at, start_at, end_at, status, pets(name), services(name, slug)")
           .eq("sitter_id", sitterId)
           .gte("start_at", start.toISOString())
           .lte("start_at", end.toISOString())
@@ -187,6 +226,8 @@ export default function SitterToday() {
               {todayBookings.map((b) => {
                 const startAt = new Date(b.scheduled_start_at ?? b.start_at);
                 const endAt = new Date(b.scheduled_end_at ?? b.end_at);
+                const events = eventsForSlug(b.services?.slug);
+                const [startEvent, endEvent] = events ?? [];
                 return (
                   <li key={b.id} className="flex flex-wrap items-center gap-3 py-3">
                     <div className="w-16 text-right">
@@ -199,38 +240,44 @@ export default function SitterToday() {
                     </div>
                     <Badge variant="outline" className="capitalize">{b.status.replace(/_/g, " ")}</Badge>
                     <div className="flex items-center gap-1">
-                      <Button
-                        size="sm"
-                        variant="outline"
-                        className="h-8 px-2"
-                        onClick={(e) => { e.preventDefault(); sendQuickUpdate(b, "pickup"); }}
-                        onContextMenu={(e) => { e.preventDefault(); setUpdateTarget({ booking: b, kind: "pickup" }); }}
-                        disabled={sending}
-                        title="One-click pickup. Right-click to add a note."
-                      >
-                        <LogIn className="mr-1 h-3.5 w-3.5" /> Pickup
-                      </Button>
-                      <Button
-                        size="sm"
-                        variant="outline"
-                        className="h-8 px-2"
-                        onClick={(e) => { e.preventDefault(); sendQuickUpdate(b, "dropoff"); }}
-                        onContextMenu={(e) => { e.preventDefault(); setUpdateTarget({ booking: b, kind: "dropoff" }); }}
-                        disabled={sending}
-                        title="One-click drop-off. Right-click to add a note."
-                      >
-                        <LogOut className="mr-1 h-3.5 w-3.5" /> Drop-off
-                      </Button>
-                      <Button
-                        size="sm"
-                        variant="ghost"
-                        className="h-8 px-2 text-muted-foreground"
-                        onClick={() => setUpdateTarget({ booking: b, kind: "pickup" })}
-                        disabled={sending}
-                        title="Send with a note"
-                      >
-                        + note
-                      </Button>
+                      {events ? (
+                        <>
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            className="h-8 px-2"
+                            onClick={(e) => { e.preventDefault(); sendQuickUpdate(b, startEvent!); }}
+                            onContextMenu={(e) => { e.preventDefault(); setUpdateTarget({ booking: b, kind: startEvent! }); }}
+                            disabled={sending}
+                            title={`One-click ${kindLabel[startEvent!].toLowerCase()}. Right-click to add a note.`}
+                          >
+                            <LogIn className="mr-1 h-3.5 w-3.5" /> {kindLabel[startEvent!]}
+                          </Button>
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            className="h-8 px-2"
+                            onClick={(e) => { e.preventDefault(); sendQuickUpdate(b, endEvent!); }}
+                            onContextMenu={(e) => { e.preventDefault(); setUpdateTarget({ booking: b, kind: endEvent! }); }}
+                            disabled={sending}
+                            title={`One-click ${kindLabel[endEvent!].toLowerCase()}. Right-click to add a note.`}
+                          >
+                            <LogOut className="mr-1 h-3.5 w-3.5" /> {kindLabel[endEvent!]}
+                          </Button>
+                          <Button
+                            size="sm"
+                            variant="ghost"
+                            className="h-8 px-2 text-muted-foreground"
+                            onClick={() => setUpdateTarget({ booking: b, kind: startEvent! })}
+                            disabled={sending}
+                            title="Send with a note"
+                          >
+                            + note
+                          </Button>
+                        </>
+                      ) : (
+                        <span className="text-[11px] text-muted-foreground">No status updates for this service</span>
+                      )}
                     </div>
                   </li>
                 );
@@ -285,7 +332,7 @@ export default function SitterToday() {
         <DialogContent>
           <DialogHeader>
             <DialogTitle>
-              {updateTarget?.kind === "pickup" ? "Send pickup update" : "Send drop-off update"}
+              {updateTarget ? `Send ${kindLabel[updateTarget.kind].toLowerCase()} update` : "Send update"}
             </DialogTitle>
             <DialogDescription>
               Sends a text and email to {updateTarget?.booking.pets?.name ?? "the pet"}'s owner. Add an optional note for anything important.

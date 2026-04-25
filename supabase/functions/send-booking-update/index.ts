@@ -6,7 +6,7 @@ const GATEWAY_URL = "https://connector-gateway.lovable.dev/twilio";
 
 const bodySchema = z.object({
   bookingId: z.string().uuid(),
-  kind: z.enum(["pickup", "dropoff", "note"]),
+  kind: z.enum(["pickup", "dropoff", "arrived", "departed", "note"]),
   note: z.string().trim().max(240).optional(),
   sendSms: z.boolean().default(true),
 });
@@ -149,7 +149,11 @@ Deno.serve(async (req) => {
         ? `Anneke just picked up ${petName} for ${serviceName}.`
         : kind === "dropoff"
           ? `Anneke just dropped off ${petName}.`
-          : `Anneke sent a quick update about ${petName}.`;
+          : kind === "arrived"
+            ? `Anneke has arrived at your home to care for ${petName}.`
+            : kind === "departed"
+              ? `Anneke has finished the visit with ${petName} and is heading out.`
+              : `Anneke sent a quick update about ${petName}.`;
 
     const cleanNote = note?.trim() || null;
     const smsBody = cleanNote ? `${defaultMessage} ${cleanNote}` : defaultMessage;
@@ -203,10 +207,20 @@ Deno.serve(async (req) => {
       if (recipientEmail) {
         const subject =
           kind === "pickup"
-            ? `${petName} is on their way home`
+            ? `${petName} is on their way`
             : kind === "dropoff"
               ? `${petName} just got dropped off`
-              : `Quick update about ${petName}`;
+              : kind === "arrived"
+                ? `Anneke has arrived for ${petName}`
+                : kind === "departed"
+                  ? `Anneke has wrapped up with ${petName}`
+                  : `Quick update about ${petName}`;
+        const kindLabel =
+          kind === "pickup" ? "Pickup"
+          : kind === "dropoff" ? "Drop-off"
+          : kind === "arrived" ? "Arrived at home"
+          : kind === "departed" ? "Visit complete"
+          : "Care update";
         const res = await admin.functions.invoke("send-transactional-email", {
           headers: { Authorization: `Bearer ${supabaseServiceRoleKey}` },
           body: {
@@ -219,7 +233,7 @@ Deno.serve(async (req) => {
               message: smsBody,
               sitterName: "Anneke",
               bookingLabel: serviceName,
-              kindLabel: kind === "pickup" ? "Pickup" : kind === "dropoff" ? "Drop-off" : "Care update",
+              kindLabel,
             },
           },
         });

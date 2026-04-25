@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { Link, useParams } from "react-router-dom";
 import { format } from "date-fns";
-import { ArrowLeft, Mail, Phone, PawPrint, CalendarDays, CreditCard, MessageSquare } from "lucide-react";
+import { ArrowLeft, Mail, Phone, PawPrint, CalendarDays, CreditCard, MessageSquare, Star, Save } from "lucide-react";
 import { SitterShell } from "@/components/sitter/SitterShell";
 import { EmptyState } from "@/components/sitter/EmptyState";
 import { Card } from "@/components/ui/card";
@@ -9,9 +9,12 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { Textarea } from "@/components/ui/textarea";
+import { Label } from "@/components/ui/label";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { formatCents } from "@/lib/invoices";
+import { toast } from "@/hooks/use-toast";
 
 export default function SitterClientProfile() {
   const { id } = useParams<{ id: string }>();
@@ -22,11 +25,20 @@ export default function SitterClientProfile() {
   const [invoices, setInvoices] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
 
+  // Internal admin profile (rating + private notes — only visible to Anneke/admins)
+  const [adminProfileId, setAdminProfileId] = useState<string | null>(null);
+  const [starRating, setStarRating] = useState<number>(3);
+  const [internalNotes, setInternalNotes] = useState<string>("");
+  const [savedRating, setSavedRating] = useState<number>(3);
+  const [savedNotes, setSavedNotes] = useState<string>("");
+  const [savingAdmin, setSavingAdmin] = useState(false);
+  const dirty = starRating !== savedRating || internalNotes !== savedNotes;
+
   useEffect(() => {
     if (!id || !user?.id) return;
     let cancelled = false;
     const load = async () => {
-      const [pRes, bookingsRes, invoicesRes] = await Promise.all([
+      const [pRes, bookingsRes, invoicesRes, adminRes] = await Promise.all([
         supabase.from("profiles").select("*").eq("id", id).maybeSingle(),
         supabase.from("bookings")
           .select("id, start_at, end_at, status, total_cents, payment_status, services(name), pets(id, name, photo_url)")
@@ -35,6 +47,10 @@ export default function SitterClientProfile() {
         supabase.from("invoices").select("id, invoice_number, status, total_cents, amount_paid_cents, due_date, created_at")
           .eq("sitter_id", user.id).eq("customer_id", id)
           .order("created_at", { ascending: false }),
+        supabase.from("client_admin_profiles")
+          .select("id, star_rating, internal_notes")
+          .eq("client_id", id)
+          .maybeSingle(),
       ]);
       if (cancelled) return;
       setProfile(pRes.data);
@@ -45,11 +61,51 @@ export default function SitterClientProfile() {
         if (b.pets) seen.set(b.pets.id, b.pets);
       }
       setPets([...seen.values()]);
+      const a = adminRes.data;
+      setAdminProfileId(a?.id ?? null);
+      const r = a?.star_rating ?? 3;
+      const n = a?.internal_notes ?? "";
+      setStarRating(r);
+      setInternalNotes(n);
+      setSavedRating(r);
+      setSavedNotes(n);
       setLoading(false);
     };
     load();
     return () => { cancelled = true; };
   }, [id, user?.id]);
+
+  const saveAdminProfile = async () => {
+    if (!id || !user?.id) return;
+    setSavingAdmin(true);
+    const payload = {
+      client_id: id,
+      star_rating: starRating,
+      internal_notes: internalNotes.trim() || null,
+      last_updated_by: user.id,
+    };
+    const { data, error } = adminProfileId
+      ? await supabase
+          .from("client_admin_profiles")
+          .update(payload)
+          .eq("id", adminProfileId)
+          .select("id")
+          .maybeSingle()
+      : await supabase
+          .from("client_admin_profiles")
+          .insert(payload)
+          .select("id")
+          .maybeSingle();
+    setSavingAdmin(false);
+    if (error) {
+      toast({ title: "Couldn't save", description: error.message, variant: "destructive" });
+      return;
+    }
+    if (data?.id) setAdminProfileId(data.id);
+    setSavedRating(starRating);
+    setSavedNotes(internalNotes);
+    toast({ title: "Saved", description: "Internal notes updated." });
+  };
 
   if (loading) {
     return <SitterShell><div className="p-6 text-sm text-muted-foreground">Loading…</div></SitterShell>;
@@ -112,6 +168,52 @@ export default function SitterClientProfile() {
               <div className="flex justify-between"><dt className="text-muted-foreground">Open invoices</dt><dd>{invoices.filter((i) => i.status !== "paid" && i.status !== "void").length}</dd></div>
               <div className="flex justify-between"><dt className="text-muted-foreground">Lifetime spend</dt><dd>{formatCents(invoices.reduce((s, i) => s + (i.amount_paid_cents ?? 0), 0))}</dd></div>
             </dl>
+          </Card>
+
+          <Card className="border-2 border-amber-200/60 bg-amber-50/40 p-5 shadow-soft lg:col-span-2 dark:border-amber-900/40 dark:bg-amber-950/20">
+            <div className="mb-3 flex items-center justify-between">
+              <div>
+                <h3 className="font-display text-lg text-primary">Internal client notes</h3>
+                <p className="text-xs text-muted-foreground">Only visible to you. Clients never see this.</p>
+              </div>
+              <Button size="sm" onClick={saveAdminProfile} disabled={savingAdmin || !dirty}>
+                <Save className="mr-1.5 h-4 w-4" />{savingAdmin ? "Saving…" : dirty ? "Save changes" : "Saved"}
+              </Button>
+            </div>
+
+            <div className="mb-4 space-y-1.5">
+              <Label className="text-xs">Star rating</Label>
+              <div className="flex items-center gap-1">
+                {Array.from({ length: 5 }).map((_, i) => {
+                  const value = i + 1;
+                  const filled = value <= starRating;
+                  return (
+                    <button
+                      key={value}
+                      type="button"
+                      aria-label={`${value} star${value === 1 ? "" : "s"}`}
+                      onClick={() => setStarRating(value)}
+                      className="rounded p-0.5 transition-transform hover:scale-110 focus:outline-none focus:ring-2 focus:ring-ring"
+                    >
+                      <Star className={`h-6 w-6 ${filled ? "fill-amber-400 text-amber-400" : "text-muted-foreground/30"}`} />
+                    </button>
+                  );
+                })}
+                <span className="ml-2 text-xs text-muted-foreground">{starRating}/5</span>
+              </div>
+            </div>
+
+            <div className="space-y-1.5">
+              <Label htmlFor="internal-notes" className="text-xs">Private notes</Label>
+              <Textarea
+                id="internal-notes"
+                value={internalNotes}
+                onChange={(e) => setInternalNotes(e.target.value)}
+                placeholder="Quirks, gate codes, tipping habits, payment patterns, anything you want to remember about this client…"
+                rows={5}
+                className="bg-background"
+              />
+            </div>
           </Card>
         </TabsContent>
 
