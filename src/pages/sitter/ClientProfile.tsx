@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { Link, useParams } from "react-router-dom";
 import { format } from "date-fns";
-import { ArrowLeft, Mail, Phone, PawPrint, CalendarDays, CreditCard, MessageSquare } from "lucide-react";
+import { ArrowLeft, Mail, Phone, PawPrint, CalendarDays, CreditCard, MessageSquare, Star, Save } from "lucide-react";
 import { SitterShell } from "@/components/sitter/SitterShell";
 import { EmptyState } from "@/components/sitter/EmptyState";
 import { Card } from "@/components/ui/card";
@@ -9,9 +9,12 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { Textarea } from "@/components/ui/textarea";
+import { Label } from "@/components/ui/label";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { formatCents } from "@/lib/invoices";
+import { toast } from "@/hooks/use-toast";
 
 export default function SitterClientProfile() {
   const { id } = useParams<{ id: string }>();
