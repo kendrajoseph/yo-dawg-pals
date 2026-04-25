@@ -1899,13 +1899,22 @@ const SitterDashboard = () => {
     }
 
     setSavingAlert(true);
+    // Auto-expire alerts at the end of their start day if the sitter didn't
+    // pick an explicit end. Keeps "Closed Today" notices from lingering forever.
+    const startsAtIso = new Date(alertDraft.startsAt).toISOString();
+    let endsAtIso: string | null = alertDraft.endsAt ? new Date(alertDraft.endsAt).toISOString() : null;
+    if (!endsAtIso) {
+      const startDate = new Date(alertDraft.startsAt);
+      const eod = new Date(startDate.getFullYear(), startDate.getMonth(), startDate.getDate(), 23, 59, 59, 999);
+      endsAtIso = eod.toISOString();
+    }
     const { error } = await db.from("service_alerts").insert({
       sitter_id: user.id,
       kind: alertDraft.kind,
       title: alertDraft.title,
       message: alertDraft.message,
-      starts_at: new Date(alertDraft.startsAt).toISOString(),
-      ends_at: alertDraft.endsAt ? new Date(alertDraft.endsAt).toISOString() : null,
+      starts_at: startsAtIso,
+      ends_at: endsAtIso,
       is_active: alertDraft.isActive,
       pin_to_profile: alertDraft.pinToProfile,
       created_by: user.id,
