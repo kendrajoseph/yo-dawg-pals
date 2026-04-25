@@ -95,13 +95,19 @@ const Auth = () => {
             <PawPrint className="h-7 w-7" />
           </div>
           <h1 className="font-display text-4xl text-primary">
-            Get in,
-            <br />
-            <span className="text-gradient-sunlight">good boy.</span>
+            {isBookingFlow ? (<>Almost there,<br /><span className="text-gradient-sunlight">good human.</span></>) : (<>Get in,<br /><span className="text-gradient-sunlight">good boy.</span></>)}
           </h1>
           <p className="mt-2 text-sm text-foreground/70">
-            Book sitters, manage pets, track visits.
+            {isBookingFlow
+              ? "Create a quick account so we can save your request — you'll land right back where you left off."
+              : "Book sitters, manage pets, track visits."}
           </p>
+          {isBookingFlow && (
+            <div className="mt-4 rounded-md border-2 border-dashed border-primary/40 bg-accent/20 p-3 text-xs text-foreground/80">
+              <strong className="font-display uppercase text-primary">Your request is saved.</strong>{" "}
+              Sign up (or sign in) and you'll return to your booking with everything filled in.
+            </div>
+          )}
 
           <Tabs value={tab} onValueChange={(v) => setTab(v as "signin" | "signup")} className="mt-6">
             <TabsList className="grid w-full grid-cols-2">
