@@ -14,9 +14,10 @@ import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 
 type InvoiceRow = Invoice & {
-  bookings: {
+  booking: {
     id: string;
     customer_id: string;
+    service_id: string;
     start_at: string;
     end_at: string;
     payment_status: string | null;
@@ -25,9 +26,9 @@ type InvoiceRow = Invoice & {
     refund_id: string | null;
     stripe_payment_intent: string | null;
     stripe_charge_id: string | null;
-    services: { name: string } | null;
-    profiles: { full_name: string | null } | null;
   } | null;
+  customer_name: string;
+  service_name: string;
 };
 
 type StatusTab = "outstanding" | "overdue" | "drafts" | "paid" | "refunded" | "all";
@@ -44,11 +45,47 @@ export default function SitterInvoices() {
   const load = async () => {
     if (!user?.id) return;
     setLoading(true);
-    const { data } = await supabase.from("invoices")
-      .select(`*, bookings:booking_id(id, customer_id, start_at, end_at, payment_status, payment_amount_cents, paid_at, refund_id, stripe_payment_intent, stripe_charge_id, services(name), profiles:customer_id(full_name))`)
+    const { data: invoiceData, error } = await supabase.from("invoices")
+      .select("*")
       .eq("sitter_id", user.id)
       .order("created_at", { ascending: false });
-    setRows((data ?? []) as any);
+
+    if (error) {
+      setRows([]);
+      setLoading(false);
+      return;
+    }
+
+    const invoices = (invoiceData ?? []) as Invoice[];
+    const bookingIds = [...new Set(invoices.map((i) => i.booking_id).filter(Boolean))];
+    const customerIds = [...new Set(invoices.map((i) => i.customer_id).filter(Boolean))];
+
+    const [bookingsRes, profilesRes] = await Promise.all([
+      bookingIds.length
+        ? supabase.from("bookings").select("id, customer_id, service_id, start_at, end_at, payment_status, payment_amount_cents, paid_at, refund_id, stripe_payment_intent, stripe_charge_id").in("id", bookingIds)
+        : Promise.resolve({ data: [] }),
+      customerIds.length
+        ? supabase.from("profiles").select("id, full_name").in("id", customerIds)
+        : Promise.resolve({ data: [] }),
+    ]);
+
+    const bookings = new Map(((bookingsRes.data ?? []) as any[]).map((b) => [b.id, b]));
+    const serviceIds = [...new Set(((bookingsRes.data ?? []) as any[]).map((b) => b.service_id).filter(Boolean))];
+    const servicesRes = serviceIds.length
+      ? await supabase.from("services").select("id, name").in("id", serviceIds)
+      : { data: [] };
+    const profiles = new Map(((profilesRes.data ?? []) as any[]).map((p) => [p.id, p.full_name ?? "Customer"]));
+    const services = new Map(((servicesRes.data ?? []) as any[]).map((s) => [s.id, s.name ?? "Service"]));
+
+    setRows(invoices.map((invoice) => {
+      const booking = bookings.get(invoice.booking_id) ?? null;
+      return {
+        ...invoice,
+        booking,
+        customer_name: profiles.get(invoice.customer_id) ?? "Customer",
+        service_name: booking ? services.get(booking.service_id) ?? "Service" : "Service",
+      };
+    }));
     setLoading(false);
   };
 
@@ -57,8 +94,6 @@ export default function SitterInvoices() {
   const enriched = useMemo(() => rows.map((r) => ({
     ...r,
     derived: derivedStatus(r),
-    customer_name: r.bookings?.profiles?.full_name ?? "Customer",
-    service_name: r.bookings?.services?.name ?? "Service",
   })), [rows]);
 
   const stats = useMemo(() => {
@@ -97,8 +132,8 @@ export default function SitterInvoices() {
   }, [enriched, tab, search]);
 
   const openRow = (row: typeof enriched[number]) => {
-    if (!row.bookings) return;
-    const b = row.bookings;
+    if (!row.booking) return;
+    const b = row.booking;
     setDrawerBooking({
       id: b.id,
       customer_id: b.customer_id,
