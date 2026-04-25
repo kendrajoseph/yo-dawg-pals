@@ -9,7 +9,19 @@ serve(async (req) => {
   if (req.method !== "POST") return new Response("Method not allowed", { status: 405 });
   const env = ((new URL(req.url)).searchParams.get("env") || "sandbox") as StripeEnv;
   try {
-    const event = await verifyWebhook(req, env);
+    const event = await verifyWebhook(req, env) as { id?: string; type: string; data: { object: any } };
+
+    // Idempotency: if we've seen this event id before, skip. PK conflict = already processed.
+    if (event.id) {
+      const { error: dupErr } = await supabase
+        .from("processed_stripe_events")
+        .insert({ id: event.id, event_type: event.type });
+      if (dupErr && (dupErr.code === "23505" || /duplicate/i.test(dupErr.message ?? ""))) {
+        console.log("Skipping duplicate event", event.id);
+        return new Response(JSON.stringify({ received: true, duplicate: true }), { status: 200, headers: { "Content-Type": "application/json" } });
+      }
+    }
+
     if (event.type === "checkout.session.completed") {
       const session: any = event.data.object;
       const bookingId = session.metadata?.bookingId;
@@ -35,11 +47,14 @@ serve(async (req) => {
       }
 
       if (bookingId) {
+        // Defense-in-depth: if booking is already paid, skip side-effects (receipt, notify).
         const { data: bookingRow } = await supabase
           .from("bookings")
-          .select("total_cents, payment_amount_cents")
+          .select("total_cents, payment_amount_cents, paid_at")
           .eq("id", bookingId)
           .maybeSingle();
+
+        const alreadyPaid = !!(bookingRow as any)?.paid_at;
         const totalCents = (bookingRow as any)?.total_cents ?? (session.amount_total ?? 0);
         const paidCents = session.amount_total ?? totalCents;
 
@@ -52,7 +67,7 @@ serve(async (req) => {
           stripe_session_id: session.id,
         }).eq("id", bookingId);
 
-        // Mark related invoice paid + emit events + send receipt
+        // Mark related invoice paid
         const invoiceId = session.metadata?.invoiceId;
         let resolvedInvoiceId: string | null = invoiceId ?? null;
         if (!resolvedInvoiceId) {
@@ -69,35 +84,68 @@ serve(async (req) => {
           }).eq("id", resolvedInvoiceId);
         }
 
-        await supabase.from("payment_events").insert({
-          booking_id: bookingId,
-          invoice_id: resolvedInvoiceId,
-          kind: "charge_succeeded",
-          channel: "stripe",
-          amount_cents: paidCents,
-          metadata: { stripe_session_id: session.id, stripe_payment_intent: paymentIntentId },
-        });
-
-        try {
-          await supabase.functions.invoke("send-payment-receipt", {
-            body: {
-              invoiceId: resolvedInvoiceId ?? undefined,
-              bookingId,
-              amountPaidCents: paidCents,
-              paymentMethod: "Card",
-              paidAt: new Date().toISOString(),
-            },
+        if (!alreadyPaid) {
+          await supabase.from("payment_events").insert({
+            booking_id: bookingId,
+            invoice_id: resolvedInvoiceId,
+            kind: "charge_succeeded",
+            channel: "stripe",
+            amount_cents: paidCents,
+            metadata: { stripe_session_id: session.id, stripe_payment_intent: paymentIntentId },
           });
-        } catch (e) { console.error("receipt email failed", e); }
 
-        await notifyAnnekeOfPaidBooking(bookingId);
+          try {
+            await supabase.functions.invoke("send-payment-receipt", {
+              body: {
+                invoiceId: resolvedInvoiceId ?? undefined,
+                bookingId,
+                amountPaidCents: paidCents,
+                paymentMethod: "Card",
+                paidAt: new Date().toISOString(),
+              },
+            });
+          } catch (e) { console.error("receipt email failed", e); }
+
+          await notifyAnnekeOfPaidBooking(bookingId);
+        } else {
+          console.log("Booking already paid, skipping receipt/notify side-effects", bookingId);
+        }
       }
     }
+
     if (event.type === "charge.refunded") {
       const charge: any = event.data.object;
       const paymentIntentId = typeof charge.payment_intent === "string" ? charge.payment_intent : charge.payment_intent?.id;
-      if (paymentIntentId) await supabase.from("bookings").update({ status: "refunded", payment_status: "refunded" }).eq("stripe_payment_intent", paymentIntentId);
+      const refundedAmount: number = charge.amount_refunded ?? 0;
+      const totalAmount: number = charge.amount ?? 0;
+      const isFullRefund = refundedAmount >= totalAmount;
+
+      if (paymentIntentId) {
+        const { data: booking } = await supabase
+          .from("bookings")
+          .select("id, payment_amount_cents, refund_amount_cents")
+          .eq("stripe_payment_intent", paymentIntentId)
+          .maybeSingle();
+
+        if (booking) {
+          await supabase.from("bookings").update({
+            status: isFullRefund ? "refunded" : "confirmed",
+            payment_status: isFullRefund ? "refunded" : "partial_refund",
+            refund_amount_cents: refundedAmount,
+            payment_amount_cents: Math.max(0, ((booking as any).payment_amount_cents ?? totalAmount) - refundedAmount),
+          }).eq("id", (booking as any).id);
+
+          await supabase.from("payment_events").insert({
+            booking_id: (booking as any).id,
+            kind: isFullRefund ? "refund_succeeded" : "partial_refund",
+            channel: "stripe",
+            amount_cents: refundedAmount,
+            metadata: { stripe_payment_intent: paymentIntentId, charge_id: charge.id },
+          });
+        }
+      }
     }
+
     if (event.type === "payment_intent.succeeded") {
       const intent: any = event.data.object;
       const bookingId = intent.metadata?.bookingId;
@@ -110,6 +158,7 @@ serve(async (req) => {
         }).eq("id", bookingId);
       }
     }
+
     return new Response(JSON.stringify({ received: true }), { status: 200, headers: { "Content-Type": "application/json" } });
   } catch (e) {
     console.error("Webhook error:", e);
