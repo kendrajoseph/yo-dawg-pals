@@ -6,7 +6,7 @@ import SiteNav from "@/components/SiteNav";
 import SiteFooter from "@/components/SiteFooter";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
-import { BellRing, CalendarPlus, ChevronRight, CreditCard, Mail, PawPrint, Smartphone, Trash2, User, X } from "lucide-react";
+import { BellRing, CalendarDays, CalendarPlus, ChevronRight, CreditCard, Mail, PawPrint, Smartphone, Trash2, User, X } from "lucide-react";
 import { formatBookingSchedule, formatPriceWithDecimals, STATUS_LABELS, STATUS_STYLES } from "@/lib/booking";
 import { toast } from "@/hooks/use-toast";
 import {
