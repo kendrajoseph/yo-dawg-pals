@@ -13,7 +13,8 @@ import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
-import { formatCents } from "@/lib/invoices";
+import { formatCents, derivedStatus } from "@/lib/invoices";
+import { downloadCsv, formatCentsForCsv, todayStamp } from "@/lib/csv";
 import { toast } from "@/hooks/use-toast";
 
 export default function SitterClientProfile() {
