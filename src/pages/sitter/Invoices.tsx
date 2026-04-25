@@ -188,6 +188,8 @@ export default function SitterInvoices() {
     setDeleteTarget(null);
     load();
   };
+
+  return (
     <SitterShell>
       <div className="mb-6 flex items-end justify-between gap-3">
         <div>
