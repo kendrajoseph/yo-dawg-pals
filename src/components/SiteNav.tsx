@@ -1,6 +1,6 @@
 import { Link, NavLink, useLocation, useNavigate } from "react-router-dom";
-import { Menu, LogOut } from "lucide-react";
-import { useState } from "react";
+import { Menu, LogOut, X } from "lucide-react";
+import { useEffect, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/hooks/useAuth";
 import { cn } from "@/lib/utils";
@@ -17,7 +17,29 @@ const SiteNav = ({ variant = "light" }: SiteNavProps) => {
   const location = useLocation();
   const [open, setOpen] = useState(false);
 
+  // Close mobile menu on route change
+  useEffect(() => {
+    setOpen(false);
+  }, [location.pathname]);
+
+  // Close mobile menu when viewport grows past md
+  useEffect(() => {
+    const mql = window.matchMedia("(min-width: 768px)");
+    const handler = (e: MediaQueryListEvent) => { if (e.matches) setOpen(false); };
+    mql.addEventListener("change", handler);
+    return () => mql.removeEventListener("change", handler);
+  }, []);
+
+  // Lock body scroll when sheet open
+  useEffect(() => {
+    if (!open) return;
+    const prev = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+    return () => { document.body.style.overflow = prev; };
+  }, [open]);
+
   const handleSignOut = async () => {
+    setOpen(false);
     await signOut();
     navigate("/");
   };
@@ -67,20 +89,21 @@ const SiteNav = ({ variant = "light" }: SiteNavProps) => {
           variant="ghost"
           size="icon"
           className={cn(
-            "md:hidden",
+            "h-11 w-11 md:hidden",
              onDark && "text-primary hover:bg-primary/10 hover:text-primary",
           )}
-          aria-label="Open menu"
+          aria-label={open ? "Close menu" : "Open menu"}
+          aria-expanded={open}
           onClick={() => setOpen((o) => !o)}
         >
-          <Menu className="h-5 w-5" />
+          {open ? <Menu className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
         </Button>
         {user ? (
           <Button
             onClick={handleSignOut}
             variant="ghost"
             className={cn(
-              "hidden h-10 text-sm sm:inline-flex",
+              "hidden h-10 text-sm md:inline-flex",
                onDark && "text-primary hover:bg-primary/10 hover:text-primary",
             )}
           >
@@ -90,7 +113,7 @@ const SiteNav = ({ variant = "light" }: SiteNavProps) => {
           <Button
             asChild
             className={cn(
-              "hidden h-10 rounded-full px-5 text-sm font-semibold transition-all hover:scale-[1.02] sm:inline-flex",
+              "hidden h-10 rounded-full px-5 text-sm font-semibold transition-all hover:scale-[1.02] md:inline-flex",
               onDark
                 ? "bg-accent text-accent-foreground hover:bg-accent/90"
                 : "bg-primary text-primary-foreground hover:bg-primary/90",
@@ -102,24 +125,70 @@ const SiteNav = ({ variant = "light" }: SiteNavProps) => {
       </div>
 
       {open && (
-        <div className="absolute left-0 right-0 top-full z-30 mx-5 mt-2 flex flex-col gap-1 rounded-xl border border-border bg-card p-3 text-foreground shadow-card md:hidden">
-          <Link to="/#services" onClick={() => setOpen(false)} className="px-3 py-2 text-sm font-semibold">Services</Link>
-          <Link to="/book" onClick={() => setOpen(false)} className="px-3 py-2 text-sm font-semibold">Book</Link>
-          {user && (
-            <>
-              <Link to="/account" onClick={() => setOpen(false)} className="px-3 py-2 text-sm font-semibold">Account</Link>
-              <Link to="/account/profile" onClick={() => setOpen(false)} className="px-3 py-2 text-sm font-semibold">Profile</Link>
-            </>
-          )}
-          {canManageDashboard && (
-            <Link to="/sitter" onClick={() => setOpen(false)} className="px-3 py-2 text-sm font-semibold">Dashboard</Link>
-          )}
-          {user ? (
-            <button onClick={handleSignOut} className="px-3 py-2 text-left text-sm font-semibold">Sign out</button>
-          ) : (
-            <Link to="/auth" onClick={() => setOpen(false)} className="px-3 py-2 text-sm font-semibold text-accent">Sign in</Link>
-          )}
-        </div>
+        <>
+          {/* Backdrop */}
+          <button
+            type="button"
+            aria-label="Close menu"
+            onClick={() => setOpen(false)}
+            className="fixed inset-0 top-[68px] z-30 bg-foreground/30 backdrop-blur-sm md:hidden"
+          />
+          {/* Sheet */}
+          <div className="absolute inset-x-3 top-full z-40 mt-2 overflow-hidden rounded-2xl border-2 border-primary bg-card text-foreground shadow-pop md:hidden">
+            <div className="flex items-center justify-between border-b border-border px-4 py-3">
+              <span className="font-display text-sm uppercase tracking-wider text-primary">Menu</span>
+              <button
+                type="button"
+                onClick={() => setOpen(false)}
+                className="-mr-2 inline-flex h-9 w-9 items-center justify-center rounded-full text-foreground/70 hover:bg-muted hover:text-foreground"
+                aria-label="Close menu"
+              >
+                <X className="h-5 w-5" />
+              </button>
+            </div>
+            <ul className="flex flex-col py-2">
+              {[
+                { to: "/#services", label: "Services" },
+                { to: "/book", label: "Book" },
+                ...(user
+                  ? [
+                      { to: "/account", label: "Account" },
+                      { to: "/account/profile", label: "Profile" },
+                    ]
+                  : []),
+                ...(canManageDashboard ? [{ to: "/sitter", label: "Dashboard" }] : []),
+              ].map((item) => (
+                <li key={item.to}>
+                  <Link
+                    to={item.to}
+                    onClick={() => setOpen(false)}
+                    className="flex min-h-12 items-center px-5 py-3 text-base font-semibold text-foreground/85 transition-colors hover:bg-muted hover:text-foreground"
+                  >
+                    {item.label}
+                  </Link>
+                </li>
+              ))}
+            </ul>
+            <div className="border-t border-border p-3">
+              {user ? (
+                <Button
+                  onClick={handleSignOut}
+                  variant="outline"
+                  className="h-12 w-full justify-center border-2 border-primary text-base font-semibold"
+                >
+                  <LogOut className="h-4 w-4" /> Sign out
+                </Button>
+              ) : (
+                <Button
+                  asChild
+                  className="h-12 w-full justify-center rounded-full bg-primary text-base font-semibold text-primary-foreground hover:bg-primary/90"
+                >
+                  <Link to="/auth" onClick={() => setOpen(false)}>Sign in</Link>
+                </Button>
+              )}
+            </div>
+          </div>
+        </>
       )}
     </nav>
   );
