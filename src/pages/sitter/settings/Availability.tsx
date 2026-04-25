@@ -300,12 +300,12 @@ export default function SettingsAvailability() {
                       {list.map((w) => (
                         <li key={w.id} className="rounded-md border border-border bg-card px-3 py-2">
                           <div className="flex items-center justify-between gap-2">
-                            <button onClick={() => setWinForm({ id: w.id, serviceId: w.service_id, weekday: w.weekday, label: w.window_label, start: minutesToTime(w.start_minute), end: minutesToTime(w.end_minute), maxBookings: w.max_bookings })} className="text-left">
+                            <button onClick={() => setWinForm({ id: w.id, serviceId: w.service_id, weekday: w.weekday, label: w.window_label, start: minutesToTime24(w.start_minute), end: minutesToTime24(w.end_minute), maxBookings: w.max_bookings })} className="text-left">
                               <div className="font-display text-xs uppercase text-primary">{DAYS[w.weekday]} · {w.window_label}</div>
                               <div className="text-xs text-muted-foreground">{minutesToTime(w.start_minute)}–{minutesToTime(w.end_minute)}</div>
                             </button>
                             <div className="flex items-center gap-2">
-                              <button onClick={() => setWinForm({ id: w.id, serviceId: w.service_id, weekday: w.weekday, label: w.window_label, start: minutesToTime(w.start_minute), end: minutesToTime(w.end_minute), maxBookings: w.max_bookings })}><Pencil className="h-3.5 w-3.5 text-muted-foreground" /></button>
+                              <button onClick={() => setWinForm({ id: w.id, serviceId: w.service_id, weekday: w.weekday, label: w.window_label, start: minutesToTime24(w.start_minute), end: minutesToTime24(w.end_minute), maxBookings: w.max_bookings })}><Pencil className="h-3.5 w-3.5 text-muted-foreground" /></button>
                               <button onClick={() => removeWindow(w.id)}><Trash2 className="h-3.5 w-3.5 text-destructive" /></button>
                             </div>
                           </div>
