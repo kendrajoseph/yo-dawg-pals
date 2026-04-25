@@ -157,7 +157,6 @@ const PetForm = ({ form, setForm, availableTemperamentTags = [], photoFile, setP
           <Textarea
             rows={3}
             maxLength={1000}
-            placeholder=""
             value={form.temperament_notes ?? ""}
             onChange={(e) => set("temperament_notes", e.target.value)}
           />

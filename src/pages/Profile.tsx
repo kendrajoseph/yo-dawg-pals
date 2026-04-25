@@ -25,27 +25,33 @@ const phoneField = z
   .optional()
   .or(z.literal(""));
 
-const profileSchema = z
-  .object({
-    full_name: z
-      .string()
-      .trim()
-      .min(1, "Name is required")
-      .max(100, "Name must be 100 characters or less"),
-    phone: phoneField,
-    mobile_phone: phoneField,
-    sms_opt_in: z.boolean(),
-    bio: z
-      .string()
-      .trim()
-      .max(1000, "Notes must be 1000 characters or less")
-      .optional()
-      .or(z.literal("")),
-  })
-  .refine((data) => !data.sms_opt_in || Boolean(data.mobile_phone?.trim()), {
-    message: "Add a mobile number before turning on text updates",
-    path: ["mobile_phone"],
-  });
+const profileSchema = z.object({
+  full_name: z
+    .string()
+    .trim()
+    .min(1, "Name is required")
+    .max(100, "Name must be 100 characters or less"),
+  email: z
+    .string()
+    .trim()
+    .email("Enter a valid email")
+    .max(255, "Email must be 255 characters or less"),
+  phone: phoneField,
+  // Mobile is required so we can text pickup/dropoff updates. Copy stays soft.
+  mobile_phone: z
+    .string()
+    .trim()
+    .min(7, "Add a mobile number we can text")
+    .max(30, "Phone must be 30 characters or less")
+    .regex(/^[\d\s()+\-.]+$/, "Phone can only contain digits, spaces, and ()+-."),
+  sms_opt_in: z.boolean(),
+  bio: z
+    .string()
+    .trim()
+    .max(1000, "Notes must be 1000 characters or less")
+    .optional()
+    .or(z.literal("")),
+});
 
 const Profile = () => {
   const db = supabase as any;
@@ -60,6 +66,7 @@ const Profile = () => {
   const [avatarUrl, setAvatarUrl] = useState<string | null>(null);
   const [form, setForm] = useState({
     full_name: "",
+    email: "",
     phone: "",
     mobile_phone: "",
     sms_opt_in: false,
@@ -81,6 +88,7 @@ const Profile = () => {
       } else if (data) {
         setForm({
           full_name: data.full_name ?? "",
+          email: user.email ?? "",
           phone: data.phone ?? "",
           mobile_phone: (data as { mobile_phone?: string | null }).mobile_phone ?? "",
           sms_opt_in: Boolean((data as { sms_opt_in?: boolean | null }).sms_opt_in),
@@ -151,23 +159,40 @@ const Profile = () => {
     setErrors({});
     setSaving(true);
 
+    // Auto-enable text updates whenever a mobile is on file. Stays subtle — no
+    // checkbox required for it to work.
+    const smsOn = result.data.sms_opt_in || Boolean(result.data.mobile_phone?.trim());
+
     const { error } = await db
       .from("profiles")
       .update({
         full_name: result.data.full_name,
         phone: result.data.phone || null,
-        mobile_phone: result.data.mobile_phone || null,
-        sms_opt_in: result.data.sms_opt_in,
+        mobile_phone: result.data.mobile_phone,
+        sms_opt_in: smsOn,
         bio: result.data.bio || null,
       })
       .eq("id", user.id);
 
-    setSaving(false);
     if (error) {
+      setSaving(false);
       toast.error("Couldn't save: " + error.message);
-    } else {
-      toast.success(result.data.sms_opt_in ? "Profile saved. Text updates are on." : "Profile saved");
+      return;
     }
+
+    // Update auth email if it changed.
+    if (result.data.email && result.data.email !== user.email) {
+      const { error: emailErr } = await supabase.auth.updateUser({ email: result.data.email });
+      if (emailErr) {
+        setSaving(false);
+        toast.error("Email update failed: " + emailErr.message);
+        return;
+      }
+      toast.success("Profile saved. Check your inbox to confirm the new email.");
+    } else {
+      toast.success("Profile saved");
+    }
+    setSaving(false);
   };
 
   const handleSignOut = async () => {
@@ -260,12 +285,17 @@ const Profile = () => {
                   </Label>
                   <Input
                     id="email"
-                    value={user?.email ?? ""}
-                    disabled
-                    className="border-2 border-primary/40 bg-muted"
+                    type="email"
+                    value={form.email}
+                    onChange={(e) => setForm({ ...form, email: e.target.value })}
+                    maxLength={255}
+                    className="border-2 border-primary"
                   />
+                  {errors.email && (
+                    <p className="text-sm font-medium text-destructive">{errors.email}</p>
+                  )}
                   <p className="text-xs text-muted-foreground">
-                    Contact us to change the email on your account.
+                    We'll send a confirmation email to your new address before the change takes effect.
                   </p>
                 </div>
 
@@ -277,7 +307,6 @@ const Profile = () => {
                     <Input
                       id="phone"
                       type="tel"
-                      placeholder="(555) 123-4567"
                       value={form.phone}
                       onChange={(e) => setForm({ ...form, phone: e.target.value })}
                       maxLength={30}
@@ -290,19 +319,19 @@ const Profile = () => {
 
                   <div className="space-y-2">
                     <Label htmlFor="mobile_phone" className="font-display uppercase">
-                      Mobile for text updates
+                      Mobile number
                     </Label>
                     <Input
                       id="mobile_phone"
                       type="tel"
-                      placeholder="(555) 987-6543"
+                      required
                       value={form.mobile_phone}
                       onChange={(e) => setForm({ ...form, mobile_phone: e.target.value })}
                       maxLength={30}
                       className="border-2 border-primary"
                     />
                     <p className="text-xs text-muted-foreground">
-                      Used for pickup, drop-off, and quick care notes.
+                      Used for quick pickup, drop-off, and care updates.
                     </p>
                     {errors.mobile_phone && (
                       <p className="text-sm font-medium text-destructive">{errors.mobile_phone}</p>
@@ -310,31 +339,7 @@ const Profile = () => {
                   </div>
                 </div>
 
-                <div className="rounded-xl border-2 border-primary bg-card p-4 shadow-pop-sm">
-                  <div className="flex items-start gap-3">
-                    <div className="mt-0.5 grid h-9 w-9 shrink-0 place-items-center rounded-full bg-secondary text-secondary-foreground">
-                      <Smartphone className="h-4 w-4" />
-                    </div>
-                    <div className="flex-1">
-                      <Label htmlFor="sms_opt_in" className="font-display uppercase text-primary">
-                        Turn on text updates
-                      </Label>
-                      <p className="mt-1 text-sm text-muted-foreground">
-                        Text updates can be sent when your dog is picked up, dropped off, or if there is a quick note worth sharing.
-                      </p>
-                      <div className="mt-3 flex items-center gap-3">
-                        <Checkbox
-                          id="sms_opt_in"
-                          checked={form.sms_opt_in}
-                          onCheckedChange={(checked) => setForm({ ...form, sms_opt_in: checked === true })}
-                        />
-                        <Label htmlFor="sms_opt_in" className="text-sm text-foreground">
-                          Yes, send me organized text updates about my dog’s care.
-                        </Label>
-                      </div>
-                    </div>
-                  </div>
-                </div>
+                {/* SMS opt-in is implicit when a mobile number is on file. */}
 
                 <div className="space-y-2">
                   <Label htmlFor="bio" className="font-display uppercase">
@@ -343,7 +348,6 @@ const Profile = () => {
                   <Textarea
                     id="bio"
                     rows={4}
-                    placeholder="Gate codes, parking, building access, anything we should know…"
                     value={form.bio}
                     onChange={(e) => setForm({ ...form, bio: e.target.value })}
                     maxLength={1000}

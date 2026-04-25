@@ -269,11 +269,6 @@ const Account = () => {
                     </div>
                     <p className="mt-1 font-display text-base uppercase text-primary">{message.subject}</p>
                     <p className="mt-1 text-foreground/80">{message.message}</p>
-                    <div className="mt-2 flex flex-wrap gap-2 text-[11px] uppercase text-muted-foreground">
-                      <span className="rounded-full bg-card px-2 py-0.5">in-app</span>
-                      {message.send_email && <span className="rounded-full bg-highlight px-2 py-0.5 text-primary">email</span>}
-                      {message.send_sms && <span className="rounded-full bg-highlight px-2 py-0.5 text-primary">sms</span>}
-                    </div>
                   </li>
                 ))}
               </ul>
