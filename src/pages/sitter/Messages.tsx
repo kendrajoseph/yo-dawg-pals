@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import { Link } from "react-router-dom";
-import { format, formatDistanceToNow } from "date-fns";
+import { formatDistanceToNow } from "date-fns";
 import { MessageSquare, Search, Plus } from "lucide-react";
 import { SitterShell } from "@/components/sitter/SitterShell";
 import { EmptyState } from "@/components/sitter/EmptyState";
@@ -11,6 +11,7 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
+import { MessageComposer } from "@/components/sitter/MessageComposer";
 
 type Thread = {
   customer_id: string;
@@ -28,6 +29,8 @@ export default function SitterMessages() {
   const [threads, setThreads] = useState<Thread[]>([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState("");
+  const [composeOpen, setComposeOpen] = useState(false);
+  const [reloadKey, setReloadKey] = useState(0);
 
   useEffect(() => {
     if (!user?.id) return;
@@ -63,7 +66,7 @@ export default function SitterMessages() {
     };
     load();
     return () => { cancelled = true; };
-  }, [user?.id]);
+  }, [user?.id, reloadKey]);
 
   const filtered = useMemo(() => {
     if (!search.trim()) return threads;
@@ -77,7 +80,7 @@ export default function SitterMessages() {
 
   return (
     <SitterShell action={
-      <Button size="sm" asChild><Link to="/sitter-classic#care"><Plus className="mr-1.5 h-4 w-4" />Compose</Link></Button>
+      <Button size="sm" onClick={() => setComposeOpen(true)}><Plus className="mr-1.5 h-4 w-4" />Compose</Button>
     }>
       <div className="mb-6">
         <h1 className="font-display text-3xl text-primary">Messages</h1>
@@ -97,7 +100,7 @@ export default function SitterMessages() {
             icon={<MessageSquare className="h-8 w-8" />}
             title="No conversations yet"
             description="Messages you send to clients will appear here."
-            action={<Button size="sm" asChild><Link to="/sitter-classic#care">Compose your first</Link></Button>}
+            action={<Button size="sm" onClick={() => setComposeOpen(true)}>Compose your first</Button>}
           />
         ) : (
           <ul className="divide-y divide-border">
@@ -123,6 +126,8 @@ export default function SitterMessages() {
           </ul>
         )}
       </Card>
+
+      <MessageComposer open={composeOpen} onOpenChange={setComposeOpen} onSent={() => setReloadKey((k) => k + 1)} />
     </SitterShell>
   );
 }

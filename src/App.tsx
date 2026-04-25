@@ -29,6 +29,7 @@ import SitterMessages from "./pages/sitter/Messages.tsx";
 import SitterReports from "./pages/sitter/Reports.tsx";
 import SettingsHome from "./pages/sitter/settings/SettingsHome.tsx";
 import SettingsRedirect from "./pages/sitter/settings/SettingsRedirect.tsx";
+import SettingsAvailability from "./pages/sitter/settings/Availability.tsx";
 import Unsubscribe from "./pages/Unsubscribe.tsx";
 import FAQ from "./pages/FAQ.tsx";
 import Terms from "./pages/Terms.tsx";
@@ -66,7 +67,7 @@ const App = () => (
             <Route path="/sitter/reports" element={<ProtectedRoute requireSitter><SitterReports /></ProtectedRoute>} />
             <Route path="/sitter/settings" element={<ProtectedRoute requireSitter><SettingsHome /></ProtectedRoute>} />
             <Route path="/sitter/settings/services" element={<ProtectedRoute requireSitter><SettingsRedirect title="Services & pricing" description="Define what you offer and how it's priced." hash="#playbook" /></ProtectedRoute>} />
-            <Route path="/sitter/settings/availability" element={<ProtectedRoute requireSitter><SettingsRedirect title="Availability" description="Weekly hours, walk windows, and blocked dates." hash="#schedule" /></ProtectedRoute>} />
+            <Route path="/sitter/settings/availability" element={<ProtectedRoute requireSitter><SettingsAvailability /></ProtectedRoute>} />
             <Route path="/sitter/settings/reminders" element={<ProtectedRoute requireSitter><SettingsRedirect title="Reminders" description="Auto-send invoice reminders on a cadence." hash="#payments" /></ProtectedRoute>} />
             <Route path="/sitter/settings/templates" element={<ProtectedRoute requireSitter><SettingsRedirect title="Templates" description="Email and SMS message templates." hash="#playbook" /></ProtectedRoute>} />
             <Route path="/sitter/settings/branding" element={<ProtectedRoute requireSitter><SettingsRedirect title="Branding" description="Logo and colours on invoices and emails." hash="#playbook" /></ProtectedRoute>} />
