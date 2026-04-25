@@ -217,9 +217,9 @@ Deno.serve(async (req) => {
               customerName,
               subject,
               message: smsBody,
-              petName,
-              serviceName,
               sitterName: "Anneke",
+              bookingLabel: serviceName,
+              kindLabel: kind === "pickup" ? "Pickup" : kind === "dropoff" ? "Drop-off" : "Care update",
             },
           },
         });
