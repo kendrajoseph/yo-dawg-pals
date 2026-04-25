@@ -1,16 +1,27 @@
 import { useEffect, useMemo, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { format } from "date-fns";
-import { CalendarPlus, CalendarCheck, CreditCard, Inbox as InboxIcon, MessageSquarePlus, AlertTriangle, Clock3 } from "lucide-react";
+import { CalendarPlus, CalendarCheck, CreditCard, Inbox as InboxIcon, MessageSquarePlus, AlertTriangle, Clock3, LogIn, LogOut } from "lucide-react";
 import { SitterShell } from "@/components/sitter/SitterShell";
 import { KpiTile } from "@/components/sitter/KpiTile";
 import { EmptyState } from "@/components/sitter/EmptyState";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import { Textarea } from "@/components/ui/textarea";
+import { Label } from "@/components/ui/label";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { formatCents } from "@/lib/invoices";
+import { toast } from "@/hooks/use-toast";
 
 type TodayBooking = {
   id: string;
