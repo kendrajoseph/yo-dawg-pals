@@ -223,6 +223,32 @@ const Account = () => {
     setClientMessages((prev) => prev.filter((m) => m.id !== messageId));
   };
 
+  const exportInvoicesCsv = () => {
+    if (invoices.length === 0) {
+      toast({ title: "No invoices to export" });
+      return;
+    }
+    const rows = invoices.map((i) => {
+      const status = derivedStatus(i as any);
+      const balance = (i.total_cents ?? 0) - (i.amount_paid_cents ?? 0);
+      return {
+        "Invoice #": i.invoice_number,
+        "Status": status,
+        "Issued": i.created_at ? new Date(i.created_at).toISOString().slice(0, 10) : "",
+        "Sent": i.sent_at ? new Date(i.sent_at).toISOString().slice(0, 10) : "",
+        "Due": i.due_date ?? "",
+        "Paid on": i.paid_at ? new Date(i.paid_at).toISOString().slice(0, 10) : "",
+        "Subtotal": formatCentsForCsv(i.subtotal_cents),
+        "Total": formatCentsForCsv(i.total_cents),
+        "Paid": formatCentsForCsv(i.amount_paid_cents),
+        "Balance": formatCentsForCsv(balance),
+        "Notes": i.notes ?? "",
+      };
+    });
+    downloadCsv(`yodawg-my-invoices-${todayStamp()}.csv`, rows);
+    toast({ title: "Exported", description: `${rows.length} invoice${rows.length === 1 ? "" : "s"} downloaded.` });
+  };
+
   return (
     <main className="min-h-screen bg-background texture-grain">
       <SiteNav />
