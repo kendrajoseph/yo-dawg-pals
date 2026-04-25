@@ -1,0 +1,88 @@
+// Send an invoice via the transactional email pipeline.
+import { corsHeaders } from "npm:@supabase/supabase-js@2/cors";
+import { createClient } from "npm:@supabase/supabase-js@2";
+import { z } from "npm:zod@3.24.1";
+
+const bodySchema = z.object({ invoiceId: z.string().uuid() });
+
+const json = (b: unknown, s = 200) =>
+  new Response(JSON.stringify(b), { status: s, headers: { ...corsHeaders, "Content-Type": "application/json" } });
+
+const PUBLIC_BASE = "https://yodawg.ca";
+
+Deno.serve(async (req) => {
+  if (req.method === "OPTIONS") return new Response("ok", { headers: corsHeaders });
+  try {
+    const parsed = bodySchema.safeParse(await req.json());
+    if (!parsed.success) return json({ error: parsed.error.flatten().fieldErrors }, 400);
+
+    const url = Deno.env.get("SUPABASE_URL")!;
+    const service = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
+    const admin = createClient(url, service);
+
+    const { data: invoice } = await admin
+      .from("invoices")
+      .select("*")
+      .eq("id", parsed.data.invoiceId)
+      .maybeSingle();
+    if (!invoice) return json({ error: "Invoice not found" }, 404);
+
+    const { data: lineItems } = await admin
+      .from("invoice_line_items")
+      .select("*")
+      .eq("invoice_id", invoice.id)
+      .order("sort_order");
+
+    const { data: customer } = await admin.auth.admin.getUserById((invoice as any).customer_id);
+    const recipientEmail = customer?.user?.email;
+    if (!recipientEmail) return json({ error: "Customer email not found" }, 400);
+
+    const { data: profile } = await admin
+      .from("profiles")
+      .select("full_name")
+      .eq("id", (invoice as any).customer_id)
+      .maybeSingle();
+
+    const payUrl = `${PUBLIC_BASE}/pay/${(invoice as any).public_token}`;
+
+    const { error: sendErr } = await admin.functions.invoke("send-transactional-email", {
+      body: {
+        templateName: "invoice-issued",
+        recipientEmail,
+        idempotencyKey: `invoice-${invoice.id}-${Date.now()}`,
+        templateData: {
+          customerName: (profile as any)?.full_name ?? "there",
+          invoiceNumber: (invoice as any).invoice_number,
+          dueDate: (invoice as any).due_date,
+          totalCents: (invoice as any).total_cents,
+          lineItems: (lineItems ?? []).map((li: any) => ({
+            label: li.label,
+            quantity: Number(li.quantity),
+            total_cents: li.total_cents,
+          })),
+          payUrl,
+          notes: (invoice as any).notes ?? "",
+        },
+      },
+    });
+    if (sendErr) return json({ error: sendErr.message }, 500);
+
+    await admin.from("invoices").update({
+      status: (invoice as any).status === "draft" ? "sent" : (invoice as any).status,
+      sent_at: (invoice as any).sent_at ?? new Date().toISOString(),
+    }).eq("id", invoice.id);
+
+    await admin.from("payment_events").insert({
+      invoice_id: invoice.id,
+      booking_id: (invoice as any).booking_id,
+      kind: "invoice_sent",
+      channel: "email",
+      metadata: { recipient: recipientEmail },
+    });
+
+    return json({ ok: true });
+  } catch (e: any) {
+    console.error("send-invoice-email error", e);
+    return json({ error: e?.message ?? "Failed" }, 500);
+  }
+});

@@ -35,13 +35,61 @@ serve(async (req) => {
       }
 
       if (bookingId) {
+        const { data: bookingRow } = await supabase
+          .from("bookings")
+          .select("total_cents, payment_amount_cents")
+          .eq("id", bookingId)
+          .maybeSingle();
+        const totalCents = (bookingRow as any)?.total_cents ?? (session.amount_total ?? 0);
+        const paidCents = session.amount_total ?? totalCents;
+
         await supabase.from("bookings").update({
           status: "confirmed",
           paid_at: new Date().toISOString(),
           payment_status: "paid",
+          payment_amount_cents: paidCents,
           stripe_payment_intent: paymentIntentId ?? null,
           stripe_session_id: session.id,
         }).eq("id", bookingId);
+
+        // Mark related invoice paid + emit events + send receipt
+        const invoiceId = session.metadata?.invoiceId;
+        let resolvedInvoiceId: string | null = invoiceId ?? null;
+        if (!resolvedInvoiceId) {
+          const { data: inv } = await supabase.from("invoices")
+            .select("id").eq("booking_id", bookingId)
+            .order("created_at", { ascending: false }).limit(1).maybeSingle();
+          resolvedInvoiceId = (inv as any)?.id ?? null;
+        }
+        if (resolvedInvoiceId) {
+          await supabase.from("invoices").update({
+            status: "paid",
+            amount_paid_cents: paidCents,
+            paid_at: new Date().toISOString(),
+          }).eq("id", resolvedInvoiceId);
+        }
+
+        await supabase.from("payment_events").insert({
+          booking_id: bookingId,
+          invoice_id: resolvedInvoiceId,
+          kind: "charge_succeeded",
+          channel: "stripe",
+          amount_cents: paidCents,
+          metadata: { stripe_session_id: session.id, stripe_payment_intent: paymentIntentId },
+        });
+
+        try {
+          await supabase.functions.invoke("send-payment-receipt", {
+            body: {
+              invoiceId: resolvedInvoiceId ?? undefined,
+              bookingId,
+              amountPaidCents: paidCents,
+              paymentMethod: "Card",
+              paidAt: new Date().toISOString(),
+            },
+          });
+        } catch (e) { console.error("receipt email failed", e); }
+
         await notifyAnnekeOfPaidBooking(bookingId);
       }
     }

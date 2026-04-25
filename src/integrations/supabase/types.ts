@@ -595,6 +595,146 @@ export type Database = {
         }
         Relationships: []
       }
+      invoice_line_items: {
+        Row: {
+          created_at: string
+          id: string
+          invoice_id: string
+          kind: string
+          label: string
+          quantity: number
+          sort_order: number
+          total_cents: number
+          unit_price_cents: number
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          invoice_id: string
+          kind?: string
+          label: string
+          quantity?: number
+          sort_order?: number
+          total_cents?: number
+          unit_price_cents?: number
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          invoice_id?: string
+          kind?: string
+          label?: string
+          quantity?: number
+          sort_order?: number
+          total_cents?: number
+          unit_price_cents?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "invoice_line_items_invoice_id_fkey"
+            columns: ["invoice_id"]
+            isOneToOne: false
+            referencedRelation: "invoices"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      invoices: {
+        Row: {
+          amount_paid_cents: number
+          booking_id: string
+          created_at: string
+          customer_id: string
+          due_date: string | null
+          id: string
+          invoice_number: string
+          notes: string | null
+          paid_at: string | null
+          public_token: string
+          sent_at: string | null
+          sitter_id: string
+          status: string
+          subtotal_cents: number
+          total_cents: number
+          updated_at: string
+          voided_at: string | null
+        }
+        Insert: {
+          amount_paid_cents?: number
+          booking_id: string
+          created_at?: string
+          customer_id: string
+          due_date?: string | null
+          id?: string
+          invoice_number?: string
+          notes?: string | null
+          paid_at?: string | null
+          public_token?: string
+          sent_at?: string | null
+          sitter_id: string
+          status?: string
+          subtotal_cents?: number
+          total_cents?: number
+          updated_at?: string
+          voided_at?: string | null
+        }
+        Update: {
+          amount_paid_cents?: number
+          booking_id?: string
+          created_at?: string
+          customer_id?: string
+          due_date?: string | null
+          id?: string
+          invoice_number?: string
+          notes?: string | null
+          paid_at?: string | null
+          public_token?: string
+          sent_at?: string | null
+          sitter_id?: string
+          status?: string
+          subtotal_cents?: number
+          total_cents?: number
+          updated_at?: string
+          voided_at?: string | null
+        }
+        Relationships: []
+      }
+      payment_events: {
+        Row: {
+          amount_cents: number | null
+          booking_id: string | null
+          channel: string | null
+          created_at: string
+          created_by: string | null
+          id: string
+          invoice_id: string | null
+          kind: string
+          metadata: Json
+        }
+        Insert: {
+          amount_cents?: number | null
+          booking_id?: string | null
+          channel?: string | null
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          invoice_id?: string | null
+          kind: string
+          metadata?: Json
+        }
+        Update: {
+          amount_cents?: number | null
+          booking_id?: string | null
+          channel?: string | null
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          invoice_id?: string | null
+          kind?: string
+          metadata?: Json
+        }
+        Relationships: []
+      }
       pet_fit_alerts: {
         Row: {
           approval_id: string | null
@@ -908,6 +1048,33 @@ export type Database = {
           phone?: string | null
           sms_opt_in?: boolean
           stripe_customer_id?: string | null
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      reminder_settings: {
+        Row: {
+          auto_enabled: boolean
+          cadence: Json
+          created_at: string
+          default_tone: string
+          sitter_id: string
+          updated_at: string
+        }
+        Insert: {
+          auto_enabled?: boolean
+          cadence?: Json
+          created_at?: string
+          default_tone?: string
+          sitter_id: string
+          updated_at?: string
+        }
+        Update: {
+          auto_enabled?: boolean
+          cadence?: Json
+          created_at?: string
+          default_tone?: string
+          sitter_id?: string
           updated_at?: string
         }
         Relationships: []
@@ -1320,6 +1487,8 @@ export type Database = {
         Args: { payload: Json; queue_name: string }
         Returns: number
       }
+      generate_invoice_number: { Args: never; Returns: string }
+      get_public_invoice: { Args: { _token: string }; Returns: Json }
       has_role: {
         Args: {
           _role: Database["public"]["Enums"]["app_role"]
