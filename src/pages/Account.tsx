@@ -128,7 +128,11 @@ const Account = () => {
       sms_opt_in: Boolean((profileData as { sms_opt_in?: boolean | null } | null)?.sms_opt_in),
     });
     setClientMessages((messageData ?? []) as ClientMessageRow[]);
-    setServiceAlerts((alertData ?? []) as ServiceAlertRow[]);
+    const nowMs = Date.now();
+    const liveAlerts = ((alertData ?? []) as ServiceAlertRow[]).filter(
+      (a) => !a.ends_at || new Date(a.ends_at).getTime() >= nowMs,
+    );
+    setServiceAlerts(liveAlerts);
 
     if (nextBookings.length > 0) {
       const { data: updatesData } = await db
