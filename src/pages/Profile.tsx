@@ -342,7 +342,6 @@ const Profile = () => {
                   <Textarea
                     id="bio"
                     rows={4}
-                    placeholder="Gate codes, parking, building access, anything we should know…"
                     value={form.bio}
                     onChange={(e) => setForm({ ...form, bio: e.target.value })}
                     maxLength={1000}
