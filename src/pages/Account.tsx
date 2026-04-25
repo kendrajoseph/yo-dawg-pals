@@ -154,7 +154,7 @@ const Account = () => {
       (a) => !a.ends_at || new Date(a.ends_at).getTime() >= nowMs,
     );
     setServiceAlerts(liveAlerts);
-
+    setInvoices((invoiceData ?? []) as CustomerInvoiceRow[]);
     if (nextBookings.length > 0) {
       const { data: updatesData } = await db
         .from("booking_updates")
