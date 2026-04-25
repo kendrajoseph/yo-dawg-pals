@@ -188,7 +188,7 @@ export default function SitterToday() {
                 const startAt = new Date(b.scheduled_start_at ?? b.start_at);
                 const endAt = new Date(b.scheduled_end_at ?? b.end_at);
                 return (
-                  <li key={b.id} className="flex items-center gap-3 py-3">
+                  <li key={b.id} className="flex flex-wrap items-center gap-3 py-3">
                     <div className="w-16 text-right">
                       <div className="font-display text-sm text-primary">{format(startAt, "h:mm a")}</div>
                       <div className="text-[11px] text-muted-foreground">{format(endAt, "h:mm a")}</div>
@@ -198,6 +198,40 @@ export default function SitterToday() {
                       <div className="truncate text-xs text-muted-foreground">{b.pets?.name ?? "Pet"}</div>
                     </div>
                     <Badge variant="outline" className="capitalize">{b.status.replace(/_/g, " ")}</Badge>
+                    <div className="flex items-center gap-1">
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        className="h-8 px-2"
+                        onClick={(e) => { e.preventDefault(); sendQuickUpdate(b, "pickup"); }}
+                        onContextMenu={(e) => { e.preventDefault(); setUpdateTarget({ booking: b, kind: "pickup" }); }}
+                        disabled={sending}
+                        title="One-click pickup. Right-click to add a note."
+                      >
+                        <LogIn className="mr-1 h-3.5 w-3.5" /> Pickup
+                      </Button>
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        className="h-8 px-2"
+                        onClick={(e) => { e.preventDefault(); sendQuickUpdate(b, "dropoff"); }}
+                        onContextMenu={(e) => { e.preventDefault(); setUpdateTarget({ booking: b, kind: "dropoff" }); }}
+                        disabled={sending}
+                        title="One-click drop-off. Right-click to add a note."
+                      >
+                        <LogOut className="mr-1 h-3.5 w-3.5" /> Drop-off
+                      </Button>
+                      <Button
+                        size="sm"
+                        variant="ghost"
+                        className="h-8 px-2 text-muted-foreground"
+                        onClick={() => setUpdateTarget({ booking: b, kind: "pickup" })}
+                        disabled={sending}
+                        title="Send with a note"
+                      >
+                        + note
+                      </Button>
+                    </div>
                   </li>
                 );
               })}
