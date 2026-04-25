@@ -2,6 +2,7 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { addDays, endOfWeek, format, startOfWeek } from "date-fns";
 import { Link } from "react-router-dom";
 import {
+  AlertTriangle,
   BellRing,
   CalendarDays,
   CalendarOff,
@@ -18,8 +19,11 @@ import {
   Megaphone,
   MessageSquare,
   Minus,
+  MoreVertical,
   Pencil,
   Plus,
+  Receipt,
+  Search,
   Send,
   ShieldCheck,
   Smartphone,
@@ -28,6 +32,7 @@ import {
   Trash2,
   UserRound,
   Users,
+  Wallet,
   X,
   Zap,
 } from "lucide-react";
