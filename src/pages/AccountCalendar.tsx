@@ -31,7 +31,7 @@ type CalendarBooking = {
   pets: { name: string } | null;
 };
 
-const ACTIVE_STATUSES = ["confirmed", "completed", "in_progress"];
+const ACTIVE_STATUSES = ["confirmed", "completed", "in_progress"] as const;
 
 const AccountCalendar = () => {
   const { user } = useAuth();
