@@ -1,54 +1,61 @@
-## What we have today
+## Switching to Anneke's new Stripe account
 
-- **Customer Account page** (`/account`) — shows bookings only. **No invoice section, no exports.**
-- **Sitter ClientProfile** (`/sitter/clients/:id`) — already has an "Invoices" tab listing all invoices for that client (paid, sent, overdue, partial, void). **No export button.**
-- **Sitter Reports** (`/sitter/reports`) — shows revenue, outstanding, aging KPIs. **No export.**
-- **Sitter Invoices** (`/sitter/invoices`) — list of all invoices. **No export.**
+You're using **Lovable's built-in Stripe payments** (managed integration through the gateway — no API keys stored in code). To switch which Stripe account it's pointed at, the change happens in the **Payments tab**, not by pasting an API key here. Here's exactly what we'll do.
 
-So the answer to the question is: **partially** — Anneke can already see all invoices per client, but customers can't see their own invoices, and nobody can export.
+## Good news first
 
-## What this plan adds
+I checked your data:
+- **0 paid invoices** in the database
+- **No active subscriptions** (you're not on a subscription model — invoices only)
+- The current Stripe account hasn't processed any real money through the app yet
 
-### 1. Customer-facing invoice history
+That means switching is low-risk. Nothing to migrate.
 
-On `/account`, add a new **"Invoices"** section under the existing bookings, with:
-- Invoice number, issue date, due date, status badge (paid / sent / overdue / partial / void), total, amount paid, amount due
-- "View / pay" link that goes to the existing public-invoice page (`/pay/:token`) for unpaid ones, or a read-only summary for paid ones
-- An **"Export CSV"** button that downloads only that customer's invoices
+## What you actually need to do (in the Payments tab)
 
-### 2. Per-client export on sitter ClientProfile
+You can't paste a new API key into the built-in integration — that would be the legacy "BYOK" path, which I'm specifically *not* recommending because you'd lose the managed webhooks, automatic go-live flow, and tax/compliance handling.
 
-Add an **"Export CSV"** button on the existing Invoices tab in `/sitter/clients/:id` that downloads that single client's invoice history (one row per invoice, plus a second sheet/file with line items if simple to do — kept as a single CSV for v1).
+Instead:
 
-### 3. Admin financial report on sitter Reports
+1. **Open the Payments tab** in Lovable (left sidebar).
+2. **Disconnect the current Stripe connection** (Byram's account).
+3. **Re-enable Stripe payments** — this provisions a fresh sandbox tied to your workspace.
+4. **Click "Claim sandbox"** and, on the Stripe-hosted page that opens, **sign in to Anneke's new Stripe account** (instead of creating a new one).
+5. **Complete go-live** on Anneke's account: business verification, bank details, 2FA, then submit. Stripe will offer to copy products/prices/the Lovable app from sandbox to live — accept and **make sure "Lovable" app is included**.
+6. Lovable then auto-provisions live keys (`STRIPE_LIVE_API_KEY`, `PAYMENTS_LIVE_WEBHOOK_SECRET`) and updates the gateway connection. No code change needed.
 
-On `/sitter/reports`, add a small **"Export"** card with:
-- Date range picker (defaults: month-to-date, year-to-date, last 12 months, custom)
-- **Export invoices CSV** — every invoice in range with: invoice #, customer name, status, issued, due, paid date, subtotal, total, paid, balance
-- **Export payments CSV** — every payment event in range from `payment_events` (kind, channel, amount, booking/invoice link, customer)
-- **Export bookings CSV** — every booking in range with service, customer, pet, status, total, paid status
+## What I need to do on the code/data side
 
-All exports are generated client-side from existing Supabase data (no edge function needed) and download as `.csv`.
+Almost nothing — but a few cleanups while we're at it:
 
-## Technical details
+1. **Verify no orphaned Stripe references.** I'll scan `payments-webhook`, `create-checkout`, `pay-invoice-public`, `charge-saved-card`, `refund-payment`, and `cancel-booking` to confirm they all use `createStripeClient(env)` from the shared utility (so they automatically pick up the new account once the gateway is re-pointed). No hardcoded customer IDs or product IDs.
+2. **Re-create products & prices on the new Stripe account.** Any products/prices created against Byram's account live in *that* Stripe account and won't exist in Anneke's. I'll list what's referenced in the codebase (e.g. invoice line item products, any subscription prices) and recreate them via the `payments` tools after you complete go-live. Since no one has paid yet, no `lookup_key` collisions to worry about.
+3. **Confirm webhook routing.** Built-in payments registers `payments-webhook?env=sandbox` and `?env=live` automatically against the new account on re-connect — I'll verify the function is deployed and the secret env vars resolve.
+4. **Tax & compliance question (after go-live).** Once Anneke's account is live, I'll ask whether she wants Stripe to handle full tax compliance (+3.5% per transaction, covers ~80 buyer countries) or just tax calculation only (+0.5%). Canada is a supported seller country, so both options are available.
 
-- New shared util `src/lib/csv.ts` — array-to-CSV serializer with proper escaping (commas, quotes, newlines) + `downloadCsv(filename, rows)`.
-- Customer invoice fetch: `supabase.from("invoices").select(...).eq("customer_id", user.id)` — already covered by the existing `Customers view own invoices` RLS policy. No schema change needed.
-- Sitter per-client export: reuses data already loaded in `SitterClientProfile`.
-- Reports exports: extend the existing `useEffect` in `Reports.tsx` to also load the raw rows needed for export, gated by date range; reuse existing RLS (`Sitters manage own invoices`, `Sitters view own bookings`, `Sitters view own payment events`).
-- Filenames: `yodawg-invoices-2026-04-25.csv`, `yodawg-payments-2026-01-01_2026-04-25.csv`, etc.
-- No new tables, no new edge functions, no new dependencies.
+## What WON'T work / things to be aware of
 
-## Files to change
+- **Don't share Anneke's secret key with me.** I don't need it and shouldn't store it. The built-in integration uses gateway connection identifiers, not real `sk_live_...` keys.
+- **The current `STRIPE_LIVE_API_KEY` and `PAYMENTS_LIVE_WEBHOOK_SECRET` secrets** will be overwritten automatically by Lovable when you complete the new go-live. Don't touch them manually.
+- **Saved cards / Stripe customers from Byram's account** can't be migrated. None exist yet, so this isn't an issue today.
+- **Anything you tested in the old sandbox** (test products, test prices, test invoices in Stripe dashboard) stays in Byram's Stripe account. The data in *this app's* database (invoices, bookings, etc.) is unaffected — that's all in Lovable Cloud, separate from Stripe.
 
-- `src/lib/csv.ts` — new
-- `src/pages/Account.tsx` — add Invoices section + export button
-- `src/pages/sitter/ClientProfile.tsx` — add export button on Invoices tab
-- `src/pages/sitter/Reports.tsx` — add Export card with date range + 3 CSV buttons
+## Order of operations
 
-## Out of scope (ask if you want them)
+```text
+1. You: Payments tab → disconnect current Stripe
+2. You: Re-enable Stripe payments → claim → sign in as Anneke
+3. You: Complete Stripe go-live form on Anneke's account
+4. Lovable: auto-provisions new live keys (wait ~1 min)
+5. Me: verify edge functions, recreate products/prices on new account
+6. Me: ask about tax/compliance handling preference
+7. You: test a real $1 invoice end-to-end to confirm payout lands in Anneke's bank
+```
 
-- PDF receipts for individual invoices (the public invoice page already prints nicely)
-- Excel/.xlsx exports (CSV opens in Excel/Sheets/Numbers fine; xlsx adds a dependency)
-- Tax-summary report (HST/GST breakdown by quarter)
-- Emailed monthly statements
+## Files I'll touch (after you complete steps 1–4)
+
+- No `src/` changes expected — the gateway abstraction means our app code doesn't change.
+- Possible: a one-time setup script run via `payments--batch_create_product` + `payments--create_price` to recreate any products on the new account.
+- Possible: `supabase/functions/_shared/stripe.ts` audit (read-only, I expect no changes).
+
+Approve this and I'll wait for you to complete steps 1–4 in the Payments tab, then take it from there.
