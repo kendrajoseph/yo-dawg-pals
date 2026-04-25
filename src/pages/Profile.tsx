@@ -66,6 +66,7 @@ const Profile = () => {
   const [avatarUrl, setAvatarUrl] = useState<string | null>(null);
   const [form, setForm] = useState({
     full_name: "",
+    email: "",
     phone: "",
     mobile_phone: "",
     sms_opt_in: false,
@@ -87,6 +88,7 @@ const Profile = () => {
       } else if (data) {
         setForm({
           full_name: data.full_name ?? "",
+          email: user.email ?? "",
           phone: data.phone ?? "",
           mobile_phone: (data as { mobile_phone?: string | null }).mobile_phone ?? "",
           sms_opt_in: Boolean((data as { sms_opt_in?: boolean | null }).sms_opt_in),
