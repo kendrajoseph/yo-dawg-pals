@@ -2,6 +2,7 @@ import { useState, useEffect } from "react";
 import { useNavigate, useLocation, Link } from "react-router-dom";
 import { z } from "zod";
 import { supabase } from "@/integrations/supabase/client";
+import { lovable } from "@/integrations/lovable";
 import { useAuth } from "@/hooks/useAuth";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -79,6 +80,20 @@ const Auth = () => {
       toast({ title: "Sign in failed", description: error.message, variant: "destructive" });
       return;
     }
+    navigate(from, { replace: true });
+  };
+
+  const handleGoogle = async () => {
+    setLoading(true);
+    const result = await lovable.auth.signInWithOAuth("google", {
+      redirect_uri: `${window.location.origin}${from}`,
+    });
+    if (result.error) {
+      setLoading(false);
+      toast({ title: "Google sign-in failed", description: String(result.error.message ?? result.error), variant: "destructive" });
+      return;
+    }
+    if (result.redirected) return;
     navigate(from, { replace: true });
   };
 
