@@ -26,6 +26,8 @@ import SitterClients from "./pages/sitter/Clients.tsx";
 import SitterClientProfile from "./pages/sitter/ClientProfile.tsx";
 import SitterPets from "./pages/sitter/Pets.tsx";
 import SitterPetProfile from "./pages/sitter/PetProfile.tsx";
+import SitterRequestDetail from "./pages/sitter/RequestDetail.tsx";
+import SitterScheduleAssistant from "./pages/sitter/ScheduleAssistant.tsx";
 import SitterMessages from "./pages/sitter/Messages.tsx";
 import SitterReports from "./pages/sitter/Reports.tsx";
 import SitterReviews from "./pages/sitter/Reviews.tsx";
@@ -60,6 +62,8 @@ const App = () => (
             <Route path="/account/profile" element={<ProtectedRoute><Profile /></ProtectedRoute>} />
             <Route path="/sitter" element={<ProtectedRoute requireSitter><SitterToday /></ProtectedRoute>} />
             <Route path="/sitter/inbox" element={<ProtectedRoute requireSitter><SitterInbox /></ProtectedRoute>} />
+            <Route path="/sitter/requests/:id" element={<ProtectedRoute requireSitter><SitterRequestDetail /></ProtectedRoute>} />
+            <Route path="/sitter/assistant" element={<ProtectedRoute requireSitter><SitterScheduleAssistant /></ProtectedRoute>} />
             <Route path="/sitter/invoices" element={<ProtectedRoute requireSitter><SitterInvoices /></ProtectedRoute>} />
             <Route path="/sitter/calendar" element={<ProtectedRoute requireSitter><SitterCalendar /></ProtectedRoute>} />
             <Route path="/sitter/clients" element={<ProtectedRoute requireSitter><SitterClients /></ProtectedRoute>} />
