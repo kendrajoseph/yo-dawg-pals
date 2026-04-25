@@ -169,6 +169,52 @@ export default function SitterClientProfile() {
               <div className="flex justify-between"><dt className="text-muted-foreground">Lifetime spend</dt><dd>{formatCents(invoices.reduce((s, i) => s + (i.amount_paid_cents ?? 0), 0))}</dd></div>
             </dl>
           </Card>
+
+          <Card className="border-2 border-amber-200/60 bg-amber-50/40 p-5 shadow-soft lg:col-span-2 dark:border-amber-900/40 dark:bg-amber-950/20">
+            <div className="mb-3 flex items-center justify-between">
+              <div>
+                <h3 className="font-display text-lg text-primary">Internal client notes</h3>
+                <p className="text-xs text-muted-foreground">Only visible to you. Clients never see this.</p>
+              </div>
+              <Button size="sm" onClick={saveAdminProfile} disabled={savingAdmin || !dirty}>
+                <Save className="mr-1.5 h-4 w-4" />{savingAdmin ? "Saving…" : dirty ? "Save changes" : "Saved"}
+              </Button>
+            </div>
+
+            <div className="mb-4 space-y-1.5">
+              <Label className="text-xs">Star rating</Label>
+              <div className="flex items-center gap-1">
+                {Array.from({ length: 5 }).map((_, i) => {
+                  const value = i + 1;
+                  const filled = value <= starRating;
+                  return (
+                    <button
+                      key={value}
+                      type="button"
+                      aria-label={`${value} star${value === 1 ? "" : "s"}`}
+                      onClick={() => setStarRating(value)}
+                      className="rounded p-0.5 transition-transform hover:scale-110 focus:outline-none focus:ring-2 focus:ring-ring"
+                    >
+                      <Star className={`h-6 w-6 ${filled ? "fill-amber-400 text-amber-400" : "text-muted-foreground/30"}`} />
+                    </button>
+                  );
+                })}
+                <span className="ml-2 text-xs text-muted-foreground">{starRating}/5</span>
+              </div>
+            </div>
+
+            <div className="space-y-1.5">
+              <Label htmlFor="internal-notes" className="text-xs">Private notes</Label>
+              <Textarea
+                id="internal-notes"
+                value={internalNotes}
+                onChange={(e) => setInternalNotes(e.target.value)}
+                placeholder="Quirks, gate codes, tipping habits, payment patterns, anything you want to remember about this client…"
+                rows={5}
+                className="bg-background"
+              />
+            </div>
+          </Card>
         </TabsContent>
 
         <TabsContent value="pets" className="mt-4">
