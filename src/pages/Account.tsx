@@ -386,6 +386,15 @@ const Account = () => {
                           </AlertDialogContent>
                         </AlertDialog>
                       )}
+                      {booking.status === "completed" && user && (
+                        <LeaveReviewDialog
+                          bookingId={booking.id}
+                          customerId={user.id}
+                          sitterId={booking.sitter_id}
+                          serviceLabel={displayName}
+                          petName={booking.pets?.name}
+                        />
+                      )}
                       {booking.status === "cancelled" && (
                         <AlertDialog>
                           <AlertDialogTrigger asChild>
