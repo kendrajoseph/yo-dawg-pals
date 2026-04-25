@@ -207,10 +207,20 @@ Deno.serve(async (req) => {
       if (recipientEmail) {
         const subject =
           kind === "pickup"
-            ? `${petName} is on their way home`
+            ? `${petName} is on their way`
             : kind === "dropoff"
               ? `${petName} just got dropped off`
-              : `Quick update about ${petName}`;
+              : kind === "arrived"
+                ? `Anneke has arrived for ${petName}`
+                : kind === "departed"
+                  ? `Anneke has wrapped up with ${petName}`
+                  : `Quick update about ${petName}`;
+        const kindLabel =
+          kind === "pickup" ? "Pickup"
+          : kind === "dropoff" ? "Drop-off"
+          : kind === "arrived" ? "Arrived at home"
+          : kind === "departed" ? "Visit complete"
+          : "Care update";
         const res = await admin.functions.invoke("send-transactional-email", {
           headers: { Authorization: `Bearer ${supabaseServiceRoleKey}` },
           body: {
@@ -223,7 +233,7 @@ Deno.serve(async (req) => {
               message: smsBody,
               sitterName: "Anneke",
               bookingLabel: serviceName,
-              kindLabel: kind === "pickup" ? "Pickup" : kind === "dropoff" ? "Drop-off" : "Care update",
+              kindLabel,
             },
           },
         });
