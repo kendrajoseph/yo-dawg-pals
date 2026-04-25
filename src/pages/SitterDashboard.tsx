@@ -488,6 +488,7 @@ const SitterDashboard = () => {
   const [paymentsFilter, setPaymentsFilter] = useState<"all" | "outstanding" | "overdue" | "paid" | "refunded">("outstanding");
   const [paymentsSearch, setPaymentsSearch] = useState("");
   const [paymentDrawerBookingId, setPaymentDrawerBookingId] = useState<string | null>(null);
+  const [invoicesByBooking, setInvoicesByBooking] = useState<Record<string, Invoice>>({});
   const [blockAlertOpen, setBlockAlertOpen] = useState(false);
   const [blockAlertContext, setBlockAlertContext] = useState<{ date: string; reason: string } | null>(null);
   const [blockAlertChannels, setBlockAlertChannels] = useState({ email: true, sms: false });
