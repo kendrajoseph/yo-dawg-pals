@@ -166,7 +166,28 @@ export default function SitterInvoices() {
     setDrawerOpen(true);
   };
 
-  return (
+  const handleDelete = async () => {
+    if (!deleteTarget) return;
+    setDeleting(true);
+    const { error: liErr } = await supabase
+      .from("invoice_line_items")
+      .delete()
+      .eq("invoice_id", deleteTarget.id);
+    if (liErr) {
+      toast.error(`Could not delete line items: ${liErr.message}`);
+      setDeleting(false);
+      return;
+    }
+    const { error } = await supabase.from("invoices").delete().eq("id", deleteTarget.id);
+    setDeleting(false);
+    if (error) {
+      toast.error(`Could not delete invoice: ${error.message}`);
+      return;
+    }
+    toast.success(`Deleted ${deleteTarget.invoice_number}`);
+    setDeleteTarget(null);
+    load();
+  };
     <SitterShell>
       <div className="mb-6 flex items-end justify-between gap-3">
         <div>
