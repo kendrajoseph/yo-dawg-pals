@@ -16,7 +16,7 @@ import { Separator } from "@/components/ui/separator";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { toast } from "@/hooks/use-toast";
-import { approveBooking, declineBooking, setPetServiceFit } from "@/lib/approveBooking";
+import { approveBooking, declineBooking, setPetServiceFit, type DeclineReasonCategory, type DeclineSuggestion } from "@/lib/approveBooking";
 import { formatCents } from "@/lib/invoices";
 
 type Booking = {
