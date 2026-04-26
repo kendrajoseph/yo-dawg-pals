@@ -165,11 +165,9 @@ export default function SitterMap() {
 
       const allStatuses = [
         "requested",
-        "pending_approval",
         "awaiting_payment",
         "confirmed",
-        "in_progress",
-      ];
+      ] as const;
 
       const { data, error } = await supabase
         .from("bookings")
