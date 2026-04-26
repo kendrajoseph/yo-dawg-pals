@@ -546,24 +546,154 @@ export default function SitterRequestDetail() {
       )}
 
       <Dialog open={declineOpen} onOpenChange={(o) => { if (!working) setDeclineOpen(o); }}>
-        <DialogContent>
+        <DialogContent className="max-h-[90vh] overflow-y-auto sm:max-w-xl">
           <DialogHeader>
             <DialogTitle>Decline this request?</DialogTitle>
             <DialogDescription>
-              The booking will be cancelled. You can add an optional note explaining why — it'll be included in the message to the client.
+              Pick a reason — we'll suggest the right follow-up so the client gets useful next steps, not a dead end.
             </DialogDescription>
           </DialogHeader>
-          <div className="space-y-4 py-2">
+
+          <div className="space-y-5 py-2">
+            {/* Step 1: reason */}
             <div>
-              <Label className="mb-1.5 block text-xs uppercase tracking-wide text-muted-foreground">Reason (optional)</Label>
+              <Label className="mb-2 block text-xs uppercase tracking-wide text-muted-foreground">Reason</Label>
+              <div className="grid gap-2 sm:grid-cols-2">
+                {([
+                  { id: "schedule_conflict", label: "Schedule conflict", hint: "I'm booked / unavailable then" },
+                  { id: "pack_full", label: "Pack is full", hint: "Group is at capacity that day" },
+                  { id: "service_mismatch", label: "Different service fits better", hint: "Recommend solo / training / etc." },
+                  { id: "pet_not_ready", label: "Pet isn't ready", hint: "Behavioural / training prerequisite" },
+                  { id: "out_of_area", label: "Outside service area", hint: "Too far from my route" },
+                  { id: "other", label: "Other", hint: "Free-form note only" },
+                ] as Array<{ id: DeclineReasonCategory; label: string; hint: string }>).map((opt) => {
+                  const active = declineCategory === opt.id;
+                  return (
+                    <button
+                      key={opt.id}
+                      type="button"
+                      onClick={() => setDeclineCategory(opt.id)}
+                      className={`rounded-md border p-3 text-left transition-colors ${
+                        active ? "border-primary bg-primary/5 ring-1 ring-primary" : "border-border hover:bg-muted/40"
+                      }`}
+                    >
+                      <div className="text-sm font-medium">{opt.label}</div>
+                      <div className="text-xs text-muted-foreground">{opt.hint}</div>
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+
+            {/* Step 2: follow-up — alternative times */}
+            {followUpKind(declineCategory) === "times" && (
+              <div className="rounded-md border border-border bg-muted/30 p-3">
+                <Label className="mb-2 block text-xs uppercase tracking-wide text-muted-foreground">
+                  Suggest alternative times
+                </Label>
+                <p className="mb-3 text-xs text-muted-foreground">
+                  These show up as bullets in the email/SMS so the client can pick one and re-request.
+                </p>
+                <div className="space-y-2">
+                  {altSlots.map((slot, idx) => (
+                    <div key={idx} className="grid gap-2 sm:grid-cols-[1fr_1fr_auto]">
+                      <Input
+                        type="date"
+                        value={slot.date}
+                        onChange={(e) => {
+                          const next = [...altSlots];
+                          next[idx] = { ...next[idx], date: e.target.value };
+                          setAltSlots(next);
+                        }}
+                      />
+                      <Input
+                        placeholder="e.g. 9–10am"
+                        value={slot.label}
+                        onChange={(e) => {
+                          const next = [...altSlots];
+                          next[idx] = { ...next[idx], label: e.target.value };
+                          setAltSlots(next);
+                        }}
+                      />
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => setAltSlots(altSlots.length === 1 ? [{ date: "", label: "" }] : altSlots.filter((_, i) => i !== idx))}
+                        className="text-muted-foreground"
+                      >
+                        Remove
+                      </Button>
+                    </div>
+                  ))}
+                </div>
+                {altSlots.length < 4 && (
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    className="mt-2"
+                    onClick={() => setAltSlots([...altSlots, { date: "", label: "" }])}
+                  >
+                    + Add another option
+                  </Button>
+                )}
+              </div>
+            )}
+
+            {/* Step 2: follow-up — alternative service */}
+            {followUpKind(declineCategory) === "service" && (
+              <div className="rounded-md border border-border bg-muted/30 p-3">
+                <Label className="mb-2 block text-xs uppercase tracking-wide text-muted-foreground">
+                  Recommend a different service
+                </Label>
+                <p className="mb-3 text-xs text-muted-foreground">
+                  {declineCategory === "pet_not_ready"
+                    ? "Suggest a service that builds the skills first (e.g. Training before Group Walk)."
+                    : "E.g. recommend a Solo Walk if the dog is reactive in groups."}
+                </p>
+                <div className="grid gap-2">
+                  {recommendedServices.map((svc) => {
+                    const active = altServiceSlug === svc.slug;
+                    return (
+                      <button
+                        key={svc.slug}
+                        type="button"
+                        onClick={() => setAltServiceSlug(active ? "" : svc.slug)}
+                        className={`rounded-md border p-2.5 text-left transition-colors ${
+                          active ? "border-primary bg-primary/5 ring-1 ring-primary" : "border-border hover:bg-background"
+                        }`}
+                      >
+                        <div className="text-sm font-medium">{svc.name}</div>
+                        <div className="text-xs text-muted-foreground">{svc.hint}</div>
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+            )}
+
+            {/* Free-form note */}
+            <div>
+              <Label className="mb-1.5 block text-xs uppercase tracking-wide text-muted-foreground">
+                Personal note (optional)
+              </Label>
               <Textarea
                 value={declineReason}
                 onChange={(e) => setDeclineReason(e.target.value)}
-                rows={4}
+                rows={3}
                 maxLength={800}
-                placeholder="e.g. The midday group is full that day. Try Thursday morning?"
+                placeholder={
+                  declineCategory === "service_mismatch"
+                    ? "e.g. Biscuit gets a bit reactive on a busy walk. A solo walk would give him more space."
+                    : declineCategory === "schedule_conflict"
+                    ? "e.g. I'm fully booked Tuesday — does any of these work instead?"
+                    : "Anything you'd like the client to know."
+                }
               />
             </div>
+
+            {/* Notify */}
             <div className="space-y-2">
               <Label className="text-xs uppercase tracking-wide text-muted-foreground">Notify client via</Label>
               <label className="flex items-start gap-2 text-sm">
@@ -582,11 +712,12 @@ export default function SitterRequestDetail() {
               </label>
             </div>
           </div>
+
           <DialogFooter>
             <Button variant="outline" onClick={() => setDeclineOpen(false)} disabled={!!working}>
               Cancel
             </Button>
-            <Button variant="destructive" onClick={handleDecline} disabled={!!working}>
+            <Button variant="destructive" onClick={handleDecline} disabled={!!working || !declineCategory}>
               {working === "decline" ? "Declining…" : "Decline request"}
             </Button>
           </DialogFooter>
