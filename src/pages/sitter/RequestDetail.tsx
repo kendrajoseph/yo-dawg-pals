@@ -522,7 +522,7 @@ export default function SitterRequestDetail() {
               </div>
             </div>
             <div className="flex gap-2">
-              <Button variant="outline" onClick={() => { setDeclineReason(""); setDeclineSendEmail(true); setDeclineSendSms(false); setDeclineOpen(true); }} disabled={!!working}>
+              <Button variant="outline" onClick={() => { resetDecline(); setDeclineOpen(true); }} disabled={!!working}>
                 <XCircle className="mr-1.5 h-4 w-4" />Decline
               </Button>
               <Button onClick={handleApprove} disabled={!!working || !fitOk}>
