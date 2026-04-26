@@ -75,8 +75,8 @@ type BookingPin = {
   isConfirmed: boolean;
 };
 
-const CONFIRMED_STATUSES = new Set(["confirmed", "in_progress", "completed", "awaiting_payment"]);
-const REQUESTED_STATUSES = new Set(["requested", "pending_approval"]);
+const CONFIRMED_STATUSES = new Set(["confirmed", "completed", "awaiting_payment"]);
+const REQUESTED_STATUSES = new Set(["requested"]);
 
 function FitBounds({ pins }: { pins: BookingPin[] }) {
   const map = useMap();
