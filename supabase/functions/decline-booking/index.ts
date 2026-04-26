@@ -87,9 +87,6 @@ Deno.serve(async (req) => {
       .update({
         status: "cancelled",
         cancelled_at: new Date().toISOString(),
-        internal_notes: cleanReason
-          ? `[Declined] ${cleanReason}`
-          : booking.status,
       })
       .eq("id", bookingId);
     if (updateError) return json({ error: updateError.message }, 400);
