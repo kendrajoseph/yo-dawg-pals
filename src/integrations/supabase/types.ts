@@ -1105,40 +1105,67 @@ export type Database = {
       }
       profiles: {
         Row: {
+          address_geocoded_at: string | null
+          address_lat: number | null
+          address_line1: string | null
+          address_line2: string | null
+          address_lng: number | null
           avatar_url: string | null
           bio: string | null
+          city: string | null
+          country: string | null
           created_at: string
           default_payment_method_id: string | null
           full_name: string | null
           id: string
           mobile_phone: string | null
           phone: string | null
+          postal_code: string | null
+          province: string | null
           sms_opt_in: boolean
           stripe_customer_id: string | null
           updated_at: string
         }
         Insert: {
+          address_geocoded_at?: string | null
+          address_lat?: number | null
+          address_line1?: string | null
+          address_line2?: string | null
+          address_lng?: number | null
           avatar_url?: string | null
           bio?: string | null
+          city?: string | null
+          country?: string | null
           created_at?: string
           default_payment_method_id?: string | null
           full_name?: string | null
           id: string
           mobile_phone?: string | null
           phone?: string | null
+          postal_code?: string | null
+          province?: string | null
           sms_opt_in?: boolean
           stripe_customer_id?: string | null
           updated_at?: string
         }
         Update: {
+          address_geocoded_at?: string | null
+          address_lat?: number | null
+          address_line1?: string | null
+          address_line2?: string | null
+          address_lng?: number | null
           avatar_url?: string | null
           bio?: string | null
+          city?: string | null
+          country?: string | null
           created_at?: string
           default_payment_method_id?: string | null
           full_name?: string | null
           id?: string
           mobile_phone?: string | null
           phone?: string | null
+          postal_code?: string | null
+          province?: string | null
           sms_opt_in?: boolean
           stripe_customer_id?: string | null
           updated_at?: string
