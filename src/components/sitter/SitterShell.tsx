@@ -6,6 +6,7 @@ import {
   CreditCard,
   Inbox,
   LayoutDashboard,
+  Map as MapIcon,
   MessageSquare,
   MoreHorizontal,
   PawPrint,
@@ -43,6 +44,7 @@ const PRIMARY: NavItem[] = [
   { to: "/sitter", label: "Today", icon: LayoutDashboard, end: true },
   { to: "/sitter/inbox", label: "Inbox", icon: Inbox, badgeKey: "inbox" },
   { to: "/sitter/calendar", label: "Calendar", icon: CalendarDays },
+  { to: "/sitter/map", label: "Route map", icon: MapIcon },
   { to: "/sitter/clients", label: "Clients", icon: UserRound },
   { to: "/sitter/pets", label: "Pets", icon: PawPrint },
   { to: "/sitter/invoices", label: "Invoices", icon: CreditCard, badgeKey: "invoices" },
@@ -189,6 +191,7 @@ const titleFor = (path: string): string => {
   if (path.startsWith("/sitter/inbox")) return "Inbox";
   if (path.startsWith("/sitter/requests")) return "Request";
   if (path.startsWith("/sitter/calendar")) return "Calendar";
+  if (path.startsWith("/sitter/map")) return "Route map";
   if (path.startsWith("/sitter/clients")) return "Clients";
   if (path.startsWith("/sitter/pets")) return "Pets";
   if (path.startsWith("/sitter/invoices")) return "Invoices";
