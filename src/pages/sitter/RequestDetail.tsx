@@ -465,6 +465,54 @@ export default function SitterRequestDetail() {
           </div>
         </Card>
       )}
+
+      <Dialog open={declineOpen} onOpenChange={(o) => { if (!working) setDeclineOpen(o); }}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Decline this request?</DialogTitle>
+            <DialogDescription>
+              The booking will be cancelled. You can add an optional note explaining why — it'll be included in the message to the client.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4 py-2">
+            <div>
+              <Label className="mb-1.5 block text-xs uppercase tracking-wide text-muted-foreground">Reason (optional)</Label>
+              <Textarea
+                value={declineReason}
+                onChange={(e) => setDeclineReason(e.target.value)}
+                rows={4}
+                maxLength={800}
+                placeholder="e.g. The midday group is full that day. Try Thursday morning?"
+              />
+            </div>
+            <div className="space-y-2">
+              <Label className="text-xs uppercase tracking-wide text-muted-foreground">Notify client via</Label>
+              <label className="flex items-start gap-2 text-sm">
+                <Checkbox
+                  checked={declineSendEmail}
+                  onCheckedChange={(v) => setDeclineSendEmail(v === true)}
+                />
+                <span>Email</span>
+              </label>
+              <label className="flex items-start gap-2 text-sm">
+                <Checkbox
+                  checked={declineSendSms}
+                  onCheckedChange={(v) => setDeclineSendSms(v === true)}
+                />
+                <span>SMS (only if client opted in)</span>
+              </label>
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setDeclineOpen(false)} disabled={!!working}>
+              Cancel
+            </Button>
+            <Button variant="destructive" onClick={handleDecline} disabled={!!working}>
+              {working === "decline" ? "Declining…" : "Decline request"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </SitterShell>
   );
 }
