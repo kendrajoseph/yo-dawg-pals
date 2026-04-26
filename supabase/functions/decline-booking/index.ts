@@ -4,9 +4,28 @@ import { z } from "npm:zod@3.24.1";
 
 const GATEWAY_URL = "https://connector-gateway.lovable.dev/twilio";
 
+const suggestionSchema = z.union([
+  z.object({
+    kind: z.literal("alternative_times"),
+    slots: z.array(z.object({ date: z.string().min(1), label: z.string().optional() })).max(6),
+  }),
+  z.object({
+    kind: z.literal("alternative_service"),
+    serviceSlug: z.string().min(1).max(64),
+    serviceName: z.string().min(1).max(120),
+    explanation: z.string().max(400).optional(),
+  }),
+  z.object({ kind: z.literal("none") }),
+]);
+
 const bodySchema = z.object({
   bookingId: z.string().uuid(),
   reason: z.string().trim().max(800).optional(),
+  reasonCategory: z
+    .enum(["schedule_conflict", "pack_full", "service_mismatch", "pet_not_ready", "out_of_area", "other"])
+    .optional(),
+  reasonLabel: z.string().trim().max(120).optional(),
+  suggestion: suggestionSchema.optional(),
   sendEmail: z.boolean().default(true),
   sendSms: z.boolean().default(false),
 });
@@ -66,7 +85,7 @@ Deno.serve(async (req) => {
     const { data: { user }, error: authError } = await client.auth.getUser();
     if (authError || !user) return json({ error: "Unauthorized" }, 401);
 
-    const { bookingId, reason, sendEmail, sendSms } = parsed.data;
+    const { bookingId, reason, reasonCategory, reasonLabel, suggestion, sendEmail, sendSms } = parsed.data;
     const cleanReason = reason && reason.trim().length > 0 ? reason.trim() : null;
 
     const { data: booking, error: bErr } = await admin
@@ -91,12 +110,42 @@ Deno.serve(async (req) => {
       .eq("id", bookingId);
     if (updateError) return json({ error: updateError.message }, 400);
 
+    // Build a structured suggestion summary for email/SMS/audit
+    const formatSlotDate = (iso: string) => {
+      try {
+        const d = new Date(`${iso}T12:00:00`);
+        return d.toLocaleDateString("en-CA", { weekday: "short", month: "short", day: "numeric" });
+      } catch {
+        return iso;
+      }
+    };
+
+    let suggestionHeading: string | null = null;
+    let suggestionLines: string[] = [];
+    let suggestionShort: string | null = null;
+    if (suggestion?.kind === "alternative_times" && suggestion.slots.length) {
+      suggestionHeading = "Could any of these times work?";
+      suggestionLines = suggestion.slots.map((s) => `• ${formatSlotDate(s.date)}${s.label ? ` — ${s.label}` : ""}`);
+      suggestionShort = `Try: ${suggestion.slots
+        .slice(0, 2)
+        .map((s) => `${formatSlotDate(s.date)}${s.label ? ` ${s.label}` : ""}`)
+        .join(", ")}`;
+    } else if (suggestion?.kind === "alternative_service") {
+      suggestionHeading = `I'd recommend ${suggestion.serviceName} instead`;
+      if (suggestion.explanation) suggestionLines = [suggestion.explanation];
+      suggestionShort = `Try ${suggestion.serviceName} instead`;
+    }
+
     // Audit log entry
+    const auditParts: string[] = ["Declined."];
+    if (reasonLabel) auditParts.push(`Reason: ${reasonLabel}.`);
+    if (cleanReason) auditParts.push(cleanReason);
+    if (suggestionShort) auditParts.push(`Suggestion: ${suggestionShort}.`);
     await admin.from("booking_updates").insert({
       booking_id: bookingId,
       created_by: user.id,
       kind: "approval",
-      message: cleanReason ? `Declined. Reason: ${cleanReason}` : "Declined.",
+      message: auditParts.join(" "),
       sent_via_sms: false,
     });
 
@@ -136,6 +185,9 @@ Deno.serve(async (req) => {
               petName,
               requestedWhen,
               reason: cleanReason ?? undefined,
+              reasonLabel: reasonLabel ?? undefined,
+              suggestionHeading: suggestionHeading ?? undefined,
+              suggestionLines: suggestionLines.length ? suggestionLines : undefined,
               sitterName: "Anneke",
             },
           },
@@ -167,8 +219,10 @@ Deno.serve(async (req) => {
           `Hi ${customerName.split(" ")[0]}, Anneke here.`,
           `I can't take your ${serviceName.toLowerCase()}${petName ? ` for ${petName}` : ""} (${requestedWhen}).`,
         ];
+        if (reasonLabel) lines.push(`Reason: ${reasonLabel}.`);
         if (cleanReason) lines.push(cleanReason);
-        lines.push("Feel free to send another request. — Yo Dawg");
+        if (suggestionShort) lines.push(suggestionShort + ".");
+        lines.push("Reply or send another request. — Yo Dawg");
         const smsBody = lines.join(" ").slice(0, 320);
 
         const twilioResponse = await fetch(`${GATEWAY_URL}/Messages.json`, {
