@@ -219,8 +219,10 @@ Deno.serve(async (req) => {
           `Hi ${customerName.split(" ")[0]}, Anneke here.`,
           `I can't take your ${serviceName.toLowerCase()}${petName ? ` for ${petName}` : ""} (${requestedWhen}).`,
         ];
+        if (reasonLabel) lines.push(`Reason: ${reasonLabel}.`);
         if (cleanReason) lines.push(cleanReason);
-        lines.push("Feel free to send another request. — Yo Dawg");
+        if (suggestionShort) lines.push(suggestionShort + ".");
+        lines.push("Reply or send another request. — Yo Dawg");
         const smsBody = lines.join(" ").slice(0, 320);
 
         const twilioResponse = await fetch(`${GATEWAY_URL}/Messages.json`, {
