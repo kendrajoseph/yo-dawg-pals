@@ -152,7 +152,8 @@ export default function SitterMap() {
   const { user } = useAuth();
   const [pins, setPins] = useState<BookingPin[]>([]);
   const [loading, setLoading] = useState(true);
-  const [missingAddress, setMissingAddress] = useState<Array<{ id: string; customerName: string | null; serviceName: string | null }>>([]);
+  const [missingAddress, setMissingAddress] = useState<Array<{ id: string; customerId: string; customerName: string | null; serviceName: string | null; status: string; scheduledStart: string | null; requestedDate: string | null; requestedWindowLabel: string | null }>>([]);
+  const [missingDialogOpen, setMissingDialogOpen] = useState(false);
   const [timeframe, setTimeframe] = useState<TimeframeKey>("today");
   const [statusFilter, setStatusFilter] = useState<StatusKey>("both");
   const [customDate, setCustomDate] = useState<string>(format(new Date(), "yyyy-MM-dd"));
