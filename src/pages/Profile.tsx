@@ -13,6 +13,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import PetProfilesManager from "@/components/pets/PetProfilesManager";
+import { AddressEditor } from "@/components/AddressEditor";
 import { Camera, LogOut, Save, ArrowLeft, Smartphone } from "lucide-react";
 import { toast } from "sonner";
 import { validateProfileImageFile } from "@/lib/fileValidation";
