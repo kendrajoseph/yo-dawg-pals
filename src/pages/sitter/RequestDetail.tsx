@@ -10,6 +10,8 @@ import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
+import { Checkbox } from "@/components/ui/checkbox";
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Separator } from "@/components/ui/separator";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
@@ -73,6 +75,10 @@ export default function SitterRequestDetail() {
   const [fit, setFit] = useState<FitDecision | null>(null);
   const [loading, setLoading] = useState(true);
   const [working, setWorking] = useState<"approve" | "decline" | "fit-approve" | "fit-decline" | null>(null);
+  const [declineOpen, setDeclineOpen] = useState(false);
+  const [declineReason, setDeclineReason] = useState("");
+  const [declineSendEmail, setDeclineSendEmail] = useState(true);
+  const [declineSendSms, setDeclineSendSms] = useState(false);
 
   // Editable approval form
   const [date, setDate] = useState("");
@@ -212,15 +218,25 @@ export default function SitterRequestDetail() {
 
   const handleDecline = async () => {
     if (!booking) return;
-    if (!window.confirm("Decline this request? This cancels the booking.")) return;
     setWorking("decline");
-    const result = await declineBooking(booking.id);
+    const result = await declineBooking(booking.id, {
+      reason: declineReason,
+      sendEmail: declineSendEmail,
+      sendSms: declineSendSms,
+    });
     setWorking(null);
     if (!result.ok) {
       toast({ title: "Couldn't decline", description: result.error, variant: "destructive" });
       return;
     }
-    toast({ title: "Request declined" });
+    const notes: string[] = [];
+    if (declineSendEmail) notes.push(result.emailSent ? "Email sent." : (result.emailError || "Email not sent."));
+    if (declineSendSms) notes.push(result.smsSent ? "SMS sent." : (result.smsError || "SMS not sent."));
+    toast({
+      title: "Request declined",
+      description: notes.join(" ") || undefined,
+    });
+    setDeclineOpen(false);
     navigate("/sitter/inbox");
   };
 
@@ -427,7 +443,7 @@ export default function SitterRequestDetail() {
               </div>
             </div>
             <div className="flex gap-2">
-              <Button variant="outline" onClick={handleDecline} disabled={!!working}>
+              <Button variant="outline" onClick={() => { setDeclineReason(""); setDeclineSendEmail(true); setDeclineSendSms(false); setDeclineOpen(true); }} disabled={!!working}>
                 <XCircle className="mr-1.5 h-4 w-4" />Decline
               </Button>
               <Button onClick={handleApprove} disabled={!!working || !fitOk}>
@@ -449,6 +465,54 @@ export default function SitterRequestDetail() {
           </div>
         </Card>
       )}
+
+      <Dialog open={declineOpen} onOpenChange={(o) => { if (!working) setDeclineOpen(o); }}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Decline this request?</DialogTitle>
+            <DialogDescription>
+              The booking will be cancelled. You can add an optional note explaining why — it'll be included in the message to the client.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4 py-2">
+            <div>
+              <Label className="mb-1.5 block text-xs uppercase tracking-wide text-muted-foreground">Reason (optional)</Label>
+              <Textarea
+                value={declineReason}
+                onChange={(e) => setDeclineReason(e.target.value)}
+                rows={4}
+                maxLength={800}
+                placeholder="e.g. The midday group is full that day. Try Thursday morning?"
+              />
+            </div>
+            <div className="space-y-2">
+              <Label className="text-xs uppercase tracking-wide text-muted-foreground">Notify client via</Label>
+              <label className="flex items-start gap-2 text-sm">
+                <Checkbox
+                  checked={declineSendEmail}
+                  onCheckedChange={(v) => setDeclineSendEmail(v === true)}
+                />
+                <span>Email</span>
+              </label>
+              <label className="flex items-start gap-2 text-sm">
+                <Checkbox
+                  checked={declineSendSms}
+                  onCheckedChange={(v) => setDeclineSendSms(v === true)}
+                />
+                <span>SMS (only if client opted in)</span>
+              </label>
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setDeclineOpen(false)} disabled={!!working}>
+              Cancel
+            </Button>
+            <Button variant="destructive" onClick={handleDecline} disabled={!!working}>
+              {working === "decline" ? "Declining…" : "Decline request"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </SitterShell>
   );
 }

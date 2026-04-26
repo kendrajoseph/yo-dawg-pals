@@ -143,13 +143,43 @@ export async function approveBooking(input: ApproveBookingInput): Promise<Approv
   };
 }
 
-export async function declineBooking(bookingId: string): Promise<{ ok: boolean; error?: string }> {
-  const { error } = await supabase
-    .from("bookings")
-    .update({ status: "cancelled", cancelled_at: new Date().toISOString() })
-    .eq("id", bookingId);
+export type DeclineBookingOptions = {
+  reason?: string;
+  sendEmail?: boolean;
+  sendSms?: boolean;
+};
+
+export type DeclineBookingResult = {
+  ok: boolean;
+  error?: string;
+  emailSent?: boolean;
+  emailError?: string | null;
+  smsSent?: boolean;
+  smsError?: string | null;
+};
+
+export async function declineBooking(
+  bookingId: string,
+  options: DeclineBookingOptions = {},
+): Promise<DeclineBookingResult> {
+  const { data, error } = await supabase.functions.invoke("decline-booking", {
+    body: {
+      bookingId,
+      reason: options.reason?.trim() || undefined,
+      sendEmail: options.sendEmail ?? true,
+      sendSms: options.sendSms ?? false,
+    },
+  });
   if (error) return { ok: false, error: error.message };
-  return { ok: true };
+  const result = (data ?? {}) as DeclineBookingResult & { error?: string };
+  if (result.error) return { ok: false, error: result.error };
+  return {
+    ok: true,
+    emailSent: result.emailSent,
+    emailError: result.emailError,
+    smsSent: result.smsSent,
+    smsError: result.smsError,
+  };
 }
 
 export async function setPetServiceFit(

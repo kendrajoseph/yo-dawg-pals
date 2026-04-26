@@ -1762,15 +1762,39 @@ const SitterDashboard = () => {
   };
 
   const declineRequest = async (booking: Booking) => {
-    const { error } = await db.from("bookings").update({ status: "cancelled" }).eq("id", booking.id);
-    if (error) toast({ title: "Failed", description: error.message, variant: "destructive" });
-    else {
-      const service = serviceMap.get(booking.service_id);
-      if (service?.requires_pet_approval) {
-        await setPetApproval(booking.pet_id, booking.service_id, "declined", "Not a fit for this service right now.");
-      } else {
-        load();
-      }
+    const reasonInput = window.prompt(
+      "Optional: add a short note for the client explaining why you're declining (leave blank to skip).",
+      "",
+    );
+    if (reasonInput === null) return; // cancelled
+    const reason = reasonInput.trim();
+
+    const { data, error } = await supabase.functions.invoke("decline-booking", {
+      body: {
+        bookingId: booking.id,
+        reason: reason || undefined,
+        sendEmail: true,
+        sendSms: false,
+      },
+    });
+    if (error || (data as any)?.error) {
+      toast({
+        title: "Failed to decline",
+        description: error?.message || (data as any)?.error || "Unknown error",
+        variant: "destructive",
+      });
+      return;
+    }
+    const result = data as { emailSent?: boolean; emailError?: string | null };
+    toast({
+      title: "Request declined",
+      description: result?.emailSent ? "Client notified by email." : (result?.emailError || "Client was not notified."),
+    });
+    const service = serviceMap.get(booking.service_id);
+    if (service?.requires_pet_approval) {
+      await setPetApproval(booking.pet_id, booking.service_id, "declined", "Not a fit for this service right now.");
+    } else {
+      load();
     }
   };
 

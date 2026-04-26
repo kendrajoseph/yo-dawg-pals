@@ -18,6 +18,7 @@ import { template as invoiceIssued } from './invoice-issued.tsx'
 import { template as paymentReceipt } from './payment-receipt.tsx'
 import { template as paymentReminder } from './payment-reminder.tsx'
 import { template as refundIssued } from './refund-issued.tsx'
+import { template as bookingDeclined } from './booking-declined.tsx'
 
 export const TEMPLATES: Record<string, TemplateEntry> = {
   'booking-paid-notification': bookingPaidNotification,
@@ -29,4 +30,5 @@ export const TEMPLATES: Record<string, TemplateEntry> = {
   'payment-receipt': paymentReceipt,
   'payment-reminder': paymentReminder,
   'refund-issued': refundIssued,
+  'booking-declined': bookingDeclined,
 }
