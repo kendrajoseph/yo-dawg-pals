@@ -3,6 +3,7 @@ import { Link, useParams } from "react-router-dom";
 import { format } from "date-fns";
 import { ArrowLeft, Mail, Phone, PawPrint, CalendarDays, CreditCard, MessageSquare, Star, Save, Download } from "lucide-react";
 import { SitterShell } from "@/components/sitter/SitterShell";
+import { AddressEditor } from "@/components/AddressEditor";
 import { EmptyState } from "@/components/sitter/EmptyState";
 import { Card } from "@/components/ui/card";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
@@ -192,8 +193,21 @@ export default function SitterClientProfile() {
               <div className="flex justify-between"><dt className="text-muted-foreground">Total bookings</dt><dd>{bookings.length}</dd></div>
               <div className="flex justify-between"><dt className="text-muted-foreground">Open invoices</dt><dd>{invoices.filter((i) => i.status !== "paid" && i.status !== "void").length}</dd></div>
               <div className="flex justify-between"><dt className="text-muted-foreground">Lifetime spend</dt><dd>{formatCents(invoices.reduce((s, i) => s + (i.amount_paid_cents ?? 0), 0))}</dd></div>
+              <div className="flex justify-between"><dt className="text-muted-foreground">Address on map</dt>
+                <dd>{profile?.address_lat && profile?.address_lng ? "Pinned" : profile?.address_line1 ? "Saved (not geocoded)" : "Not set"}</dd>
+              </div>
             </dl>
           </Card>
+
+          {id && (
+            <Card className="border border-border p-5 shadow-soft lg:col-span-2">
+              <h3 className="mb-1 font-display text-lg text-primary">Pickup address</h3>
+              <p className="mb-3 text-xs text-muted-foreground">
+                Used by your route map. You can fill this in for the client if they haven't done it themselves.
+              </p>
+              <AddressEditor userId={id} compact />
+            </Card>
+          )}
 
           <Card className="border-2 border-amber-200/60 bg-amber-50/40 p-5 shadow-soft lg:col-span-2 dark:border-amber-900/40 dark:bg-amber-950/20">
             <div className="mb-3 flex items-center justify-between">
