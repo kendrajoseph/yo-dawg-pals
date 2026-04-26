@@ -75,6 +75,10 @@ export default function SitterRequestDetail() {
   const [fit, setFit] = useState<FitDecision | null>(null);
   const [loading, setLoading] = useState(true);
   const [working, setWorking] = useState<"approve" | "decline" | "fit-approve" | "fit-decline" | null>(null);
+  const [declineOpen, setDeclineOpen] = useState(false);
+  const [declineReason, setDeclineReason] = useState("");
+  const [declineSendEmail, setDeclineSendEmail] = useState(true);
+  const [declineSendSms, setDeclineSendSms] = useState(false);
 
   // Editable approval form
   const [date, setDate] = useState("");
