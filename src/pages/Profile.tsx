@@ -374,6 +374,16 @@ const Profile = () => {
               </form>
             </Card>
 
+            <Card className="mt-6 -rotate-[0.5deg] border-4 border-primary p-6 shadow-pop">
+              <h2 className="font-display text-2xl uppercase text-primary">Pickup address</h2>
+              <p className="mt-2 text-sm text-foreground/80">
+                Your sitter uses this to plan her route. Adding it makes you easier to fit into her schedule and group walks.
+              </p>
+              <div className="mt-4">
+                <AddressEditor userId={user.id} />
+              </div>
+            </Card>
+
             <Card className="mt-6 rotate-[0.5deg] border-4 border-primary p-6 shadow-pop">
               <h2 className="font-display text-2xl uppercase text-primary">Account</h2>
               {createdAt && (
