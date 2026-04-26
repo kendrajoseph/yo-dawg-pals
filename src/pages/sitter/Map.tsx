@@ -4,7 +4,7 @@ import { addDays, endOfWeek, format, isSameDay, parseISO, startOfWeek } from "da
 import { MapContainer, Marker, Popup, TileLayer, useMap } from "react-leaflet";
 import L from "leaflet";
 import "leaflet/dist/leaflet.css";
-import { ArrowLeft, MapPin, Filter, Calendar as CalendarIcon, Info } from "lucide-react";
+import { ArrowLeft, MapPin, Filter, Calendar as CalendarIcon, Info, ExternalLink, UserCog } from "lucide-react";
 
 import { SitterShell } from "@/components/sitter/SitterShell";
 import { EmptyState } from "@/components/sitter/EmptyState";
@@ -14,6 +14,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 
@@ -152,7 +153,8 @@ export default function SitterMap() {
   const { user } = useAuth();
   const [pins, setPins] = useState<BookingPin[]>([]);
   const [loading, setLoading] = useState(true);
-  const [missingAddress, setMissingAddress] = useState<Array<{ id: string; customerName: string | null; serviceName: string | null }>>([]);
+  const [missingAddress, setMissingAddress] = useState<Array<{ id: string; customerId: string; customerName: string | null; serviceName: string | null; status: string; scheduledStart: string | null; requestedDate: string | null; requestedWindowLabel: string | null }>>([]);
+  const [missingDialogOpen, setMissingDialogOpen] = useState(false);
   const [timeframe, setTimeframe] = useState<TimeframeKey>("today");
   const [statusFilter, setStatusFilter] = useState<StatusKey>("both");
   const [customDate, setCustomDate] = useState<string>(format(new Date(), "yyyy-MM-dd"));
@@ -223,8 +225,13 @@ export default function SitterMap() {
         } else {
           missing.push({
             id: b.id,
+            customerId: b.customer_id,
             customerName: prof?.full_name ?? null,
             serviceName: (b.services as any)?.name ?? null,
+            status: b.status as string,
+            scheduledStart: (b.scheduled_start_at as string | null) ?? null,
+            requestedDate: (b.requested_date as string | null) ?? null,
+            requestedWindowLabel: (b.requested_window_label as string | null) ?? null,
           });
         }
       }
@@ -355,9 +362,11 @@ export default function SitterMap() {
             description="As soon as a client saves their address (Account → Profile → Pickup address), they'll show up here. You can also add it for them on a client's profile page."
           />
           {missingAddress.length > 0 && (
-            <p className="mt-4 text-xs text-muted-foreground">
-              {missingAddress.length} active booking{missingAddress.length === 1 ? "" : "s"} without a mapped address.
-            </p>
+            <div className="mt-4 text-center">
+              <Button variant="link" size="sm" className="text-amber-700 dark:text-amber-400" onClick={() => setMissingDialogOpen(true)}>
+                {missingAddress.length} active booking{missingAddress.length === 1 ? "" : "s"} without a mapped address — view & fix →
+              </Button>
+            </div>
           )}
         </Card>
       ) : (
@@ -461,18 +470,82 @@ export default function SitterMap() {
           {missingAddress.length > 0 && (
             <Card className="mt-4 border border-amber-200 bg-amber-50/50 p-4 shadow-soft dark:border-amber-900/40 dark:bg-amber-950/20">
               <div className="flex items-start gap-2">
-                <Info className="mt-0.5 h-4 w-4 text-amber-700" />
-                <div className="text-sm">
+                <Info className="mt-0.5 h-4 w-4 shrink-0 text-amber-700" />
+                <div className="flex-1 text-sm">
                   <div className="font-medium">{missingAddress.length} booking{missingAddress.length === 1 ? "" : "s"} not on the map</div>
                   <p className="text-xs text-muted-foreground">
                     These clients haven't saved an address. Open their client profile and add one for them, or ask them to fill it in.
                   </p>
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    className="mt-2 border-amber-300 bg-white/60 text-amber-900 hover:bg-amber-100 dark:border-amber-800 dark:bg-amber-950/40 dark:text-amber-200"
+                    onClick={() => setMissingDialogOpen(true)}
+                  >
+                    View & fix {missingAddress.length} booking{missingAddress.length === 1 ? "" : "s"}
+                  </Button>
                 </div>
               </div>
             </Card>
           )}
         </>
       )}
+
+      {/* Missing-address dialog */}
+      <Dialog open={missingDialogOpen} onOpenChange={setMissingDialogOpen}>
+        <DialogContent className="max-w-lg">
+          <DialogHeader>
+            <DialogTitle>Bookings without a mapped address</DialogTitle>
+            <DialogDescription>
+              Open the client's profile to add their pickup address, or open the booking to follow up directly.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="max-h-[60vh] space-y-2 overflow-y-auto">
+            {missingAddress.length === 0 ? (
+              <p className="text-sm text-muted-foreground">All clear — every active booking has an address on file.</p>
+            ) : (
+              missingAddress.map((m) => {
+                const isRequested = REQUESTED_STATUSES.has(m.status);
+                const bookingHref = isRequested ? `/sitter/requests/${m.id}` : `/sitter/bookings/${m.id}`;
+                const whenLabel = m.scheduledStart
+                  ? format(parseISO(m.scheduledStart), "EEE MMM d · h:mm a")
+                  : m.requestedDate
+                  ? `${format(parseISO(`${m.requestedDate}T12:00:00`), "EEE MMM d")}${m.requestedWindowLabel ? ` · ${m.requestedWindowLabel}` : ""}`
+                  : "Time TBD";
+                return (
+                  <div key={m.id} className="rounded-md border border-border bg-muted/30 p-3">
+                    <div className="flex items-start justify-between gap-2">
+                      <div className="min-w-0 flex-1">
+                        <div className="font-medium">
+                          {m.customerName ?? "Client"}
+                        </div>
+                        <div className="text-xs text-muted-foreground">
+                          {m.serviceName ?? "Booking"} · {whenLabel}
+                        </div>
+                      </div>
+                      <Badge variant="outline" className="capitalize">
+                        {m.status.replace(/_/g, " ")}
+                      </Badge>
+                    </div>
+                    <div className="mt-2 flex flex-wrap gap-2">
+                      <Button asChild size="sm" variant="default" onClick={() => setMissingDialogOpen(false)}>
+                        <Link to={`/sitter/clients/${m.customerId}`}>
+                          <UserCog className="h-3.5 w-3.5" /> Add address
+                        </Link>
+                      </Button>
+                      <Button asChild size="sm" variant="outline" onClick={() => setMissingDialogOpen(false)}>
+                        <Link to={bookingHref}>
+                          <ExternalLink className="h-3.5 w-3.5" /> Open {isRequested ? "request" : "booking"}
+                        </Link>
+                      </Button>
+                    </div>
+                  </div>
+                );
+              })
+            )}
+          </div>
+        </DialogContent>
+      </Dialog>
     </SitterShell>
   );
 }
