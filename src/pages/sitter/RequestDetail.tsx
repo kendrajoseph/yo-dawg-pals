@@ -76,9 +76,16 @@ export default function SitterRequestDetail() {
   const [loading, setLoading] = useState(true);
   const [working, setWorking] = useState<"approve" | "decline" | "fit-approve" | "fit-decline" | null>(null);
   const [declineOpen, setDeclineOpen] = useState(false);
+  const [declineCategory, setDeclineCategory] = useState<DeclineReasonCategory | null>(null);
   const [declineReason, setDeclineReason] = useState("");
   const [declineSendEmail, setDeclineSendEmail] = useState(true);
   const [declineSendSms, setDeclineSendSms] = useState(false);
+  // Alternative-time slots
+  const [altSlots, setAltSlots] = useState<Array<{ date: string; label: string }>>([
+    { date: "", label: "" },
+  ]);
+  // Alternative service
+  const [altServiceSlug, setAltServiceSlug] = useState<string>("");
 
   // Editable approval form
   const [date, setDate] = useState("");
