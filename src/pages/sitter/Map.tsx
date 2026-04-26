@@ -470,18 +470,82 @@ export default function SitterMap() {
           {missingAddress.length > 0 && (
             <Card className="mt-4 border border-amber-200 bg-amber-50/50 p-4 shadow-soft dark:border-amber-900/40 dark:bg-amber-950/20">
               <div className="flex items-start gap-2">
-                <Info className="mt-0.5 h-4 w-4 text-amber-700" />
-                <div className="text-sm">
+                <Info className="mt-0.5 h-4 w-4 shrink-0 text-amber-700" />
+                <div className="flex-1 text-sm">
                   <div className="font-medium">{missingAddress.length} booking{missingAddress.length === 1 ? "" : "s"} not on the map</div>
                   <p className="text-xs text-muted-foreground">
                     These clients haven't saved an address. Open their client profile and add one for them, or ask them to fill it in.
                   </p>
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    className="mt-2 border-amber-300 bg-white/60 text-amber-900 hover:bg-amber-100 dark:border-amber-800 dark:bg-amber-950/40 dark:text-amber-200"
+                    onClick={() => setMissingDialogOpen(true)}
+                  >
+                    View & fix {missingAddress.length} booking{missingAddress.length === 1 ? "" : "s"}
+                  </Button>
                 </div>
               </div>
             </Card>
           )}
         </>
       )}
+
+      {/* Missing-address dialog */}
+      <Dialog open={missingDialogOpen} onOpenChange={setMissingDialogOpen}>
+        <DialogContent className="max-w-lg">
+          <DialogHeader>
+            <DialogTitle>Bookings without a mapped address</DialogTitle>
+            <DialogDescription>
+              Open the client's profile to add their pickup address, or open the booking to follow up directly.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="max-h-[60vh] space-y-2 overflow-y-auto">
+            {missingAddress.length === 0 ? (
+              <p className="text-sm text-muted-foreground">All clear — every active booking has an address on file.</p>
+            ) : (
+              missingAddress.map((m) => {
+                const isRequested = REQUESTED_STATUSES.has(m.status);
+                const bookingHref = isRequested ? `/sitter/requests/${m.id}` : `/sitter/bookings/${m.id}`;
+                const whenLabel = m.scheduledStart
+                  ? format(parseISO(m.scheduledStart), "EEE MMM d · h:mm a")
+                  : m.requestedDate
+                  ? `${format(parseISO(`${m.requestedDate}T12:00:00`), "EEE MMM d")}${m.requestedWindowLabel ? ` · ${m.requestedWindowLabel}` : ""}`
+                  : "Time TBD";
+                return (
+                  <div key={m.id} className="rounded-md border border-border bg-muted/30 p-3">
+                    <div className="flex items-start justify-between gap-2">
+                      <div className="min-w-0 flex-1">
+                        <div className="font-medium">
+                          {m.customerName ?? "Client"}
+                        </div>
+                        <div className="text-xs text-muted-foreground">
+                          {m.serviceName ?? "Booking"} · {whenLabel}
+                        </div>
+                      </div>
+                      <Badge variant="outline" className="capitalize">
+                        {m.status.replace(/_/g, " ")}
+                      </Badge>
+                    </div>
+                    <div className="mt-2 flex flex-wrap gap-2">
+                      <Button asChild size="sm" variant="default" onClick={() => setMissingDialogOpen(false)}>
+                        <Link to={`/sitter/clients/${m.customerId}`}>
+                          <UserCog className="h-3.5 w-3.5" /> Add address
+                        </Link>
+                      </Button>
+                      <Button asChild size="sm" variant="outline" onClick={() => setMissingDialogOpen(false)}>
+                        <Link to={bookingHref}>
+                          <ExternalLink className="h-3.5 w-3.5" /> Open {isRequested ? "request" : "booking"}
+                        </Link>
+                      </Button>
+                    </div>
+                  </div>
+                );
+              })
+            )}
+          </div>
+        </DialogContent>
+      </Dialog>
     </SitterShell>
   );
 }
