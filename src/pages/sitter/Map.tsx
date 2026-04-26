@@ -362,9 +362,11 @@ export default function SitterMap() {
             description="As soon as a client saves their address (Account → Profile → Pickup address), they'll show up here. You can also add it for them on a client's profile page."
           />
           {missingAddress.length > 0 && (
-            <p className="mt-4 text-xs text-muted-foreground">
-              {missingAddress.length} active booking{missingAddress.length === 1 ? "" : "s"} without a mapped address.
-            </p>
+            <div className="mt-4 text-center">
+              <Button variant="link" size="sm" className="text-amber-700 dark:text-amber-400" onClick={() => setMissingDialogOpen(true)}>
+                {missingAddress.length} active booking{missingAddress.length === 1 ? "" : "s"} without a mapped address — view & fix →
+              </Button>
+            </div>
           )}
         </Card>
       ) : (
