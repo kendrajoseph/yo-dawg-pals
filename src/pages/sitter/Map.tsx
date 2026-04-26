@@ -224,8 +224,13 @@ export default function SitterMap() {
         } else {
           missing.push({
             id: b.id,
+            customerId: b.customer_id,
             customerName: prof?.full_name ?? null,
             serviceName: (b.services as any)?.name ?? null,
+            status: b.status as string,
+            scheduledStart: (b.scheduled_start_at as string | null) ?? null,
+            requestedDate: (b.requested_date as string | null) ?? null,
+            requestedWindowLabel: (b.requested_window_label as string | null) ?? null,
           });
         }
       }
