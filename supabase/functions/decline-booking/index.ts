@@ -4,9 +4,28 @@ import { z } from "npm:zod@3.24.1";
 
 const GATEWAY_URL = "https://connector-gateway.lovable.dev/twilio";
 
+const suggestionSchema = z.union([
+  z.object({
+    kind: z.literal("alternative_times"),
+    slots: z.array(z.object({ date: z.string().min(1), label: z.string().optional() })).max(6),
+  }),
+  z.object({
+    kind: z.literal("alternative_service"),
+    serviceSlug: z.string().min(1).max(64),
+    serviceName: z.string().min(1).max(120),
+    explanation: z.string().max(400).optional(),
+  }),
+  z.object({ kind: z.literal("none") }),
+]);
+
 const bodySchema = z.object({
   bookingId: z.string().uuid(),
   reason: z.string().trim().max(800).optional(),
+  reasonCategory: z
+    .enum(["schedule_conflict", "pack_full", "service_mismatch", "pet_not_ready", "out_of_area", "other"])
+    .optional(),
+  reasonLabel: z.string().trim().max(120).optional(),
+  suggestion: suggestionSchema.optional(),
   sendEmail: z.boolean().default(true),
   sendSms: z.boolean().default(false),
 });
