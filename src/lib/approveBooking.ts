@@ -143,8 +143,32 @@ export async function approveBooking(input: ApproveBookingInput): Promise<Approv
   };
 }
 
+export type DeclineReasonCategory =
+  | "schedule_conflict"
+  | "pack_full"
+  | "service_mismatch"
+  | "pet_not_ready"
+  | "out_of_area"
+  | "other";
+
+export type DeclineSuggestion =
+  | {
+      kind: "alternative_times";
+      slots: Array<{ date: string; label?: string }>; // date = yyyy-MM-dd, label e.g. "9–10am"
+    }
+  | {
+      kind: "alternative_service";
+      serviceSlug: string;
+      serviceName: string;
+      explanation?: string;
+    }
+  | { kind: "none" };
+
 export type DeclineBookingOptions = {
   reason?: string;
+  reasonCategory?: DeclineReasonCategory;
+  reasonLabel?: string;
+  suggestion?: DeclineSuggestion;
   sendEmail?: boolean;
   sendSms?: boolean;
 };
@@ -166,6 +190,9 @@ export async function declineBooking(
     body: {
       bookingId,
       reason: options.reason?.trim() || undefined,
+      reasonCategory: options.reasonCategory,
+      reasonLabel: options.reasonLabel,
+      suggestion: options.suggestion,
       sendEmail: options.sendEmail ?? true,
       sendSms: options.sendSms ?? false,
     },
