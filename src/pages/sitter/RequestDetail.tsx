@@ -218,15 +218,25 @@ export default function SitterRequestDetail() {
 
   const handleDecline = async () => {
     if (!booking) return;
-    if (!window.confirm("Decline this request? This cancels the booking.")) return;
     setWorking("decline");
-    const result = await declineBooking(booking.id);
+    const result = await declineBooking(booking.id, {
+      reason: declineReason,
+      sendEmail: declineSendEmail,
+      sendSms: declineSendSms,
+    });
     setWorking(null);
     if (!result.ok) {
       toast({ title: "Couldn't decline", description: result.error, variant: "destructive" });
       return;
     }
-    toast({ title: "Request declined" });
+    const notes: string[] = [];
+    if (declineSendEmail) notes.push(result.emailSent ? "Email sent." : (result.emailError || "Email not sent."));
+    if (declineSendSms) notes.push(result.smsSent ? "SMS sent." : (result.smsError || "SMS not sent."));
+    toast({
+      title: "Request declined",
+      description: notes.join(" ") || undefined,
+    });
+    setDeclineOpen(false);
     navigate("/sitter/inbox");
   };
 
