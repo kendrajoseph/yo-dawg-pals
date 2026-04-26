@@ -223,11 +223,82 @@ export default function SitterRequestDetail() {
     navigate("/sitter/inbox");
   };
 
+  const reasonLabelFor = (cat: DeclineReasonCategory | null): string | undefined => {
+    switch (cat) {
+      case "schedule_conflict": return "Schedule conflict";
+      case "pack_full": return "Pack is full";
+      case "service_mismatch": return "Different service would suit better";
+      case "pet_not_ready": return "Pet isn't ready for this service";
+      case "out_of_area": return "Outside service area";
+      case "other": return "Other";
+      default: return undefined;
+    }
+  };
+
+  const followUpKind = (cat: DeclineReasonCategory | null): "times" | "service" | "none" => {
+    if (cat === "schedule_conflict" || cat === "pack_full") return "times";
+    if (cat === "service_mismatch" || cat === "pet_not_ready") return "service";
+    return "none";
+  };
+
+  const recommendedServices = useMemo(() => {
+    // Curated alternatives the sitter offers, excluding the requested service
+    const all = [
+      { slug: "solo-walk", name: "Solo Walk", hint: "1-on-1 attention, easier on reactive or anxious pups" },
+      { slug: "group-walk", name: "Group Walk", hint: "Social pack walk for confident, well-socialised dogs" },
+      { slug: "training", name: "Training", hint: "Work on leash skills, recall, or behaviour first" },
+      { slug: "walk", name: "Dog Walking", hint: "Standard neighbourhood walk" },
+      { slug: "sitting", name: "Pet Sitting", hint: "In-home visits instead of a walk" },
+      { slug: "boarding", name: "Boarding", hint: "Overnight stay" },
+      { slug: "meet-and-greet", name: "Meet & Greet", hint: "Free intro before booking the real thing" },
+    ];
+    return all.filter((s) => s.slug !== service?.slug);
+  }, [service?.slug]);
+
+  const buildSuggestion = (): DeclineSuggestion => {
+    const kind = followUpKind(declineCategory);
+    if (kind === "times") {
+      const slots = altSlots
+        .filter((s) => s.date.trim().length > 0)
+        .map((s) => ({ date: s.date, label: s.label.trim() || undefined }));
+      return slots.length ? { kind: "alternative_times", slots } : { kind: "none" };
+    }
+    if (kind === "service" && altServiceSlug) {
+      const svc = recommendedServices.find((s) => s.slug === altServiceSlug);
+      if (svc) {
+        return {
+          kind: "alternative_service",
+          serviceSlug: svc.slug,
+          serviceName: svc.name,
+          explanation: declineReason.trim() || svc.hint,
+        };
+      }
+    }
+    return { kind: "none" };
+  };
+
+  const resetDecline = () => {
+    setDeclineCategory(null);
+    setDeclineReason("");
+    setAltSlots([{ date: "", label: "" }]);
+    setAltServiceSlug("");
+    setDeclineSendEmail(true);
+    setDeclineSendSms(false);
+  };
+
   const handleDecline = async () => {
     if (!booking) return;
+    if (!declineCategory) {
+      toast({ title: "Pick a reason", description: "Choose what to tell the client.", variant: "destructive" });
+      return;
+    }
     setWorking("decline");
+    const suggestion = buildSuggestion();
     const result = await declineBooking(booking.id, {
       reason: declineReason,
+      reasonCategory: declineCategory,
+      reasonLabel: reasonLabelFor(declineCategory),
+      suggestion,
       sendEmail: declineSendEmail,
       sendSms: declineSendSms,
     });
@@ -244,6 +315,7 @@ export default function SitterRequestDetail() {
       description: notes.join(" ") || undefined,
     });
     setDeclineOpen(false);
+    resetDecline();
     navigate("/sitter/inbox");
   };
 
