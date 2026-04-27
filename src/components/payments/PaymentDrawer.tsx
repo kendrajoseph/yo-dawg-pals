@@ -143,6 +143,12 @@ export function PaymentDrawer({ open, onOpenChange, booking, hasSavedCard, cardL
   const owed = Math.max(0, total - paid);
   const status = invoice ? derivedStatus(invoice) : (booking.payment_status ?? (booking.paid_at ? "paid" : "outstanding"));
   const refunded = !!booking.refund_id;
+  // An invoice is "frozen" once it's been voided / fully refunded / the booking
+  // itself is cancelled. We hide outbound actions (send, charge, reminders)
+  // so the sitter can't accidentally bill a client whose service was cancelled.
+  const invoiceVoided = invoice?.status === "void";
+  const bookingCancelled = booking.payment_status === "refunded" || (refunded && owed === 0);
+  const frozen = invoiceVoided || bookingCancelled;
   const payUrl = invoice ? `${PUBLIC_BASE}/pay/${invoice.public_token}` : null;
 
   // Actions
@@ -319,8 +325,8 @@ export function PaymentDrawer({ open, onOpenChange, booking, hasSavedCard, cardL
           <div className="flex flex-wrap items-center justify-between gap-3">
             <div>
               <div className="text-[11px] uppercase text-muted-foreground">Status</div>
-              <span className={cn("inline-block rounded border px-2 py-0.5 text-[11px] font-display uppercase", statusBadgeClass(refunded ? "refunded" : status))}>
-                {refunded ? "refunded" : status}
+              <span className={cn("inline-block rounded border px-2 py-0.5 text-[11px] font-display uppercase", statusBadgeClass(invoiceVoided ? "void" : refunded ? "refunded" : status))}>
+                {invoiceVoided ? "cancelled" : refunded ? "refunded" : status}
               </span>
               {invoice?.invoice_number && (
                 <div className="mt-1 text-xs text-muted-foreground">{invoice.invoice_number}</div>
@@ -329,7 +335,7 @@ export function PaymentDrawer({ open, onOpenChange, booking, hasSavedCard, cardL
             <div className="grid grid-cols-3 gap-4 text-right">
               <Stat label="Total" value={formatCents(total)} />
               <Stat label="Paid" value={formatCents(paid)} />
-              <Stat label="Outstanding" value={formatCents(owed)} highlight={owed > 0} />
+              <Stat label="Outstanding" value={formatCents(owed)} highlight={owed > 0 && !frozen} />
             </div>
           </div>
           <Separator className="my-3" />
@@ -339,20 +345,29 @@ export function PaymentDrawer({ open, onOpenChange, booking, hasSavedCard, cardL
             {invoice?.due_date && <span>· Due {format(new Date(invoice.due_date + "T12:00:00"), "MMM d, yyyy")}</span>}
             {booking.stripe_payment_intent && <span>· {booking.stripe_payment_intent.slice(0, 18)}…</span>}
           </div>
+          {frozen && (
+            <div className="mt-3 rounded-md border border-dashed border-amber-300 bg-amber-50 px-3 py-2 text-xs text-amber-900 dark:border-amber-800 dark:bg-amber-950/30 dark:text-amber-200">
+              This invoice is cancelled because the booking was {refunded ? "refunded" : "cancelled"}. You can still view its history, but you can't send, charge, or remind on it.
+            </div>
+          )}
         </Card>
 
         {/* Actions */}
         <div className="mt-4 flex flex-wrap gap-2">
-          <Button size="sm" variant="outline" onClick={sendInvoice} disabled={!!actionBusy}>
-            <FileText className="h-4 w-4" /> {invoice?.sent_at ? "Resend invoice" : "Send invoice"}
-          </Button>
-          <Button size="sm" variant="outline" onClick={() => setReminderOpen(true)} disabled={!!actionBusy || !invoice}>
-            <Bell className="h-4 w-4" /> Reminder
-          </Button>
+          {!frozen && (
+            <>
+              <Button size="sm" variant="outline" onClick={sendInvoice} disabled={!!actionBusy}>
+                <FileText className="h-4 w-4" /> {invoice?.sent_at ? "Resend invoice" : "Send invoice"}
+              </Button>
+              <Button size="sm" variant="outline" onClick={() => setReminderOpen(true)} disabled={!!actionBusy || !invoice}>
+                <Bell className="h-4 w-4" /> Reminder
+              </Button>
+            </>
+          )}
           <Button size="sm" variant="outline" onClick={sendReceipt} disabled={!!actionBusy || paid === 0}>
             <Receipt className="h-4 w-4" /> Receipt
           </Button>
-          {hasSavedCard && owed > 0 && (
+          {!frozen && hasSavedCard && owed > 0 && (
             <Button size="sm" onClick={charge} disabled={!!actionBusy}>
               <Wallet className="h-4 w-4" /> Charge {formatCents(owed)}
             </Button>
@@ -362,10 +377,12 @@ export function PaymentDrawer({ open, onOpenChange, booking, hasSavedCard, cardL
               <Undo2 className="h-4 w-4" /> Refund
             </Button>
           )}
-          <Button size="sm" variant="outline" onClick={() => setMarkPaidOpen(true)} disabled={!!actionBusy || owed === 0}>
-            <CreditCard className="h-4 w-4" /> Mark paid
-          </Button>
-          {payUrl && (
+          {!frozen && (
+            <Button size="sm" variant="outline" onClick={() => setMarkPaidOpen(true)} disabled={!!actionBusy || owed === 0}>
+              <CreditCard className="h-4 w-4" /> Mark paid
+            </Button>
+          )}
+          {payUrl && !frozen && (
             <Button size="sm" variant="ghost" onClick={copyPayLink}>
               <Copy className="h-4 w-4" /> Copy pay link
             </Button>
@@ -379,14 +396,16 @@ export function PaymentDrawer({ open, onOpenChange, booking, hasSavedCard, cardL
         <Card className="mt-4 p-4">
           <h3 className="mb-3 font-display text-sm uppercase text-primary">Line items</h3>
           <InvoiceLineItemsEditor items={draftItems} onChange={setDraftItems} />
-          <div className="mt-3 flex justify-end gap-2">
-            <Button variant="outline" size="sm" onClick={() => createOrUpdateInvoice(false)} disabled={!!actionBusy}>
-              {invoice ? "Save changes" : "Create draft"}
-            </Button>
-            <Button size="sm" onClick={() => createOrUpdateInvoice(true)} disabled={!!actionBusy}>
-              <Send className="h-4 w-4" /> {invoice ? "Save & send" : "Create & send"}
-            </Button>
-          </div>
+          {!frozen && (
+            <div className="mt-3 flex justify-end gap-2">
+              <Button variant="outline" size="sm" onClick={() => createOrUpdateInvoice(false)} disabled={!!actionBusy}>
+                {invoice ? "Save changes" : "Create draft"}
+              </Button>
+              <Button size="sm" onClick={() => createOrUpdateInvoice(true)} disabled={!!actionBusy}>
+                <Send className="h-4 w-4" /> {invoice ? "Save & send" : "Create & send"}
+              </Button>
+            </div>
+          )}
         </Card>
 
         {/* Timeline */}

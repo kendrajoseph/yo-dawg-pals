@@ -122,24 +122,31 @@ serve(async (req) => {
     }
     await supabase.from("bookings").update(bookingUpdate).eq("id", bookingId);
 
-    // Mirror refund onto the related invoice + log a payment_event so it appears
-    // in invoice history just like a sitter-initiated refund.
+    // Mirror refund + cancellation onto the related invoice. Whether or not
+    // a refund was issued, a cancelled booking should void any outstanding
+    // invoice — otherwise the sitter sees a still-active "Send invoice" button
+    // and can accidentally bill a client whose service was cancelled.
+    const { data: invoice } = await supabase.from("invoices")
+      .select("id, amount_paid_cents")
+      .eq("booking_id", bookingId)
+      .order("created_at", { ascending: false })
+      .limit(1)
+      .maybeSingle();
+
+    if (invoice) {
+      const currentPaid = ((invoice as any).amount_paid_cents ?? 0);
+      const newPaid = Math.max(0, currentPaid - refundedAmount);
+      // Anything fully refunded (or never paid) → void.
+      // Partially refunded with remaining balance still on file → partial.
+      const newInvoiceStatus = newPaid === 0 ? "void" : "partial";
+      await supabase.from("invoices").update({
+        amount_paid_cents: newPaid,
+        status: newInvoiceStatus,
+        voided_at: newInvoiceStatus === "void" ? new Date().toISOString() : null,
+      }).eq("id", (invoice as any).id);
+    }
+
     if (refundedAmount > 0) {
-      const { data: invoice } = await supabase.from("invoices")
-        .select("id, amount_paid_cents")
-        .eq("booking_id", bookingId)
-        .order("created_at", { ascending: false })
-        .limit(1)
-        .maybeSingle();
-
-      if (invoice) {
-        const newPaid = Math.max(0, ((invoice as any).amount_paid_cents ?? 0) - refundedAmount);
-        await supabase.from("invoices").update({
-          amount_paid_cents: newPaid,
-          status: newPaid === 0 ? "void" : "partial",
-        }).eq("id", (invoice as any).id);
-      }
-
       await supabase.from("payment_events").insert({
         booking_id: bookingId,
         invoice_id: (invoice as any)?.id ?? null,
@@ -153,6 +160,16 @@ serve(async (req) => {
           policy: hoursUntil >= 24 ? "full" : hoursUntil >= 12 ? "half" : "none",
           environment: resolvedEnv,
         },
+      });
+    }
+
+    if (invoice) {
+      await supabase.from("payment_events").insert({
+        booking_id: bookingId,
+        invoice_id: (invoice as any).id,
+        kind: "invoice_voided",
+        created_by: user.id,
+        metadata: { source: "customer_cancel", reason: "booking_cancelled" },
       });
     }
 
