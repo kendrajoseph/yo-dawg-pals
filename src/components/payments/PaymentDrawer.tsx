@@ -143,6 +143,12 @@ export function PaymentDrawer({ open, onOpenChange, booking, hasSavedCard, cardL
   const owed = Math.max(0, total - paid);
   const status = invoice ? derivedStatus(invoice) : (booking.payment_status ?? (booking.paid_at ? "paid" : "outstanding"));
   const refunded = !!booking.refund_id;
+  // An invoice is "frozen" once it's been voided / fully refunded / the booking
+  // itself is cancelled. We hide outbound actions (send, charge, reminders)
+  // so the sitter can't accidentally bill a client whose service was cancelled.
+  const invoiceVoided = invoice?.status === "void";
+  const bookingCancelled = booking.payment_status === "refunded" || (refunded && owed === 0);
+  const frozen = invoiceVoided || bookingCancelled;
   const payUrl = invoice ? `${PUBLIC_BASE}/pay/${invoice.public_token}` : null;
 
   // Actions
