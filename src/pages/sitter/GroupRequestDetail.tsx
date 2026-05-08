@@ -362,7 +362,7 @@ export default function GroupRequestDetail() {
           {totals.lines.map((line) => (
             <div key={line.bookingId} className="flex items-center justify-between">
               <span>
-                {service?.name} — {line.petName}
+                {service?.name} — {line.petName} <span className="text-xs text-muted-foreground">({line.dateLabel})</span>
                 {line.discountCents > 0 && (
                   <span className="ml-2 text-xs text-emerald-700">(sibling discount)</span>
                 )}
