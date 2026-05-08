@@ -1013,6 +1013,7 @@ export type Database = {
           breed: string | null
           color: string | null
           created_at: string
+          created_by_sitter_id: string | null
           dietary_notes: string | null
           emergency_contact: string | null
           entry_code: string | null
@@ -1049,6 +1050,7 @@ export type Database = {
           breed?: string | null
           color?: string | null
           created_at?: string
+          created_by_sitter_id?: string | null
           dietary_notes?: string | null
           emergency_contact?: string | null
           entry_code?: string | null
@@ -1085,6 +1087,7 @@ export type Database = {
           breed?: string | null
           color?: string | null
           created_at?: string
+          created_by_sitter_id?: string | null
           dietary_notes?: string | null
           emergency_contact?: string | null
           entry_code?: string | null
@@ -1144,9 +1147,11 @@ export type Database = {
           city: string | null
           country: string | null
           created_at: string
+          created_by_sitter_id: string | null
           default_payment_method_id: string | null
           full_name: string | null
           id: string
+          is_manual: boolean
           mobile_phone: string | null
           phone: string | null
           postal_code: string | null
@@ -1166,9 +1171,11 @@ export type Database = {
           city?: string | null
           country?: string | null
           created_at?: string
+          created_by_sitter_id?: string | null
           default_payment_method_id?: string | null
           full_name?: string | null
           id: string
+          is_manual?: boolean
           mobile_phone?: string | null
           phone?: string | null
           postal_code?: string | null
@@ -1188,9 +1195,11 @@ export type Database = {
           city?: string | null
           country?: string | null
           created_at?: string
+          created_by_sitter_id?: string | null
           default_payment_method_id?: string | null
           full_name?: string | null
           id?: string
+          is_manual?: boolean
           mobile_phone?: string | null
           phone?: string | null
           postal_code?: string | null
