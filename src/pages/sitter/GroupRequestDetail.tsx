@@ -136,6 +136,9 @@ export default function GroupRequestDetail() {
       lines.push({
         bookingId: b.id,
         petName: b.pets?.name ?? "Pet",
+        dateLabel: b.requested_date
+          ? format(new Date(`${b.requested_date}T12:00:00`), "EEE, MMM d")
+          : "Date TBD",
         baseCents,
         discountCents,
         finalCents,
