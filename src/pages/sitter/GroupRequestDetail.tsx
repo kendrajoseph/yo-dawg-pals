@@ -61,6 +61,7 @@ export default function GroupRequestDetail() {
   const [loading, setLoading] = useState(true);
   const [working, setWorking] = useState<"approve" | "decline" | null>(null);
   const [internalNotes, setInternalNotes] = useState("");
+  const [addPetOpen, setAddPetOpen] = useState(false);
 
   // Editable pricing per booking
   const [prices, setPrices] = useState<Record<string, string>>({});
