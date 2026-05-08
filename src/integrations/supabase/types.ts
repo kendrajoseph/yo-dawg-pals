@@ -681,7 +681,7 @@ export type Database = {
       invoices: {
         Row: {
           amount_paid_cents: number
-          booking_id: string
+          booking_id: string | null
           created_at: string
           customer_id: string
           due_date: string | null
@@ -689,18 +689,23 @@ export type Database = {
           invoice_number: string
           notes: string | null
           paid_at: string | null
+          promotion_id: string | null
           public_token: string
+          request_group_id: string | null
           sent_at: string | null
           sitter_id: string
           status: string
           subtotal_cents: number
+          tax_cents: number
+          tax_label: string | null
+          tax_rate_percent: number | null
           total_cents: number
           updated_at: string
           voided_at: string | null
         }
         Insert: {
           amount_paid_cents?: number
-          booking_id: string
+          booking_id?: string | null
           created_at?: string
           customer_id: string
           due_date?: string | null
@@ -708,18 +713,23 @@ export type Database = {
           invoice_number?: string
           notes?: string | null
           paid_at?: string | null
+          promotion_id?: string | null
           public_token?: string
+          request_group_id?: string | null
           sent_at?: string | null
           sitter_id: string
           status?: string
           subtotal_cents?: number
+          tax_cents?: number
+          tax_label?: string | null
+          tax_rate_percent?: number | null
           total_cents?: number
           updated_at?: string
           voided_at?: string | null
         }
         Update: {
           amount_paid_cents?: number
-          booking_id?: string
+          booking_id?: string | null
           created_at?: string
           customer_id?: string
           due_date?: string | null
@@ -727,11 +737,16 @@ export type Database = {
           invoice_number?: string
           notes?: string | null
           paid_at?: string | null
+          promotion_id?: string | null
           public_token?: string
+          request_group_id?: string | null
           sent_at?: string | null
           sitter_id?: string
           status?: string
           subtotal_cents?: number
+          tax_cents?: number
+          tax_label?: string | null
+          tax_rate_percent?: number | null
           total_cents?: number
           updated_at?: string
           voided_at?: string | null
@@ -756,6 +771,20 @@ export type Database = {
             columns: ["customer_id"]
             isOneToOne: false
             referencedRelation: "profiles_public"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "invoices_promotion_id_fkey"
+            columns: ["promotion_id"]
+            isOneToOne: false
+            referencedRelation: "promotions"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "invoices_request_group_id_fkey"
+            columns: ["request_group_id"]
+            isOneToOne: false
+            referencedRelation: "booking_request_groups"
             referencedColumns: ["id"]
           },
           {
@@ -1172,6 +1201,60 @@ export type Database = {
         }
         Relationships: []
       }
+      promotions: {
+        Row: {
+          applicable_service_ids: string[] | null
+          code: string | null
+          created_at: string
+          current_uses: number
+          description: string | null
+          discount_type: string
+          discount_value: number
+          end_date: string | null
+          id: string
+          is_active: boolean
+          max_uses: number | null
+          name: string
+          sitter_id: string
+          start_date: string | null
+          updated_at: string
+        }
+        Insert: {
+          applicable_service_ids?: string[] | null
+          code?: string | null
+          created_at?: string
+          current_uses?: number
+          description?: string | null
+          discount_type?: string
+          discount_value?: number
+          end_date?: string | null
+          id?: string
+          is_active?: boolean
+          max_uses?: number | null
+          name: string
+          sitter_id: string
+          start_date?: string | null
+          updated_at?: string
+        }
+        Update: {
+          applicable_service_ids?: string[] | null
+          code?: string | null
+          created_at?: string
+          current_uses?: number
+          description?: string | null
+          discount_type?: string
+          discount_value?: number
+          end_date?: string | null
+          id?: string
+          is_active?: boolean
+          max_uses?: number | null
+          name?: string
+          sitter_id?: string
+          start_date?: string | null
+          updated_at?: string
+        }
+        Relationships: []
+      }
       reminder_settings: {
         Row: {
           auto_enabled: boolean
@@ -1502,6 +1585,42 @@ export type Database = {
           },
         ]
       }
+      sitter_settings: {
+        Row: {
+          auto_invoice_on_confirm: boolean
+          created_at: string
+          default_due_days: number
+          sitter_id: string
+          tax_enabled: boolean
+          tax_label: string
+          tax_rate_percent: number
+          tax_registration_number: string | null
+          updated_at: string
+        }
+        Insert: {
+          auto_invoice_on_confirm?: boolean
+          created_at?: string
+          default_due_days?: number
+          sitter_id: string
+          tax_enabled?: boolean
+          tax_label?: string
+          tax_rate_percent?: number
+          tax_registration_number?: string | null
+          updated_at?: string
+        }
+        Update: {
+          auto_invoice_on_confirm?: boolean
+          created_at?: string
+          default_due_days?: number
+          sitter_id?: string
+          tax_enabled?: boolean
+          tax_label?: string
+          tax_rate_percent?: number
+          tax_registration_number?: string | null
+          updated_at?: string
+        }
+        Relationships: []
+      }
       suppressed_emails: {
         Row: {
           created_at: string
@@ -1616,6 +1735,10 @@ export type Database = {
       }
     }
     Functions: {
+      calculate_sibling_discount: {
+        Args: { _booking_id: string; _request_group_id: string }
+        Returns: number
+      }
       delete_email: {
         Args: { message_id: number; queue_name: string }
         Returns: boolean
