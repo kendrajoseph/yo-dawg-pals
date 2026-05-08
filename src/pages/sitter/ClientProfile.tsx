@@ -339,6 +339,14 @@ export default function SitterClientProfile() {
           </Card>
         </TabsContent>
       </Tabs>
+
+      <AddPetDialog
+        open={addPetOpen}
+        onOpenChange={setAddPetOpen}
+        clientId={id!}
+        clientName={profile?.full_name}
+        onAdded={() => setReloadKey((k) => k + 1)}
+      />
     </SitterShell>
   );
 }
