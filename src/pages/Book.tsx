@@ -1062,6 +1062,7 @@ const Book = () => {
                             event.stopPropagation();
                             setActiveItemId(item.id);
                             setServiceForItem(item.id, svc.id);
+                            setStep(1);
                           }}
                           className="border-2 border-primary bg-card px-2.5 py-1 font-display text-xs uppercase transition-all hover:-translate-y-0.5 hover:bg-tag hover:text-tag-foreground"
                         >
