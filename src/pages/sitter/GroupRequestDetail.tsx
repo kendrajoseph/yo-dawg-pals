@@ -2,8 +2,9 @@ import { useEffect, useMemo, useState } from "react";
 import { Link, useNavigate, useParams } from "react-router-dom";
 import { format } from "date-fns";
 import {
-  ArrowLeft, CheckCircle2, XCircle, PawPrint, User as UserIcon, Clock, CreditCard, FileText, Send,
+  ArrowLeft, CheckCircle2, XCircle, PawPrint, User as UserIcon, Clock, CreditCard, FileText, Send, Plus,
 } from "lucide-react";
+import AddPetToBookingDialog from "@/components/sitter/AddPetToBookingDialog";
 import { SitterShell } from "@/components/sitter/SitterShell";
 import { EmptyState } from "@/components/sitter/EmptyState";
 import { Card } from "@/components/ui/card";
