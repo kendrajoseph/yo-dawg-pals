@@ -5,7 +5,6 @@ import { Inbox as InboxIcon, AlertTriangle, CreditCard, PawPrint, Bell } from "l
 import { SitterShell } from "@/components/sitter/SitterShell";
 import { EmptyState } from "@/components/sitter/EmptyState";
 import { Card } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
@@ -35,7 +34,7 @@ export default function SitterInbox() {
       const sitterId = user.id;
       const [requestsRes, approvalsRes, invoicesRes] = await Promise.all([
         supabase.from("bookings")
-          .select("id, services(name), pets(name), requested_date, requested_window_label, created_at")
+          .select("id, request_group_id, bundle_position, services(name), pets(name), requested_date, requested_window_label, created_at, customer_id")
           .eq("sitter_id", sitterId).eq("status", "requested")
           .order("created_at", { ascending: false }),
         supabase.from("pet_fit_alerts")
@@ -50,7 +49,63 @@ export default function SitterInbox() {
       if (cancelled) return;
       const out: Row[] = [];
 
-      for (const r of (requestsRes.data ?? []) as any[]) {
+      // ─── Group bookings by request_group_id ───
+      const requestBookings = (requestsRes.data ?? []) as any[];
+      const grouped = new Map<string, any[]>();
+      const ungrouped: any[] = [];
+
+      for (const r of requestBookings) {
+        if (r.request_group_id) {
+          const list = grouped.get(r.request_group_id) ?? [];
+          list.push(r);
+          grouped.set(r.request_group_id, list);
+        } else {
+          ungrouped.push(r);
+        }
+      }
+
+      // Resolve customer names for grouped requests
+      const allCustomerIds = [...new Set(requestBookings.map((r: any) => r.customer_id).filter(Boolean))];
+      let customerNames = new Map<string, string>();
+      if (allCustomerIds.length > 0) {
+        const { data: profiles } = await supabase
+          .from("profiles")
+          .select("id, full_name")
+          .in("id", allCustomerIds);
+        for (const p of profiles ?? []) {
+          customerNames.set(p.id, p.full_name ?? "Client");
+        }
+      }
+
+      // Render grouped requests as single rows
+      for (const [groupId, bookings] of grouped) {
+        const sorted = bookings.sort((a: any, b: any) => (a.bundle_position ?? 0) - (b.bundle_position ?? 0));
+        const first = sorted[0];
+        const petNames = sorted.map((b: any) => b.pets?.name ?? "pet");
+        const petList = petNames.length <= 3
+          ? petNames.join(", ")
+          : `${petNames.slice(0, 2).join(", ")} + ${petNames.length - 2} more`;
+        const serviceName = first.services?.name ?? "Service";
+        const customerName = customerNames.get(first.customer_id) ?? "Client";
+        const dateLabel = first.requested_date
+          ? format(new Date(first.requested_date), "EEE, MMM d")
+          : "Date TBD";
+        const windowLabel = first.requested_window_label ?? "";
+
+        out.push({
+          kind: "request",
+          id: groupId,
+          title: `${customerName} — ${serviceName} for ${petList}`,
+          subtitle: `${dateLabel}${windowLabel ? ` · ${windowLabel}` : ""}`,
+          meta: sorted.length > 1 ? `${sorted.length} pets` : undefined,
+          href: sorted.length > 1
+            ? `/sitter/requests/group/${groupId}`
+            : `/sitter/requests/${first.id}`,
+        });
+      }
+
+      // Render ungrouped requests as individual rows (backwards compat)
+      for (const r of ungrouped) {
         out.push({
           kind: "request",
           id: r.id,
@@ -60,6 +115,7 @@ export default function SitterInbox() {
           href: `/sitter/requests/${r.id}`,
         });
       }
+
       for (const a of (approvalsRes.data ?? []) as any[]) {
         out.push({
           kind: "approval",
