@@ -7,6 +7,7 @@ import {
   CheckCircle2,
   CreditCard,
   PawPrint,
+  Plus,
   StickyNote,
   User as UserIcon,
 } from "lucide-react";
