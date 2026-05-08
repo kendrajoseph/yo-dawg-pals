@@ -2,8 +2,9 @@ import { useEffect, useMemo, useState } from "react";
 import { Link, useNavigate, useParams } from "react-router-dom";
 import { format } from "date-fns";
 import {
-  ArrowLeft, CheckCircle2, XCircle, PawPrint, User as UserIcon, Clock, CreditCard, FileText, Send,
+  ArrowLeft, CheckCircle2, XCircle, PawPrint, User as UserIcon, Clock, CreditCard, FileText, Send, Plus,
 } from "lucide-react";
+import AddPetToBookingDialog from "@/components/sitter/AddPetToBookingDialog";
 import { SitterShell } from "@/components/sitter/SitterShell";
 import { EmptyState } from "@/components/sitter/EmptyState";
 import { Card } from "@/components/ui/card";
@@ -60,6 +61,7 @@ export default function GroupRequestDetail() {
   const [loading, setLoading] = useState(true);
   const [working, setWorking] = useState<"approve" | "decline" | null>(null);
   const [internalNotes, setInternalNotes] = useState("");
+  const [addPetOpen, setAddPetOpen] = useState(false);
 
   // Editable pricing per booking
   const [prices, setPrices] = useState<Record<string, string>>({});
@@ -229,15 +231,30 @@ export default function GroupRequestDetail() {
       </Link>
 
       {/* Header */}
-      <div className="mb-4">
-        <h1 className="font-display text-3xl text-primary">
-          {service?.name ?? "Service"} for {customerName}
-        </h1>
-        <p className="text-sm text-muted-foreground">
-          {bookings.length} pet{bookings.length === 1 ? "" : "s"} · {first?.requested_date ? format(new Date(first.requested_date), "EEE, MMM d") : "Date TBD"}
-          {first?.requested_window_label ? ` · ${first.requested_window_label}` : ""}
-        </p>
+      <div className="mb-4 flex flex-wrap items-start justify-between gap-3">
+        <div>
+          <h1 className="font-display text-3xl text-primary">
+            {service?.name ?? "Service"} for {customerName}
+          </h1>
+          <p className="text-sm text-muted-foreground">
+            {bookings.length} pet{bookings.length === 1 ? "" : "s"} · {first?.requested_date ? format(new Date(first.requested_date), "EEE, MMM d") : "Date TBD"}
+            {first?.requested_window_label ? ` · ${first.requested_window_label}` : ""}
+          </p>
+        </div>
+        <Button variant="outline" onClick={() => setAddPetOpen(true)}>
+          <Plus className="mr-1.5 h-4 w-4" />Add pet to booking
+        </Button>
       </div>
+
+      {first && (
+        <AddPetToBookingDialog
+          open={addPetOpen}
+          onOpenChange={setAddPetOpen}
+          bookingId={first.id}
+          customerId={first.customer_id}
+          onAdded={reload}
+        />
+      )}
 
       {/* Pet cards */}
       <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
