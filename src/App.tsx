@@ -29,6 +29,7 @@ import SitterClientProfile from "./pages/sitter/ClientProfile.tsx";
 import SitterPets from "./pages/sitter/Pets.tsx";
 import SitterPetProfile from "./pages/sitter/PetProfile.tsx";
 import SitterRequestDetail from "./pages/sitter/RequestDetail.tsx";
+import GroupRequestDetail from "./pages/sitter/GroupRequestDetail.tsx";
 import SitterBookingDetail from "./pages/sitter/BookingDetail.tsx";
 import SitterScheduleAssistant from "./pages/sitter/ScheduleAssistant.tsx";
 import SitterMessages from "./pages/sitter/Messages.tsx";
