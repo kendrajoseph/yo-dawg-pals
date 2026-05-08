@@ -1078,11 +1078,6 @@ const Book = () => {
                                     +$60 each additional night
                                   </div>
                                 )}
-                                {(variant.sibling_discount_percent ?? 0) > 0 && (
-                                  <div className={cn("mt-1 text-[11px]", activeVariantCard ? "text-tag-foreground/80" : "text-muted-foreground")}>
-                                    50% off each sibling
-                                  </div>
-                                )}
                               </button>
                             );
                           })}
