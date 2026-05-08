@@ -176,7 +176,8 @@ const computeLines = ({
   }
 
   const startPos = petPositionStartByService.get(service.slug) ?? 0;
-  const discountPct = variant.sibling_discount_percent ?? 0;
+  // Sibling discount no longer applies to boarding (was a promotional offer).
+  const discountPct = service.slug === "boarding" ? 0 : (variant.sibling_discount_percent ?? 0);
 
   return petsForItem.map((pet, idx) => {
     const position = startPos + idx;
@@ -1308,7 +1309,7 @@ const Book = () => {
           {step === 2 && activeItem && activeService && (
             <div className="mt-6">
               <h3 className="font-display text-2xl uppercase">Who&apos;s coming?</h3>
-              <p className="mt-1 text-sm text-foreground/75">Pick one or more pets — siblings get 50% off on group walks and boarding.</p>
+              <p className="mt-1 text-sm text-foreground/75">Pick one or more pets — siblings get 50% off on group walks.</p>
               {pets.length === 0 ? (
                 <Card className="mt-4 -rotate-1 border-2 border-primary bg-highlight p-6 text-center shadow-pop">
                   <PawPrint className="mx-auto h-8 w-8 text-clay" />
@@ -1406,6 +1407,9 @@ const Book = () => {
                   <span className="font-display text-3xl text-primary">{formatPriceWithDecimals(grandTotalCents)}</span>
                 </div>
                 <p className="mt-1 text-xs text-muted-foreground">All prices include tax. You won't be charged until Anneke confirms your request.</p>
+                <p className="mt-2 text-[11px] leading-relaxed text-muted-foreground/80">
+                  Prices shown are starting rates and may be adjusted based on your pet's unique needs, length of stay, holiday periods, or other circumstances. Final pricing is confirmed by Anneke before any charge is made.
+                </p>
               </div>
 
               <p className="mt-4 text-xs text-muted-foreground">{reviewCopy}</p>
