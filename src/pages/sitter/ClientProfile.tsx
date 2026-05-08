@@ -162,7 +162,8 @@ export default function SitterClientProfile() {
             {profile.phone && <span className="inline-flex items-center gap-1"><Phone className="h-3 w-3" />{profile.phone}</span>}
           </div>
         </div>
-        <div className="flex gap-2">
+        <div className="flex flex-wrap gap-2">
+          <Button size="sm" variant="outline" onClick={() => setAddPetOpen(true)}><Plus className="mr-1.5 h-4 w-4" />Add pet</Button>
           <Button size="sm" variant="outline" asChild><Link to="/sitter/messages"><MessageSquare className="mr-1.5 h-4 w-4" />Message</Link></Button>
           <Button size="sm" asChild><Link to="/sitter/invoices"><CreditCard className="mr-1.5 h-4 w-4" />New invoice</Link></Button>
         </div>
