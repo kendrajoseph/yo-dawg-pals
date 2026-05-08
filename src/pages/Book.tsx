@@ -1023,20 +1023,19 @@ const Book = () => {
               const service = item.serviceId ? serviceMap.get(item.serviceId) ?? null : null;
               const variant = item.variantId ? variantMap.get(item.variantId) ?? null : null;
               return (
-                <button
+                <div
                   key={item.id}
-                  type="button"
-                  onClick={() => {
-                    setActiveItemId(item.id);
-                    if (!item.serviceId || !item.variantId) setStep(0);
-                  }}
+                  role="button"
+                  tabIndex={0}
+                  onClick={() => setActiveItemId(item.id)}
+                  onKeyDown={(event) => { if (event.key === "Enter" || event.key === " ") { event.preventDefault(); setActiveItemId(item.id); } }}
                   className={cn(
-                    "border-2 p-4 text-left transition-all",
+                    "cursor-pointer border-2 p-4 text-left transition-all",
                     activeItemId === item.id ? "border-primary bg-highlight shadow-pop-sm" : "border-primary bg-card hover:-translate-y-0.5 hover:bg-muted",
                   )}
                 >
                   <div className="flex items-start justify-between gap-3">
-                    <div>
+                    <div className="flex-1">
                       <div className="font-display text-base uppercase text-primary">{service?.name ?? `Service ${bundleItems.findIndex((c) => c.id === item.id) + 1}`}</div>
                       <p className="mt-1 text-sm text-foreground/75">{getBundleSummaryText(item, service, variant)}</p>
                     </div>
@@ -1053,7 +1052,25 @@ const Book = () => {
                       </span>
                     )}
                   </div>
-                </button>
+                  {!item.serviceId && (
+                    <div className="mt-3 flex flex-wrap gap-2">
+                      {services.map((svc) => (
+                        <button
+                          key={svc.id}
+                          type="button"
+                          onClick={(event) => {
+                            event.stopPropagation();
+                            setActiveItemId(item.id);
+                            setServiceForItem(item.id, svc.id);
+                          }}
+                          className="border-2 border-primary bg-card px-2.5 py-1 font-display text-xs uppercase transition-all hover:-translate-y-0.5 hover:bg-tag hover:text-tag-foreground"
+                        >
+                          {svc.name}
+                        </button>
+                      ))}
+                    </div>
+                  )}
+                </div>
               );
             })}
           </div>
