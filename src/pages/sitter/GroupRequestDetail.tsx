@@ -231,93 +231,126 @@ export default function GroupRequestDetail() {
       </Link>
 
       {/* Header */}
-      <div className="mb-4 flex flex-wrap items-start justify-between gap-3">
-        <div>
-          <h1 className="font-display text-3xl text-primary">
-            {service?.name ?? "Service"} for {customerName}
-          </h1>
-          <p className="text-sm text-muted-foreground">
-            {bookings.length} pet{bookings.length === 1 ? "" : "s"} · {first?.requested_date ? format(new Date(first.requested_date), "EEE, MMM d") : "Date TBD"}
-            {first?.requested_window_label ? ` · ${first.requested_window_label}` : ""}
-          </p>
-        </div>
-        <Button variant="outline" onClick={() => setAddPetOpen(true)}>
-          <Plus className="mr-1.5 h-4 w-4" />Add pet to booking
-        </Button>
-      </div>
+      {(() => {
+        const byDate = new Map<string, GroupBooking[]>();
+        for (const b of bookings) {
+          const key = b.requested_date ?? "tbd";
+          if (!byDate.has(key)) byDate.set(key, []);
+          byDate.get(key)!.push(b);
+        }
+        const dateKeys = Array.from(byDate.keys()).sort();
+        const totalVisits = bookings.length;
+        const uniquePets = new Set(bookings.map((b) => b.pet_id)).size;
 
-      {first && (
-        <AddPetToBookingDialog
-          open={addPetOpen}
-          onOpenChange={setAddPetOpen}
-          bookingId={first.id}
-          customerId={first.customer_id}
-          onAdded={reload}
-        />
-      )}
-
-      {/* Pet cards */}
-      <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
-        {bookings.map((b, i) => {
-          const line = totals.lines[i];
-          return (
-            <Card key={b.id} className="border border-border p-4 shadow-soft">
-              <div className="flex items-center gap-3 mb-3">
-                <Avatar className="h-12 w-12">
-                  <AvatarImage src={b.pets?.photo_url ?? undefined} />
-                  <AvatarFallback><PawPrint className="h-5 w-5" /></AvatarFallback>
-                </Avatar>
-                <div className="min-w-0 flex-1">
-                  <div className="font-medium">{b.pets?.name ?? "Pet"}</div>
-                  <div className="text-xs text-muted-foreground capitalize">{b.pets?.species ?? "dog"}</div>
-                </div>
-                {b.bundle_position === 0 && (
-                  <Badge variant="outline" className="text-[10px]">Primary</Badge>
-                )}
-                {b.bundle_position > 0 && (b.service_variants?.sibling_discount_percent ?? 0) > 0 && (
-                  <Badge variant="outline" className="border-emerald-300 bg-emerald-50 text-emerald-800 text-[10px]">
-                    {b.service_variants?.sibling_discount_percent}% sibling discount
-                  </Badge>
-                )}
+        return (
+          <>
+            <div className="mb-4 flex flex-wrap items-start justify-between gap-3">
+              <div>
+                <h1 className="font-display text-3xl text-primary">
+                  {service?.name ?? "Service"} for {customerName}
+                </h1>
+                <p className="text-sm text-muted-foreground">
+                  {uniquePets} pet{uniquePets === 1 ? "" : "s"} · {totalVisits} visit{totalVisits === 1 ? "" : "s"} across {dateKeys.length} day{dateKeys.length === 1 ? "" : "s"}
+                  {first?.requested_window_label ? ` · ${first.requested_window_label}` : ""}
+                </p>
               </div>
+              <Button variant="outline" onClick={() => setAddPetOpen(true)}>
+                <Plus className="mr-1.5 h-4 w-4" />Add pet to booking
+              </Button>
+            </div>
 
-              <div className="space-y-2">
-                <div>
-                  <Label className="text-[11px] uppercase">Price ($)</Label>
-                  <Input
-                    type="number"
-                    step="0.01"
-                    value={prices[b.id] ?? ""}
-                    onChange={(e) => setPrices((prev) => ({ ...prev, [b.id]: e.target.value }))}
-                  />
-                </div>
-                {line && line.discountCents > 0 && (
-                  <div className="text-xs text-emerald-700">
-                    Sibling discount: -{formatCents(line.discountCents)} → {formatCents(line.finalCents)}
+            {first && (
+              <AddPetToBookingDialog
+                open={addPetOpen}
+                onOpenChange={setAddPetOpen}
+                bookingId={first.id}
+                customerId={first.customer_id}
+                onAdded={reload}
+              />
+            )}
+
+            {dateKeys.map((dateKey) => {
+              const dayBookings = byDate.get(dateKey)!;
+              const dateLabel = dateKey === "tbd"
+                ? "Date to be confirmed"
+                : format(new Date(`${dateKey}T12:00:00`), "EEEE, MMMM d, yyyy");
+              return (
+                <div key={dateKey} className="mb-5">
+                  <div className="mb-2 flex items-center gap-2">
+                    <Clock className="h-4 w-4 text-primary" />
+                    <h2 className="font-display text-lg text-primary">{dateLabel}</h2>
+                    <Badge variant="outline" className="text-[10px]">
+                      {dayBookings.length} pet{dayBookings.length === 1 ? "" : "s"}
+                    </Badge>
                   </div>
-                )}
-                {line && line.discountCents === 0 && (
-                  <div className="text-xs text-muted-foreground">
-                    Subtotal: {formatCents(line.baseCents)}
+                  <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+                    {dayBookings.map((b) => {
+                      const i = bookings.findIndex((x) => x.id === b.id);
+                      const line = totals.lines[i];
+                      return (
+                        <Card key={b.id} className="border border-border p-4 shadow-soft">
+                          <div className="flex items-center gap-3 mb-3">
+                            <Avatar className="h-12 w-12">
+                              <AvatarImage src={b.pets?.photo_url ?? undefined} />
+                              <AvatarFallback><PawPrint className="h-5 w-5" /></AvatarFallback>
+                            </Avatar>
+                            <div className="min-w-0 flex-1">
+                              <div className="font-medium">{b.pets?.name ?? "Pet"}</div>
+                              <div className="text-xs text-muted-foreground capitalize">{b.pets?.species ?? "dog"}</div>
+                            </div>
+                            {b.bundle_position === 0 && (
+                              <Badge variant="outline" className="text-[10px]">Primary</Badge>
+                            )}
+                            {b.bundle_position > 0 && (b.service_variants?.sibling_discount_percent ?? 0) > 0 && (
+                              <Badge variant="outline" className="border-emerald-300 bg-emerald-50 text-emerald-800 text-[10px]">
+                                {b.service_variants?.sibling_discount_percent}% sibling discount
+                              </Badge>
+                            )}
+                          </div>
+
+                          <div className="space-y-2">
+                            <div>
+                              <Label className="text-[11px] uppercase">Price ($)</Label>
+                              <Input
+                                type="number"
+                                step="0.01"
+                                value={prices[b.id] ?? ""}
+                                onChange={(e) => setPrices((prev) => ({ ...prev, [b.id]: e.target.value }))}
+                              />
+                            </div>
+                            {line && line.discountCents > 0 && (
+                              <div className="text-xs text-emerald-700">
+                                Sibling discount: -{formatCents(line.discountCents)} → {formatCents(line.finalCents)}
+                              </div>
+                            )}
+                            {line && line.discountCents === 0 && (
+                              <div className="text-xs text-muted-foreground">
+                                Subtotal: {formatCents(line.baseCents)}
+                              </div>
+                            )}
+                          </div>
+
+                          {b.notes && (
+                            <div className="mt-3 rounded-md bg-muted/40 p-2 text-xs text-muted-foreground">
+                              {b.notes}
+                            </div>
+                          )}
+
+                          <div className="mt-2">
+                            <Link to={`/sitter/pets/${b.pets?.id}`} className="text-xs text-primary hover:underline">
+                              View pet profile →
+                            </Link>
+                          </div>
+                        </Card>
+                      );
+                    })}
                   </div>
-                )}
-              </div>
-
-              {b.notes && (
-                <div className="mt-3 rounded-md bg-muted/40 p-2 text-xs text-muted-foreground">
-                  {b.notes}
                 </div>
-              )}
-
-              <div className="mt-2">
-                <Link to={`/sitter/pets/${b.pets?.id}`} className="text-xs text-primary hover:underline">
-                  View pet profile →
-                </Link>
-              </div>
-            </Card>
-          );
-        })}
-      </div>
+              );
+            })}
+          </>
+        );
+      })()}
 
       {/* Pricing summary */}
       <Card className="mt-4 border border-border p-5 shadow-soft">
