@@ -1,9 +1,10 @@
 import { useEffect, useState } from "react";
 import { Link, useParams } from "react-router-dom";
 import { format } from "date-fns";
-import { ArrowLeft, Mail, Phone, PawPrint, CalendarDays, CreditCard, MessageSquare, Star, Save, Download } from "lucide-react";
+import { ArrowLeft, Mail, Phone, PawPrint, CalendarDays, CreditCard, MessageSquare, Star, Save, Download, Plus } from "lucide-react";
 import { SitterShell } from "@/components/sitter/SitterShell";
 import { AddressEditor } from "@/components/AddressEditor";
+import AddPetDialog from "@/components/sitter/AddPetDialog";
 import { EmptyState } from "@/components/sitter/EmptyState";
 import { Card } from "@/components/ui/card";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
