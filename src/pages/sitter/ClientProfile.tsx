@@ -43,8 +43,9 @@ export default function SitterClientProfile() {
     if (!id || !user?.id) return;
     let cancelled = false;
     const load = async () => {
-      const [pRes, bookingsRes, invoicesRes, adminRes] = await Promise.all([
+      const [pRes, petsRes, bookingsRes, invoicesRes, adminRes] = await Promise.all([
         supabase.from("profiles").select("*").eq("id", id).maybeSingle(),
+        supabase.from("pets").select("id, name, photo_url, species, breed").eq("owner_id", id),
         supabase.from("bookings")
           .select("id, start_at, end_at, status, total_cents, payment_status, services(name), pets(id, name, photo_url)")
           .eq("sitter_id", user.id).eq("customer_id", id)
@@ -61,11 +62,12 @@ export default function SitterClientProfile() {
       setProfile(pRes.data);
       setBookings(bookingsRes.data ?? []);
       setInvoices(invoicesRes.data ?? []);
-      const seen = new Map<string, any>();
+      const merged = new Map<string, any>();
+      for (const p of petsRes.data ?? []) merged.set(p.id, p);
       for (const b of bookingsRes.data ?? []) {
-        if (b.pets) seen.set(b.pets.id, b.pets);
+        if (b.pets && !merged.has(b.pets.id)) merged.set(b.pets.id, b.pets);
       }
-      setPets([...seen.values()]);
+      setPets([...merged.values()]);
       const a = adminRes.data;
       setAdminProfileId(a?.id ?? null);
       const r = a?.star_rating ?? 3;
@@ -78,7 +80,7 @@ export default function SitterClientProfile() {
     };
     load();
     return () => { cancelled = true; };
-  }, [id, user?.id]);
+  }, [id, user?.id, reloadKey]);
 
   const saveAdminProfile = async () => {
     if (!id || !user?.id) return;
