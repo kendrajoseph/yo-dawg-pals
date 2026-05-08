@@ -7,6 +7,7 @@ import {
   CheckCircle2,
   CreditCard,
   PawPrint,
+  Plus,
   StickyNote,
   User as UserIcon,
 } from "lucide-react";
@@ -17,6 +18,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
 import { PaymentDrawer, type PaymentDrawerBooking } from "@/components/payments/PaymentDrawer";
+import AddPetToBookingDialog from "@/components/sitter/AddPetToBookingDialog";
 import { formatCents } from "@/lib/invoices";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
@@ -69,6 +71,7 @@ export default function SitterBookingDetail() {
   const [customerPhone, setCustomerPhone] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const [drawerOpen, setDrawerOpen] = useState(false);
+  const [addPetOpen, setAddPetOpen] = useState(false);
 
   const load = async () => {
     if (!id || !user?.id) return;
@@ -223,7 +226,10 @@ export default function SitterBookingDetail() {
               {booking.late_pickup_fee_cents ? ` · late pickup ${formatCents(booking.late_pickup_fee_cents)}` : ""}
             </p>
           </div>
-          <div className="flex gap-2">
+          <div className="flex flex-wrap gap-2">
+            <Button variant="outline" onClick={() => setAddPetOpen(true)}>
+              <Plus className="mr-1.5 h-4 w-4" />Add pet to booking
+            </Button>
             <Button variant="outline" onClick={() => navigate(`/sitter/clients/${booking.customer_id}`)}>
               Open client
             </Button>
@@ -233,6 +239,14 @@ export default function SitterBookingDetail() {
           </div>
         </div>
       </Card>
+
+      <AddPetToBookingDialog
+        open={addPetOpen}
+        onOpenChange={setAddPetOpen}
+        bookingId={booking.id}
+        customerId={booking.customer_id}
+        onAdded={load}
+      />
 
       <PaymentDrawer
         open={drawerOpen}
