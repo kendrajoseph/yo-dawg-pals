@@ -579,6 +579,8 @@ const Book = () => {
     const nextItem = createBundleItem();
     setBundleItems((current) => [...current, nextItem]);
     setActiveItemId(nextItem.id);
+    // New items have no service yet — jump back to the service picker.
+    setStep(0);
   };
 
   const removeBundleItem = (itemId: string) => {
@@ -1024,7 +1026,10 @@ const Book = () => {
                 <button
                   key={item.id}
                   type="button"
-                  onClick={() => setActiveItemId(item.id)}
+                  onClick={() => {
+                    setActiveItemId(item.id);
+                    if (!item.serviceId || !item.variantId) setStep(0);
+                  }}
                   className={cn(
                     "border-2 p-4 text-left transition-all",
                     activeItemId === item.id ? "border-primary bg-highlight shadow-pop-sm" : "border-primary bg-card hover:-translate-y-0.5 hover:bg-muted",
