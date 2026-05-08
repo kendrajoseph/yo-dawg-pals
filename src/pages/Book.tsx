@@ -322,6 +322,13 @@ const Book = () => {
   useEffect(() => {
     if (draftLoadedRef.current) return;
     if (services.length === 0) return;
+    // If the user explicitly navigated with ?service=… they want a fresh start.
+    // Discard any older draft so it doesn't override their new selection.
+    if (presetSlug) {
+      try { localStorage.removeItem(DRAFT_KEY); } catch { /* ignore */ }
+      draftLoadedRef.current = true;
+      return;
+    }
     try {
       const raw = localStorage.getItem(DRAFT_KEY);
       if (!raw) { draftLoadedRef.current = true; return; }
