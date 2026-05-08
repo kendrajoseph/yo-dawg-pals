@@ -261,7 +261,12 @@ export default function SitterClientProfile() {
           </Card>
         </TabsContent>
 
-        <TabsContent value="pets" className="mt-4">
+        <TabsContent value="pets" className="mt-4 space-y-3">
+          <div className="flex justify-end">
+            <Button size="sm" onClick={() => setAddPetOpen(true)}>
+              <Plus className="mr-1.5 h-4 w-4" />Add pet
+            </Button>
+          </div>
           <Card className="border border-border p-4 shadow-soft">
             {pets.length === 0 ? (
               <EmptyState icon={<PawPrint className="h-7 w-7" />} title="No pets on file" />
@@ -271,7 +276,10 @@ export default function SitterClientProfile() {
                   <li key={p.id}>
                     <Link to={`/sitter/pets/${p.id}`} className="flex items-center gap-3 rounded-md border border-border p-3 hover:bg-muted">
                       <Avatar className="h-10 w-10"><AvatarImage src={p.photo_url ?? undefined} /><AvatarFallback>{p.name?.slice(0,1)}</AvatarFallback></Avatar>
-                      <div className="font-medium">{p.name}</div>
+                      <div>
+                        <div className="font-medium">{p.name}</div>
+                        {(p.breed || p.species) && <div className="text-xs text-muted-foreground">{p.breed || p.species}</div>}
+                      </div>
                     </Link>
                   </li>
                 ))}
