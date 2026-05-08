@@ -809,6 +809,29 @@ const Book = () => {
       return;
     }
 
+    // Require a mobile number and pickup address before any booking can be placed.
+    const { data: profileCheck } = await db
+      .from("profiles")
+      .select("mobile_phone, phone, address_line1, city, postal_code")
+      .eq("id", user.id)
+      .maybeSingle();
+    const hasPhone = Boolean((profileCheck?.mobile_phone || profileCheck?.phone || "").toString().trim());
+    const hasAddress = Boolean(
+      (profileCheck?.address_line1 || "").toString().trim() &&
+        (profileCheck?.city || "").toString().trim() &&
+        (profileCheck?.postal_code || "").toString().trim(),
+    );
+    if (!hasPhone || !hasAddress) {
+      const missing = [!hasPhone && "a mobile number", !hasAddress && "a pickup address"].filter(Boolean).join(" and ");
+      toast({
+        title: `Add ${missing} to your profile first`,
+        description: "Your sitter needs this to confirm the booking and plan her route.",
+        variant: "destructive",
+      });
+      navigate("/profile");
+      return;
+    }
+
     submittingRef.current = true;
     setSubmitting(true);
 
