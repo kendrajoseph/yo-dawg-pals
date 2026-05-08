@@ -231,15 +231,30 @@ export default function GroupRequestDetail() {
       </Link>
 
       {/* Header */}
-      <div className="mb-4">
-        <h1 className="font-display text-3xl text-primary">
-          {service?.name ?? "Service"} for {customerName}
-        </h1>
-        <p className="text-sm text-muted-foreground">
-          {bookings.length} pet{bookings.length === 1 ? "" : "s"} · {first?.requested_date ? format(new Date(first.requested_date), "EEE, MMM d") : "Date TBD"}
-          {first?.requested_window_label ? ` · ${first.requested_window_label}` : ""}
-        </p>
+      <div className="mb-4 flex flex-wrap items-start justify-between gap-3">
+        <div>
+          <h1 className="font-display text-3xl text-primary">
+            {service?.name ?? "Service"} for {customerName}
+          </h1>
+          <p className="text-sm text-muted-foreground">
+            {bookings.length} pet{bookings.length === 1 ? "" : "s"} · {first?.requested_date ? format(new Date(first.requested_date), "EEE, MMM d") : "Date TBD"}
+            {first?.requested_window_label ? ` · ${first.requested_window_label}` : ""}
+          </p>
+        </div>
+        <Button variant="outline" onClick={() => setAddPetOpen(true)}>
+          <Plus className="mr-1.5 h-4 w-4" />Add pet to booking
+        </Button>
       </div>
+
+      {first && (
+        <AddPetToBookingDialog
+          open={addPetOpen}
+          onOpenChange={setAddPetOpen}
+          bookingId={first.id}
+          customerId={first.customer_id}
+          onAdded={reload}
+        />
+      )}
 
       {/* Pet cards */}
       <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
