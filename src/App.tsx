@@ -68,6 +68,7 @@ const App = () => (
             <Route path="/account/profile" element={<ProtectedRoute><Profile /></ProtectedRoute>} />
             <Route path="/sitter" element={<ProtectedRoute requireSitter><SitterToday /></ProtectedRoute>} />
             <Route path="/sitter/inbox" element={<ProtectedRoute requireSitter><SitterInbox /></ProtectedRoute>} />
+            <Route path="/sitter/requests/group/:groupId" element={<ProtectedRoute requireSitter><GroupRequestDetail /></ProtectedRoute>} />
             <Route path="/sitter/requests/:id" element={<ProtectedRoute requireSitter><SitterRequestDetail /></ProtectedRoute>} />
             <Route path="/sitter/bookings/:id" element={<ProtectedRoute requireSitter><SitterBookingDetail /></ProtectedRoute>} />
             <Route path="/sitter/assistant" element={<ProtectedRoute requireSitter><SitterScheduleAssistant /></ProtectedRoute>} />
