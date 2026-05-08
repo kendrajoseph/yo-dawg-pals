@@ -226,7 +226,10 @@ export default function SitterBookingDetail() {
               {booking.late_pickup_fee_cents ? ` · late pickup ${formatCents(booking.late_pickup_fee_cents)}` : ""}
             </p>
           </div>
-          <div className="flex gap-2">
+          <div className="flex flex-wrap gap-2">
+            <Button variant="outline" onClick={() => setAddPetOpen(true)}>
+              <Plus className="mr-1.5 h-4 w-4" />Add pet to booking
+            </Button>
             <Button variant="outline" onClick={() => navigate(`/sitter/clients/${booking.customer_id}`)}>
               Open client
             </Button>
@@ -236,6 +239,14 @@ export default function SitterBookingDetail() {
           </div>
         </div>
       </Card>
+
+      <AddPetToBookingDialog
+        open={addPetOpen}
+        onOpenChange={setAddPetOpen}
+        bookingId={booking.id}
+        customerId={booking.customer_id}
+        onAdded={load}
+      />
 
       <PaymentDrawer
         open={drawerOpen}
