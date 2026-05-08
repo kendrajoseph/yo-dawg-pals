@@ -97,6 +97,7 @@ type BundleItem = {
 const STEPS = ["Services", "Schedule", "Pets", "Review"] as const;
 const WALK_REQUEST_SLUGS = new Set(["solo-walk", "group-walk"]);
 const TERMS_VERSION = "2026-04-22";
+const DRAFT_KEY = "yodawg.bookingDraft.v1";
 
 const createBundleItem = (seed?: Partial<BundleItem>): BundleItem => ({
   id: crypto.randomUUID(),
@@ -214,6 +215,9 @@ const Book = () => {
   const [acceptedTerms, setAcceptedTerms] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const submittingRef = useRef(false);
+  const draftLoadedRef = useRef(false);
+  const appliedPresetSlugRef = useRef<string | null>(null);
+  const skipNextDraftSaveRef = useRef(false);
   const [confirmation, setConfirmation] = useState<{
     lines: Array<{ serviceName: string; petName: string; timing: string; recurrence?: string | null; priceLabel?: string | null }>;
     totalLabel: string;
@@ -288,20 +292,36 @@ const Book = () => {
   }, [user]);
 
   useEffect(() => {
-    if (services.length === 0 || bundleItems.length > 0) return;
+    if (services.length === 0) return;
 
-    const foundService = presetSlug
-      ? services.find((service) => service.slug === presetSlug || service.variants.some((variant) => variant.slug === presetSlug))
-      : null;
-    const foundVariant = foundService
-      ? foundService.variants.find((variant) => variant.slug === presetSlug) ?? foundService.variants[0] ?? null
-      : null;
+    if (presetSlug) {
+      if (appliedPresetSlugRef.current === presetSlug) return;
 
-    const initialItem = createBundleItem({
-      serviceId: foundService?.id ?? null,
-      variantId: foundVariant?.id ?? null,
-    });
+      const foundService = services.find((service) => service.slug === presetSlug || service.variants.some((variant) => variant.slug === presetSlug)) ?? null;
+      const foundVariant = foundService
+        ? foundService.variants.find((variant) => variant.slug === presetSlug) ?? foundService.variants[0] ?? null
+        : null;
+      const initialItem = createBundleItem({
+        serviceId: foundService?.id ?? null,
+        variantId: foundVariant?.id ?? null,
+      });
 
+      try { localStorage.removeItem(DRAFT_KEY); } catch { /* ignore */ }
+      appliedPresetSlugRef.current = presetSlug;
+      draftLoadedRef.current = true;
+      skipNextDraftSaveRef.current = true;
+      setBundleItems([initialItem]);
+      setActiveItemId(initialItem.id);
+      setBundleNotes("");
+      setAcceptedTerms(false);
+      setStep(0);
+      return;
+    }
+
+    appliedPresetSlugRef.current = null;
+    if (bundleItems.length > 0) return;
+
+    const initialItem = createBundleItem();
     setBundleItems([initialItem]);
     setActiveItemId(initialItem.id);
   }, [bundleItems.length, presetSlug, services]);
@@ -315,9 +335,6 @@ const Book = () => {
 
   // Persist the in-progress booking draft to localStorage so users coming back
   // from sign up land back where they left off.
-  const DRAFT_KEY = "yodawg.bookingDraft.v1";
-  const draftLoadedRef = useRef(false);
-
   // Load draft once when services are available.
   useEffect(() => {
     if (draftLoadedRef.current) return;
@@ -350,11 +367,15 @@ const Book = () => {
     } finally {
       draftLoadedRef.current = true;
     }
-  }, [services.length]);
+  }, [presetSlug, services.length]);
 
   // Save draft whenever it changes (only after initial load).
   useEffect(() => {
     if (!draftLoadedRef.current) return;
+    if (skipNextDraftSaveRef.current) {
+      skipNextDraftSaveRef.current = false;
+      return;
+    }
     if (bundleItems.length === 0) return;
     try {
       localStorage.setItem(DRAFT_KEY, JSON.stringify({
