@@ -124,7 +124,7 @@ export default function GroupRequestDetail() {
   const totals = useMemo(() => {
     let subtotal = 0;
     let totalDiscount = 0;
-    const lines: { bookingId: string; petName: string; baseCents: number; discountCents: number; finalCents: number }[] = [];
+    const lines: { bookingId: string; petName: string; dateLabel: string; baseCents: number; discountCents: number; finalCents: number }[] = [];
 
     for (const b of bookings) {
       const baseCents = Math.round((parseFloat(prices[b.id] ?? "0") || 0) * 100);
