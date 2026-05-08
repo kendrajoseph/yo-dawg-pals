@@ -27,6 +27,8 @@ export default function SitterClientProfile() {
   const [bookings, setBookings] = useState<any[]>([]);
   const [invoices, setInvoices] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
+  const [addPetOpen, setAddPetOpen] = useState(false);
+  const [reloadKey, setReloadKey] = useState(0);
 
   // Internal admin profile (rating + private notes — only visible to Anneke/admins)
   const [adminProfileId, setAdminProfileId] = useState<string | null>(null);
