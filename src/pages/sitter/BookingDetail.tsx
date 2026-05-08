@@ -71,6 +71,7 @@ export default function SitterBookingDetail() {
   const [customerPhone, setCustomerPhone] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const [drawerOpen, setDrawerOpen] = useState(false);
+  const [addPetOpen, setAddPetOpen] = useState(false);
 
   const load = async () => {
     if (!id || !user?.id) return;
