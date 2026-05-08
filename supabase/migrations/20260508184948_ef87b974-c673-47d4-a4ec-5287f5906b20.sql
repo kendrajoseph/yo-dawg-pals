@@ -1,0 +1,1 @@
+ALTER TABLE public.service_variants ADD COLUMN IF NOT EXISTS sibling_discount_percent INTEGER NOT NULL DEFAULT 0;
