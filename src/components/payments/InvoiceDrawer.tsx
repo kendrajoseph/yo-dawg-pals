@@ -154,6 +154,8 @@ export function InvoiceDrawer({ open, onOpenChange, invoiceId, customerName, onC
               </Card>
             )}
 
+            <RecipientCard invoiceId={invoice.id} fallbackName={customerName} />
+
             <Card className="p-4">
               <div className="mb-2 text-xs uppercase tracking-wide text-muted-foreground">Line items</div>
               {editable ? (
