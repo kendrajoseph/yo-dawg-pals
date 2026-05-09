@@ -39,7 +39,7 @@ Deno.serve(async (req) => {
 
     const { data: profile } = await admin
       .from("profiles")
-      .select("full_name")
+      .select("full_name, phone, mobile_phone")
       .eq("id", (invoice as any).customer_id)
       .maybeSingle();
 
