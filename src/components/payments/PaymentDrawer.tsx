@@ -352,11 +352,18 @@ export function PaymentDrawer({ open, onOpenChange, booking, hasSavedCard, cardL
           )}
         </Card>
 
+        {/* Draft warning */}
+        {invoice?.status === "draft" && !frozen && (
+          <div className="mt-4 rounded-md border border-dashed border-amber-300 bg-amber-50 px-3 py-2 text-xs text-amber-900 dark:border-amber-800 dark:bg-amber-950/30 dark:text-amber-200">
+            This invoice is a <strong>draft</strong> — your client hasn't received it yet. Click <strong>Send invoice</strong> below to email it.
+          </div>
+        )}
+
         {/* Actions */}
         <div className="mt-4 flex flex-wrap gap-2">
           {!frozen && (
             <>
-              <Button size="sm" variant="outline" onClick={sendInvoice} disabled={!!actionBusy}>
+              <Button size="sm" variant={invoice?.status === "draft" ? "default" : "outline"} onClick={sendInvoice} disabled={!!actionBusy}>
                 <FileText className="h-4 w-4" /> {invoice?.sent_at ? "Resend invoice" : "Send invoice"}
               </Button>
               <Button size="sm" variant="outline" onClick={() => setReminderOpen(true)} disabled={!!actionBusy || !invoice}>
@@ -402,7 +409,7 @@ export function PaymentDrawer({ open, onOpenChange, booking, hasSavedCard, cardL
                 {invoice ? "Save changes" : "Create draft"}
               </Button>
               <Button size="sm" onClick={() => createOrUpdateInvoice(true)} disabled={!!actionBusy}>
-                <Send className="h-4 w-4" /> {invoice ? "Save & send" : "Create & send"}
+                <Send className="h-4 w-4" /> {invoice ? "Save and send to client" : "Create and send to client"}
               </Button>
             </div>
           )}
