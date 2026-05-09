@@ -327,6 +327,14 @@ export default function SitterInvoices() {
         onChanged={load}
       />
 
+      <InvoiceDrawer
+        open={!!invoiceDrawerId}
+        onOpenChange={(o) => { if (!o) setInvoiceDrawerId(null); }}
+        invoiceId={invoiceDrawerId}
+        customerName={invoiceDrawerName}
+        onChanged={load}
+      />
+
       <AlertDialog open={!!deleteTarget} onOpenChange={(o) => !o && setDeleteTarget(null)}>
         <AlertDialogContent>
           <AlertDialogHeader>
