@@ -16,6 +16,7 @@ import {
   type InvoiceLineItem,
 } from "@/lib/invoices";
 import { InvoiceLineItemsEditor, type DraftLineItem } from "./InvoiceLineItemsEditor";
+import { RecipientCard } from "./RecipientCard";
 
 const PUBLIC_BASE = typeof window !== "undefined" ? window.location.origin : "https://yodawg.ca";
 
