@@ -21,6 +21,7 @@ import { Input } from "@/components/ui/input";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { Badge } from "@/components/ui/badge";
 import { PaymentDrawer, type PaymentDrawerBooking } from "@/components/payments/PaymentDrawer";
+import { InvoiceDrawer } from "@/components/payments/InvoiceDrawer";
 import { derivedStatus, formatCents, statusBadgeClass, type Invoice } from "@/lib/invoices";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
