@@ -30,6 +30,7 @@ import { InvoiceLineItemsEditor, type DraftLineItem } from "./InvoiceLineItemsEd
 import { MarkPaidDialog } from "./MarkPaidDialog";
 import { RefundDialog } from "./RefundDialog";
 import { SendReminderDialog } from "./SendReminderDialog";
+import { RecipientCard } from "./RecipientCard";
 
 export type PaymentDrawerBooking = {
   id: string;
