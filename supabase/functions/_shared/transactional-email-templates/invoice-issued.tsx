@@ -28,6 +28,8 @@ const formatDate = (s?: string) => {
 
 const InvoiceIssuedEmail = ({
   customerName = 'there',
+  customerEmail,
+  customerPhone,
   invoiceNumber = '',
   dueDate,
   totalCents = 0,
