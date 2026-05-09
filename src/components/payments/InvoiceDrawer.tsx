@@ -16,6 +16,7 @@ import {
   type InvoiceLineItem,
 } from "@/lib/invoices";
 import { InvoiceLineItemsEditor, type DraftLineItem } from "./InvoiceLineItemsEditor";
+import { RecipientCard } from "./RecipientCard";
 
 const PUBLIC_BASE = typeof window !== "undefined" ? window.location.origin : "https://yodawg.ca";
 
@@ -152,6 +153,8 @@ export function InvoiceDrawer({ open, onOpenChange, invoiceId, customerName, onC
                 This invoice is a <strong>draft</strong> — your client hasn't received it yet.
               </Card>
             )}
+
+            <RecipientCard invoiceId={invoice.id} fallbackName={customerName} />
 
             <Card className="p-4">
               <div className="mb-2 text-xs uppercase tracking-wide text-muted-foreground">Line items</div>

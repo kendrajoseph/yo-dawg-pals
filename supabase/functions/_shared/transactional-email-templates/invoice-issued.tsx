@@ -10,6 +10,8 @@ interface LineItem { label: string; quantity?: number; total_cents: number }
 
 interface InvoiceIssuedProps {
   customerName?: string
+  customerEmail?: string
+  customerPhone?: string
   invoiceNumber?: string
   dueDate?: string
   totalCents?: number
@@ -26,6 +28,8 @@ const formatDate = (s?: string) => {
 
 const InvoiceIssuedEmail = ({
   customerName = 'there',
+  customerEmail,
+  customerPhone,
   invoiceNumber = '',
   dueDate,
   totalCents = 0,
@@ -43,6 +47,13 @@ const InvoiceIssuedEmail = ({
         </Section>
 
         <Text style={text}>Hi {customerName}, here's your invoice from {SITE_NAME}.</Text>
+
+        <Section style={billTo}>
+          <Text style={billToLabel}>Billed to</Text>
+          <Text style={billToName}>{customerName}</Text>
+          {customerEmail ? <Text style={billToLine}>{customerEmail}</Text> : null}
+          {customerPhone ? <Text style={billToLine}>{customerPhone}</Text> : null}
+        </Section>
 
         <Section style={card}>
           {lineItems.map((li, i) => (
@@ -85,6 +96,8 @@ export const template = {
   displayName: 'Invoice issued',
   previewData: {
     customerName: 'Sam',
+    customerEmail: 'sam@example.com',
+    customerPhone: '+1 555 123 4567',
     invoiceNumber: 'INV-2026-0001',
     dueDate: '2026-05-01',
     totalCents: 12000,
@@ -115,3 +128,7 @@ const button = { backgroundColor: '#0f1c33', color: '#fdf6e9', padding: '14px 32
 const notesStyle = { fontSize: '13px', color: '#55607a', fontStyle: 'italic' as const, margin: '0 0 16px', padding: '12px', backgroundColor: '#fdfbf5', borderRadius: '8px' }
 const footer = { fontSize: '12px', color: '#7c7766', margin: '12px 0 0', textAlign: 'center' as const }
 const linkStyle = { color: '#0f1c33', textDecoration: 'underline' }
+const billTo = { border: '1px solid #e6e2d6', borderRadius: '12px', padding: '12px 16px', backgroundColor: '#fdfbf5', marginBottom: '18px' }
+const billToLabel = { fontSize: '11px', color: '#7c7766', margin: '0 0 4px', textTransform: 'uppercase' as const, letterSpacing: '0.06em', fontWeight: 700 }
+const billToName = { fontSize: '14px', color: '#0f1c33', margin: '0', fontWeight: 600 }
+const billToLine = { fontSize: '13px', color: '#55607a', margin: '2px 0 0' }

@@ -30,6 +30,7 @@ import { InvoiceLineItemsEditor, type DraftLineItem } from "./InvoiceLineItemsEd
 import { MarkPaidDialog } from "./MarkPaidDialog";
 import { RefundDialog } from "./RefundDialog";
 import { SendReminderDialog } from "./SendReminderDialog";
+import { RecipientCard } from "./RecipientCard";
 
 export type PaymentDrawerBooking = {
   id: string;
@@ -355,6 +356,12 @@ export function PaymentDrawer({ open, onOpenChange, booking, hasSavedCard, cardL
             </div>
           )}
         </Card>
+
+        {invoice && (
+          <div className="mt-4">
+            <RecipientCard invoiceId={invoice.id} fallbackName={booking.customer_name} />
+          </div>
+        )}
 
         {/* Draft warning */}
         {invoice?.status === "draft" && !frozen && (
