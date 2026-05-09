@@ -193,7 +193,7 @@ Deno.serve(async (req) => {
         request_group_id: requestGroupId ?? null,
         sitter_id: sitterId!,
         customer_id: customerId!,
-        status: sendEmail ? "sent" : "draft",
+        status: "draft",
         subtotal_cents: subtotal,
         tax_cents: taxCents,
         tax_rate_percent: taxRate,
@@ -201,7 +201,7 @@ Deno.serve(async (req) => {
         total_cents: total,
         due_date: computedDue,
         notes: notes ?? null,
-        sent_at: sendEmail ? new Date().toISOString() : null,
+        sent_at: null,
       })
       .select("*")
       .single();
@@ -229,15 +229,25 @@ Deno.serve(async (req) => {
       metadata: { invoice_number: invoice.invoice_number, total_cents: total, request_group_id: requestGroupId ?? null },
     });
 
+    let emailSent = false;
+    let emailError: string | null = null;
     if (sendEmail) {
       try {
-        await admin.functions.invoke("send-invoice-email", { body: { invoiceId: invoice.id } });
-      } catch (e) {
+        const res = await admin.functions.invoke("send-invoice-email", { body: { invoiceId: invoice.id } });
+        if (res.error) {
+          emailError = res.error.message ?? "Email send failed";
+        } else if ((res.data as any)?.error) {
+          emailError = (res.data as any).error;
+        } else {
+          emailSent = true;
+        }
+      } catch (e: any) {
+        emailError = e?.message ?? "Email send failed";
         console.error("send-invoice-email failed", e);
       }
     }
 
-    return json({ ok: true, invoice });
+    return json({ ok: true, invoice, emailSent, emailError });
   } catch (e: any) {
     console.error("create-invoice error", e);
     return json({ error: e?.message ?? "Failed" }, 500);
