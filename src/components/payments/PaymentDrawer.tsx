@@ -190,7 +190,7 @@ export function PaymentDrawer({ open, onOpenChange, booking, hasSavedCard, cardL
       return;
     }
     try {
-      await invoke(
+      const result: any = await invoke(
         "create-invoice",
         {
           bookingId: booking.id,
@@ -199,7 +199,11 @@ export function PaymentDrawer({ open, onOpenChange, booking, hasSavedCard, cardL
         },
         sendEmail ? "send" : "save",
       );
-      toast({ title: sendEmail ? "Invoice created & sent" : "Invoice created" });
+      if (sendEmail && result?.emailError) {
+        toast({ title: "Invoice created — email failed", description: result.emailError, variant: "destructive" });
+      } else {
+        toast({ title: sendEmail ? "Invoice created & sent" : "Invoice created" });
+      }
       await loadInvoice();
       onChanged();
     } catch (e: any) {
