@@ -218,11 +218,21 @@ export default function SitterInvoices() {
         </div>
       </div>
 
-      <div className="grid gap-3 sm:grid-cols-3">
+      <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
         <KpiTile label="Outstanding" value={formatCents(stats.outstanding)} tone="warning" icon={<CreditCard className="h-5 w-5" />} />
         <KpiTile label="Overdue" value={formatCents(stats.overdue)} tone={stats.overdue > 0 ? "danger" : "default"} />
+        <KpiTile label="Drafts (unsent)" value={String(stats.drafts)} tone={stats.drafts > 0 ? "warning" : "default"} icon={<Send className="h-5 w-5" />} />
         <KpiTile label="Paid this month" value={formatCents(stats.paidThisMonth)} tone="success" />
       </div>
+
+      {stats.drafts > 0 && tab !== "drafts" && (
+        <button
+          onClick={() => setTab("drafts")}
+          className="mt-3 w-full rounded-md border border-dashed border-amber-300 bg-amber-50 px-3 py-2 text-left text-xs text-amber-900 hover:bg-amber-100 dark:border-amber-800 dark:bg-amber-950/30 dark:text-amber-200"
+        >
+          You have <strong>{stats.drafts}</strong> draft invoice{stats.drafts === 1 ? "" : "s"} that haven't been sent to clients yet. Click to review.
+        </button>
+      )}
 
       <Card className="mt-6 border border-border p-4 shadow-soft">
         <div className="mb-3 flex flex-col items-stretch gap-2 sm:flex-row sm:items-center">
@@ -274,6 +284,16 @@ export default function SitterInvoices() {
                           )}
                         </div>
                       </button>
+                      {r.status === "draft" && (
+                        <Button
+                          size="sm"
+                          className="mr-1"
+                          onClick={(e) => { e.stopPropagation(); sendDraft(r); }}
+                          disabled={sendingId === r.id}
+                        >
+                          <Send className="h-4 w-4" /> {sendingId === r.id ? "Sending…" : "Send"}
+                        </Button>
+                      )}
                       <Button
                         variant="ghost"
                         size="icon"
