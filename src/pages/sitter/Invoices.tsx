@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import { format } from "date-fns";
-import { CreditCard, Search, Trash2 } from "lucide-react";
+import { CreditCard, Search, Send, Trash2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
   AlertDialog,
@@ -55,6 +55,24 @@ export default function SitterInvoices() {
   const [drawerOpen, setDrawerOpen] = useState(false);
   const [deleteTarget, setDeleteTarget] = useState<InvoiceRow | null>(null);
   const [deleting, setDeleting] = useState(false);
+  const [sendingId, setSendingId] = useState<string | null>(null);
+
+  const sendDraft = async (row: InvoiceRow) => {
+    setSendingId(row.id);
+    try {
+      const { data, error } = await supabase.functions.invoke("send-invoice-email", {
+        body: { invoiceId: row.id },
+      });
+      if (error) throw new Error(error.message);
+      if ((data as any)?.error) throw new Error((data as any).error);
+      toast.success(`Sent ${row.invoice_number} to ${row.customer_name}`);
+      await load();
+    } catch (e: any) {
+      toast.error(`Could not send invoice`, { description: e?.message ?? "Try again." });
+    } finally {
+      setSendingId(null);
+    }
+  };
 
   const load = async () => {
     if (!user?.id) return;
