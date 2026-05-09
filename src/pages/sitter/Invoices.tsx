@@ -132,17 +132,19 @@ export default function SitterInvoices() {
     let outstanding = 0;
     let overdue = 0;
     let paidThisMonth = 0;
+    let drafts = 0;
     const now = new Date();
     const monthStart = new Date(now.getFullYear(), now.getMonth(), 1).getTime();
     for (const r of enriched) {
       const owed = (r.total_cents ?? 0) - (r.amount_paid_cents ?? 0);
       if (["sent", "overdue", "partial"].includes(r.derived)) outstanding += owed;
       if (r.derived === "overdue") overdue += owed;
+      if (r.status === "draft") drafts += 1;
       if (r.status === "paid" && r.paid_at && new Date(r.paid_at).getTime() >= monthStart) {
         paidThisMonth += r.total_cents ?? 0;
       }
     }
-    return { outstanding, overdue, paidThisMonth };
+    return { outstanding, overdue, paidThisMonth, drafts };
   }, [enriched]);
 
   const filtered = useMemo(() => {
