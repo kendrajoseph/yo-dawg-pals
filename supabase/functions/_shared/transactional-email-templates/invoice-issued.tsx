@@ -48,6 +48,13 @@ const InvoiceIssuedEmail = ({
 
         <Text style={text}>Hi {customerName}, here's your invoice from {SITE_NAME}.</Text>
 
+        <Section style={billTo}>
+          <Text style={billToLabel}>Billed to</Text>
+          <Text style={billToName}>{customerName}</Text>
+          {customerEmail ? <Text style={billToLine}>{customerEmail}</Text> : null}
+          {customerPhone ? <Text style={billToLine}>{customerPhone}</Text> : null}
+        </Section>
+
         <Section style={card}>
           {lineItems.map((li, i) => (
             <React.Fragment key={i}>
