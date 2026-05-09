@@ -58,6 +58,8 @@ Deno.serve(async (req) => {
         idempotencyKey: `invoice-${invoice.id}-${Date.now()}`,
         templateData: {
           customerName: (profile as any)?.full_name ?? "there",
+          customerEmail: recipientEmail,
+          customerPhone: (profile as any)?.mobile_phone ?? (profile as any)?.phone ?? "",
           invoiceNumber: (invoice as any).invoice_number,
           dueDate: (invoice as any).due_date,
           totalCents: (invoice as any).total_cents,
