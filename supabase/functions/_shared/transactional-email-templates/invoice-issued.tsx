@@ -10,6 +10,8 @@ interface LineItem { label: string; quantity?: number; total_cents: number }
 
 interface InvoiceIssuedProps {
   customerName?: string
+  customerEmail?: string
+  customerPhone?: string
   invoiceNumber?: string
   dueDate?: string
   totalCents?: number
