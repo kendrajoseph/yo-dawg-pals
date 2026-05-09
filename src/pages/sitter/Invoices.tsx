@@ -169,7 +169,11 @@ export default function SitterInvoices() {
   }, [enriched, tab, search]);
 
   const openRow = (row: typeof enriched[number]) => {
-    if (!row.booking) return;
+    if (!row.booking) {
+      setInvoiceDrawerId(row.id);
+      setInvoiceDrawerName(row.customer_name);
+      return;
+    }
     const b = row.booking;
     setDrawerBooking({
       id: b.id,
