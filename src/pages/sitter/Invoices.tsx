@@ -21,6 +21,7 @@ import { Input } from "@/components/ui/input";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { Badge } from "@/components/ui/badge";
 import { PaymentDrawer, type PaymentDrawerBooking } from "@/components/payments/PaymentDrawer";
+import { InvoiceDrawer } from "@/components/payments/InvoiceDrawer";
 import { derivedStatus, formatCents, statusBadgeClass, type Invoice } from "@/lib/invoices";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
@@ -53,6 +54,8 @@ export default function SitterInvoices() {
   const [tab, setTab] = useState<StatusTab>("outstanding");
   const [drawerBooking, setDrawerBooking] = useState<PaymentDrawerBooking | null>(null);
   const [drawerOpen, setDrawerOpen] = useState(false);
+  const [invoiceDrawerId, setInvoiceDrawerId] = useState<string | null>(null);
+  const [invoiceDrawerName, setInvoiceDrawerName] = useState<string | undefined>(undefined);
   const [deleteTarget, setDeleteTarget] = useState<InvoiceRow | null>(null);
   const [deleting, setDeleting] = useState(false);
   const [sendingId, setSendingId] = useState<string | null>(null);
@@ -166,7 +169,11 @@ export default function SitterInvoices() {
   }, [enriched, tab, search]);
 
   const openRow = (row: typeof enriched[number]) => {
-    if (!row.booking) return;
+    if (!row.booking) {
+      setInvoiceDrawerId(row.id);
+      setInvoiceDrawerName(row.customer_name);
+      return;
+    }
     const b = row.booking;
     setDrawerBooking({
       id: b.id,
@@ -317,6 +324,14 @@ export default function SitterInvoices() {
         onOpenChange={setDrawerOpen}
         booking={drawerBooking}
         hasSavedCard={false}
+        onChanged={load}
+      />
+
+      <InvoiceDrawer
+        open={!!invoiceDrawerId}
+        onOpenChange={(o) => { if (!o) setInvoiceDrawerId(null); }}
+        invoiceId={invoiceDrawerId}
+        customerName={invoiceDrawerName}
         onChanged={load}
       />
 
