@@ -96,6 +96,8 @@ export const template = {
   displayName: 'Invoice issued',
   previewData: {
     customerName: 'Sam',
+    customerEmail: 'sam@example.com',
+    customerPhone: '+1 555 123 4567',
     invoiceNumber: 'INV-2026-0001',
     dueDate: '2026-05-01',
     totalCents: 12000,
