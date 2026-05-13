@@ -275,9 +275,16 @@ export default function SitterToday() {
                 const [startEvent, endEvent] = events ?? [];
                 return (
                   <li key={b.id} className="flex flex-wrap items-center gap-3 py-3">
-                    <div className="w-16 text-right">
-                      <div className="font-display text-sm text-primary">{format(startAt, "h:mm a")}</div>
-                      <div className="text-[11px] text-muted-foreground">{format(endAt, "h:mm a")}</div>
+                    <div className="w-20 text-right">
+                      <div className="font-display text-sm text-primary">
+                        {b.spans_today ? "Ongoing" : b.starts_today ? format(startAt, "h:mm a") : `Ends ${format(endAt, "h:mm a")}`}
+                      </div>
+                      {!b.spans_today && b.starts_today && b.ends_today && (
+                        <div className="text-[11px] text-muted-foreground">{format(endAt, "h:mm a")}</div>
+                      )}
+                      {(b.spans_today || (b.starts_today && !b.ends_today) || (!b.starts_today && b.ends_today)) && (
+                        <div className="text-[11px] text-muted-foreground">multi-day</div>
+                      )}
                     </div>
                     <div className="min-w-0 flex-1">
                       <div className="truncate font-medium">{b.services?.name ?? "Service"}</div>
