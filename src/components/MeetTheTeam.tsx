@@ -93,7 +93,7 @@ const MeetTheTeam = () => {
             Local, personal care
           </span>
           <h2 className="mt-4 font-display text-[2.2rem] leading-[0.95] text-primary sm:text-[2.8rem] md:text-[3.5rem]">
-            Meet <span className="font-serif italic text-clay">AJ.</span>
+            Meet <span className="font-serif italic text-clay">Anneke.</span>
           </h2>
           <p className="mt-4 max-w-xl text-base leading-relaxed text-foreground/75 sm:text-[1.05rem]">
             I’m the person behind every Yo Dawg walk, visit, and overnight stay. I keep things small on purpose so I can learn your dog properly, make smart group decisions, and give you care that feels consistent, calm, and personal.
