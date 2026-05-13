@@ -1597,8 +1597,14 @@ export type Database = {
       sitter_settings: {
         Row: {
           auto_invoice_on_confirm: boolean
+          business_address: string | null
+          business_email: string | null
+          business_name: string | null
+          business_phone: string | null
           created_at: string
           default_due_days: number
+          invoice_footer: string | null
+          payment_instructions: string | null
           sitter_id: string
           tax_enabled: boolean
           tax_label: string
@@ -1608,8 +1614,14 @@ export type Database = {
         }
         Insert: {
           auto_invoice_on_confirm?: boolean
+          business_address?: string | null
+          business_email?: string | null
+          business_name?: string | null
+          business_phone?: string | null
           created_at?: string
           default_due_days?: number
+          invoice_footer?: string | null
+          payment_instructions?: string | null
           sitter_id: string
           tax_enabled?: boolean
           tax_label?: string
@@ -1619,8 +1631,14 @@ export type Database = {
         }
         Update: {
           auto_invoice_on_confirm?: boolean
+          business_address?: string | null
+          business_email?: string | null
+          business_name?: string | null
+          business_phone?: string | null
           created_at?: string
           default_due_days?: number
+          invoice_footer?: string | null
+          payment_instructions?: string | null
           sitter_id?: string
           tax_enabled?: boolean
           tax_label?: string
