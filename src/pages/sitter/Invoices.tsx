@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import { format } from "date-fns";
-import { ArrowLeft, CreditCard, Search, Send, Trash2 } from "lucide-react";
+import { ArrowLeft, CreditCard, Plus, Search, Send, Trash2 } from "lucide-react";
 import { Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import {
@@ -23,6 +23,7 @@ import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { Badge } from "@/components/ui/badge";
 import { PaymentDrawer, type PaymentDrawerBooking } from "@/components/payments/PaymentDrawer";
 import { InvoiceDrawer } from "@/components/payments/InvoiceDrawer";
+import { NewInvoiceDialog } from "@/components/payments/NewInvoiceDialog";
 import { derivedStatus, formatCents, statusBadgeClass, type Invoice } from "@/lib/invoices";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
@@ -60,6 +61,7 @@ export default function SitterInvoices() {
   const [deleteTarget, setDeleteTarget] = useState<InvoiceRow | null>(null);
   const [deleting, setDeleting] = useState(false);
   const [sendingId, setSendingId] = useState<string | null>(null);
+  const [newInvoiceOpen, setNewInvoiceOpen] = useState(false);
 
   const sendDraft = async (row: InvoiceRow) => {
     setSendingId(row.id);
@@ -227,6 +229,9 @@ export default function SitterInvoices() {
           <h1 className="font-display text-3xl text-primary">Invoices</h1>
           <p className="text-sm text-muted-foreground">Manage bills, charges, refunds, and reminders.</p>
         </div>
+        <Button onClick={() => setNewInvoiceOpen(true)} size="sm">
+          <Plus className="mr-1.5 h-4 w-4" /> New invoice
+        </Button>
       </div>
 
       <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
@@ -337,6 +342,12 @@ export default function SitterInvoices() {
         invoiceId={invoiceDrawerId}
         customerName={invoiceDrawerName}
         onChanged={load}
+      />
+
+      <NewInvoiceDialog
+        open={newInvoiceOpen}
+        onOpenChange={setNewInvoiceOpen}
+        onCreated={() => { load(); }}
       />
 
       <AlertDialog open={!!deleteTarget} onOpenChange={(o) => !o && setDeleteTarget(null)}>
