@@ -58,6 +58,9 @@ const ResetPassword = () => {
     <main className="min-h-screen bg-background texture-grain">
       <SiteNav />
       <section className="mx-auto flex max-w-md flex-col gap-6 px-5 py-10 sm:px-8 sm:py-16">
+        <Link to="/auth" className="self-start text-sm text-muted-foreground hover:text-foreground inline-flex items-center gap-1">
+          <ArrowLeft className="h-3.5 w-3.5" /> Back to sign in
+        </Link>
         <div className="relative -rotate-1 border-4 border-primary bg-card p-6 shadow-pop sm:p-8">
           <div className="absolute -top-5 -right-3 grid h-16 w-16 place-items-center rounded-full bg-accent text-accent-foreground shadow-pop stamp">
             <PawPrint className="h-7 w-7" />
