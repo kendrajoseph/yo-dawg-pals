@@ -265,51 +265,49 @@ Deno.serve(async (req) => {
 
 function buildAnthropicMessages(rows: any[]): any[] {
   const out: any[] = [];
-  let pendingToolResults: any[] = [];
-  const validToolUseIds = new Set<string>();
 
-  const flushToolResults = () => {
-    if (pendingToolResults.length > 0) {
-      out.push({ role: "user", content: pendingToolResults });
-      pendingToolResults = [];
-    }
-  };
-
-  for (const r of rows) {
+  for (let i = 0; i < rows.length; i++) {
+    const r = rows[i];
     if (r.role === "user") {
-      flushToolResults();
       out.push({ role: "user", content: r.content });
     } else if (r.role === "assistant") {
-      flushToolResults();
       if (r.tool_calls && Array.isArray(r.tool_calls) && r.tool_calls.length > 0) {
+        const toolUses = r.tool_calls.map(normalizeAnthropicToolUse).filter(Boolean);
+        const toolResults: any[] = [];
+        const resultIds = new Set<string>();
+
+        let j = i + 1;
+        while (j < rows.length && rows[j].role === "tool") {
+          const toolRow = rows[j];
+          if (toolRow.tool_call_id && toolUses.some((tc: any) => tc.id === toolRow.tool_call_id)) {
+            resultIds.add(toolRow.tool_call_id);
+            toolResults.push({
+              type: "tool_result",
+              tool_use_id: toolRow.tool_call_id,
+              content: toolRow.content,
+            });
+          }
+          j++;
+        }
+
+        const completeToolUses = toolUses.filter((tc: any) => resultIds.has(tc.id));
         const blocks: any[] = [];
         if (r.content) blocks.push({ type: "text", text: r.content });
-        for (const tc of r.tool_calls) {
-          const toolUse = normalizeAnthropicToolUse(tc);
-          if (toolUse) {
-            validToolUseIds.add(toolUse.id);
-            blocks.push(toolUse);
-          }
-        }
+        blocks.push(...completeToolUses);
         if (blocks.length === 0) {
           continue;
         }
         out.push({ role: "assistant", content: blocks });
+        if (completeToolUses.length > 0) {
+          out.push({ role: "user", content: toolResults.filter((tr) => resultIds.has(tr.tool_use_id)) });
+          i = j - 1;
+        }
       } else {
         out.push({ role: "assistant", content: r.content ?? "" });
       }
-    } else if (r.role === "tool") {
-      if (!r.tool_call_id || !validToolUseIds.has(r.tool_call_id)) {
-        continue;
-      }
-      pendingToolResults.push({
-        type: "tool_result",
-        tool_use_id: r.tool_call_id,
-        content: r.content,
-      });
     }
   }
-  flushToolResults();
+
   return out;
 }
 
