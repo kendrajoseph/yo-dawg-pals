@@ -34,6 +34,19 @@ type TodayBooking = {
   status: string;
   pets: { name: string } | null;
   services: { name: string; slug: string | null } | null;
+  spans_today?: boolean;
+  starts_today?: boolean;
+  ends_today?: boolean;
+};
+
+type TodayPersonalEvent = {
+  id: string;
+  title: string;
+  notes: string | null;
+  start_at: string;
+  end_at: string;
+  all_day: boolean;
+  category: string;
 };
 
 type UpdateKind = "pickup" | "dropoff" | "arrived" | "departed";
