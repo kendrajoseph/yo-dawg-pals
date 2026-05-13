@@ -195,7 +195,7 @@ export default function SitterToday() {
     <SitterShell
       action={
         <>
-          <Button size="sm" variant="outline" asChild><Link to="/sitter/calendar"><CalendarPlus className="mr-1.5 h-4 w-4" />New booking</Link></Button>
+          <Button size="sm" variant="outline" asChild><Link to="/book"><CalendarPlus className="mr-1.5 h-4 w-4" />New booking</Link></Button>
           <Button size="sm" asChild><Link to="/sitter/invoices"><CreditCard className="mr-1.5 h-4 w-4" />New invoice</Link></Button>
         </>
       }
