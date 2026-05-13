@@ -1,6 +1,6 @@
 import { Helmet } from "react-helmet-async";
 import HeroSection from "@/components/HeroSection";
-import MeetSitter from "@/components/MeetSitter";
+import MeetTheTeam from "@/components/MeetTheTeam";
 import ServicesSection from "@/components/ServicesSection";
 import TestimonialsSection from "@/components/TestimonialsSection";
 import SiteFooter from "@/components/SiteFooter";
@@ -41,7 +41,7 @@ const Index = () => {
       </Helmet>
       <SeoJsonLd id="local-business" data={localBusinessSchema} />
       <HeroSection />
-      <MeetSitter />
+      <MeetTheTeam />
       <ServicesSection />
       <TestimonialsSection />
       <SiteFooter />
