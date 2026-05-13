@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState, useCallback } from "react";
 import { Link } from "react-router-dom";
-import { Search, UserRound, Star, Plus, PawPrint } from "lucide-react";
+import { Search, UserRound, Star, Plus, PawPrint, Trash2 } from "lucide-react";
 import { SitterShell } from "@/components/sitter/SitterShell";
 import { EmptyState } from "@/components/sitter/EmptyState";
 import { Card } from "@/components/ui/card";
@@ -12,6 +12,17 @@ import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import NewClientDialog from "@/components/sitter/NewClientDialog";
 import AddPetDialog from "@/components/sitter/AddPetDialog";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
+import { toast } from "@/hooks/use-toast";
 
 type ClientRow = {
   id: string;
@@ -30,6 +41,8 @@ export default function SitterClients() {
   const [search, setSearch] = useState("");
   const [newOpen, setNewOpen] = useState(false);
   const [petTarget, setPetTarget] = useState<{ id: string; name: string | null } | null>(null);
+  const [deleteTarget, setDeleteTarget] = useState<ClientRow | null>(null);
+  const [deleting, setDeleting] = useState(false);
 
   const load = useCallback(async () => {
     if (!user?.id) return;
@@ -121,9 +134,20 @@ export default function SitterClients() {
                     ))}
                   </div>
                 </Link>
-                <Button size="sm" variant="ghost" onClick={() => setPetTarget({ id: c.id, name: c.full_name })} className="mr-2">
+                <Button size="sm" variant="ghost" onClick={() => setPetTarget({ id: c.id, name: c.full_name })} className="mr-1">
                   <PawPrint className="h-4 w-4" /> Pet
                 </Button>
+                {c.is_manual && (
+                  <Button
+                    size="sm"
+                    variant="ghost"
+                    className="text-muted-foreground hover:text-destructive"
+                    disabled={c.bookings_count > 0}
+                    onClick={() => setDeleteTarget(c)}
+                  >
+                    <Trash2 className="h-4 w-4" />
+                  </Button>
+                )}
               </li>
             ))}
           </ul>
@@ -140,6 +164,38 @@ export default function SitterClients() {
           onAdded={() => load()}
         />
       )}
+
+      <AlertDialog open={!!deleteTarget} onOpenChange={(v) => !v && setDeleteTarget(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Remove this client?</AlertDialogTitle>
+            <AlertDialogDescription>
+              "{deleteTarget?.full_name ?? "Unnamed client"}" will be permanently deleted along with their pets and profile data.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={deleting}>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              disabled={deleting}
+              onClick={async () => {
+                if (!deleteTarget) return;
+                setDeleting(true);
+                const { error } = await supabase.from("profiles").delete().eq("id", deleteTarget.id);
+                setDeleting(false);
+                if (error) {
+                  toast({ title: "Couldn't remove client", description: error.message, variant: "destructive" });
+                  return;
+                }
+                toast({ title: "Client removed" });
+                setDeleteTarget(null);
+                load();
+              }}
+            >
+              {deleting ? "Removing…" : "Remove"}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </SitterShell>
   );
 }
