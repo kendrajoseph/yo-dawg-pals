@@ -634,6 +634,42 @@ export type Database = {
         }
         Relationships: []
       }
+      inbound_sms_messages: {
+        Row: {
+          body: string
+          created_at: string
+          from_phone: string
+          id: string
+          is_help: boolean
+          is_stop: boolean
+          matched_profile_id: string | null
+          to_phone: string | null
+          twilio_message_sid: string | null
+        }
+        Insert: {
+          body: string
+          created_at?: string
+          from_phone: string
+          id?: string
+          is_help?: boolean
+          is_stop?: boolean
+          matched_profile_id?: string | null
+          to_phone?: string | null
+          twilio_message_sid?: string | null
+        }
+        Update: {
+          body?: string
+          created_at?: string
+          from_phone?: string
+          id?: string
+          is_help?: boolean
+          is_stop?: boolean
+          matched_profile_id?: string | null
+          to_phone?: string | null
+          twilio_message_sid?: string | null
+        }
+        Relationships: []
+      }
       invoice_line_items: {
         Row: {
           created_at: string
@@ -1217,6 +1253,7 @@ export type Database = {
           postal_code: string | null
           province: string | null
           sms_opt_in: boolean
+          sms_unsubscribed_at: string | null
           stripe_customer_id: string | null
           updated_at: string
         }
@@ -1241,6 +1278,7 @@ export type Database = {
           postal_code?: string | null
           province?: string | null
           sms_opt_in?: boolean
+          sms_unsubscribed_at?: string | null
           stripe_customer_id?: string | null
           updated_at?: string
         }
@@ -1265,6 +1303,7 @@ export type Database = {
           postal_code?: string | null
           province?: string | null
           sms_opt_in?: boolean
+          sms_unsubscribed_at?: string | null
           stripe_customer_id?: string | null
           updated_at?: string
         }
