@@ -7,6 +7,7 @@ import { AuthProvider } from "@/hooks/useAuth";
 import ProtectedRoute from "@/components/ProtectedRoute";
 import ScrollToHash from "@/components/ScrollToHash";
 import { PaymentTestModeBanner } from "@/components/PaymentTestModeBanner";
+import { PostHogProvider } from "@/integrations/posthog/PostHogProvider";
 import Index from "./pages/Index.tsx";
 import NotFound from "./pages/NotFound.tsx";
 import Auth from "./pages/Auth.tsx";
