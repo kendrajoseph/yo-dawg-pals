@@ -1,5 +1,6 @@
 import { ReactNode } from "react";
-import { NavLink } from "react-router-dom";
+import { Link, NavLink } from "react-router-dom";
+import { ArrowLeft } from "lucide-react";
 import { SitterShell } from "@/components/sitter/SitterShell";
 import { cn } from "@/lib/utils";
 
