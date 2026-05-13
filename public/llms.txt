@@ -1,0 +1,13 @@
+# Yo Dawg
+
+> Hamilton, Ontario dog care since 2015 — premium solo walks, carefully matched group walks, drop-in pet sitting, and home-style boarding.
+
+Yo Dawg provides personal, thoughtfully timed dog care for Hamilton families. Services are insured, pet first-aid certified, and shaped around each dog's pace, temperament, and routine.
+
+## Pages
+
+- [Home](/): Overview of services, sitter introduction, and testimonials.
+- [Book care](/book): Submit a booking request for walks, sitting, or boarding.
+- [FAQ](/faq): Common questions about bookings, group fit, emergencies, and owner responsibilities.
+- [Terms & Conditions](/terms): Service expectations, risk allocation, and liability terms.
+- [Sign in](/auth): Account access for clients and sitters.
