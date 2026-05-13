@@ -43,6 +43,7 @@ import SettingsReminders from "./pages/sitter/settings/Reminders.tsx";
 import SettingsTemplates from "./pages/sitter/settings/Templates.tsx";
 import SettingsBranding from "./pages/sitter/settings/Branding.tsx";
 import SettingsTelegram from "./pages/sitter/settings/Telegram.tsx";
+import Unsubscribe from "./pages/Unsubscribe.tsx";
 import FAQ from "./pages/FAQ.tsx";
 import Terms from "./pages/Terms.tsx";
 import Privacy from "./pages/Privacy.tsx";
