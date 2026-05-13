@@ -1,6 +1,7 @@
 import { ReactNode, useEffect } from "react";
 import { NavLink, useLocation } from "react-router-dom";
 import { Link } from "react-router-dom";
+import FloatingAssistant from "./FloatingAssistant";
 import {
   ArrowLeftRight,
   Briefcase,
@@ -245,6 +246,7 @@ function ShellInner({ children, action }: { children: ReactNode; action?: ReactN
         </main>
       </div>
       <MobileBottomNav />
+      <FloatingAssistant />
     </div>
   );
 }
