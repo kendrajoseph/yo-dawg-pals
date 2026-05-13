@@ -88,11 +88,11 @@ const HeroSection = () => {
              style={{ background: "radial-gradient(closest-side, hsl(var(--secondary) / 0.3), transparent 70%)" }}
           />
           <img
-            src={dog3}
-            alt="Illustration of a happy dog"
-            width={512}
-            height={508}
-            className="relative h-auto w-full max-w-[360px] rotate-[-4deg] drop-shadow-[0_20px_40px_hsl(220_50%_4%/0.5)] sm:max-w-[420px]"
+            src="/og-image.jpg"
+            alt="Yo Dawg — Hamilton Dog Walking, Sitting & Boarding"
+            width={1200}
+            height={630}
+            className="relative h-auto w-full max-w-[360px] rounded-lg shadow-[0_20px_40px_hsl(220_50%_4%/0.5)] sm:max-w-[420px]"
             loading="eager"
             fetchPriority="high"
           />
