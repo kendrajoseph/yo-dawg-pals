@@ -120,7 +120,7 @@ const SiteNav = ({ variant = "light" }: SiteNavProps) => {
                 : "bg-primary text-primary-foreground hover:bg-primary/90",
             )}
           >
-            <Link to="/auth">Sign in</Link>
+            <Link to="/auth" onClick={() => track("sign_in_clicked")}>Sign in</Link>
           </Button>
         )}
       </div>
