@@ -14,6 +14,134 @@ export type Database = {
   }
   public: {
     Tables: {
+      assistant_conversations: {
+        Row: {
+          created_at: string
+          id: string
+          last_message_at: string
+          sitter_id: string
+          title: string | null
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          last_message_at?: string
+          sitter_id: string
+          title?: string | null
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          last_message_at?: string
+          sitter_id?: string
+          title?: string | null
+        }
+        Relationships: []
+      }
+      assistant_messages: {
+        Row: {
+          content: string | null
+          conversation_id: string
+          created_at: string
+          id: string
+          metadata: Json | null
+          role: string
+          tool_call_id: string | null
+          tool_calls: Json | null
+          tool_name: string | null
+        }
+        Insert: {
+          content?: string | null
+          conversation_id: string
+          created_at?: string
+          id?: string
+          metadata?: Json | null
+          role: string
+          tool_call_id?: string | null
+          tool_calls?: Json | null
+          tool_name?: string | null
+        }
+        Update: {
+          content?: string | null
+          conversation_id?: string
+          created_at?: string
+          id?: string
+          metadata?: Json | null
+          role?: string
+          tool_call_id?: string | null
+          tool_calls?: Json | null
+          tool_name?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "assistant_messages_conversation_id_fkey"
+            columns: ["conversation_id"]
+            isOneToOne: false
+            referencedRelation: "assistant_conversations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      assistant_pending_actions: {
+        Row: {
+          action_payload: Json
+          action_summary: string
+          action_type: string
+          confirmed_at: string | null
+          conversation_id: string
+          created_at: string
+          expires_at: string
+          id: string
+          message_id: string | null
+          result: Json | null
+          sitter_id: string
+          status: string
+        }
+        Insert: {
+          action_payload: Json
+          action_summary: string
+          action_type: string
+          confirmed_at?: string | null
+          conversation_id: string
+          created_at?: string
+          expires_at?: string
+          id?: string
+          message_id?: string | null
+          result?: Json | null
+          sitter_id: string
+          status?: string
+        }
+        Update: {
+          action_payload?: Json
+          action_summary?: string
+          action_type?: string
+          confirmed_at?: string | null
+          conversation_id?: string
+          created_at?: string
+          expires_at?: string
+          id?: string
+          message_id?: string | null
+          result?: Json | null
+          sitter_id?: string
+          status?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "assistant_pending_actions_conversation_id_fkey"
+            columns: ["conversation_id"]
+            isOneToOne: false
+            referencedRelation: "assistant_conversations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "assistant_pending_actions_message_id_fkey"
+            columns: ["message_id"]
+            isOneToOne: false
+            referencedRelation: "assistant_messages"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       availability: {
         Row: {
           created_at: string
