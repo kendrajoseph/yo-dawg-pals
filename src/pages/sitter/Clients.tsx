@@ -41,6 +41,8 @@ export default function SitterClients() {
   const [search, setSearch] = useState("");
   const [newOpen, setNewOpen] = useState(false);
   const [petTarget, setPetTarget] = useState<{ id: string; name: string | null } | null>(null);
+  const [deleteTarget, setDeleteTarget] = useState<ClientRow | null>(null);
+  const [deleting, setDeleting] = useState(false);
 
   const load = useCallback(async () => {
     if (!user?.id) return;
