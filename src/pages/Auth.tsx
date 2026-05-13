@@ -11,6 +11,7 @@ import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { toast } from "@/hooks/use-toast";
 import SiteNav from "@/components/SiteNav";
 import { PawPrint } from "lucide-react";
+import { track } from "@/integrations/posthog/PostHogProvider";
 
 const signUpSchema = z.object({
   fullName: z.string().trim().min(1, "Name required").max(100),
