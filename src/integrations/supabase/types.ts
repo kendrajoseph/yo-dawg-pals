@@ -190,6 +190,9 @@ export type Database = {
           kind: Database["public"]["Enums"]["booking_update_kind"]
           message: string | null
           sent_via_sms: boolean
+          source: string | null
+          undone_at: string | null
+          undone_by: string | null
           updated_at: string
         }
         Insert: {
@@ -200,6 +203,9 @@ export type Database = {
           kind: Database["public"]["Enums"]["booking_update_kind"]
           message?: string | null
           sent_via_sms?: boolean
+          source?: string | null
+          undone_at?: string | null
+          undone_by?: string | null
           updated_at?: string
         }
         Update: {
@@ -210,6 +216,9 @@ export type Database = {
           kind?: Database["public"]["Enums"]["booking_update_kind"]
           message?: string | null
           sent_via_sms?: boolean
+          source?: string | null
+          undone_at?: string | null
+          undone_by?: string | null
           updated_at?: string
         }
         Relationships: []
@@ -1831,6 +1840,48 @@ export type Database = {
         }
         Relationships: []
       }
+      sitter_telegram_links: {
+        Row: {
+          digest_enabled: boolean
+          digest_hour_local: number
+          digest_timezone: string
+          last_digest_sent_for: string | null
+          link_token: string | null
+          link_token_expires_at: string | null
+          linked_at: string
+          sitter_id: string
+          telegram_chat_id: number
+          telegram_first_name: string | null
+          telegram_username: string | null
+        }
+        Insert: {
+          digest_enabled?: boolean
+          digest_hour_local?: number
+          digest_timezone?: string
+          last_digest_sent_for?: string | null
+          link_token?: string | null
+          link_token_expires_at?: string | null
+          linked_at?: string
+          sitter_id: string
+          telegram_chat_id: number
+          telegram_first_name?: string | null
+          telegram_username?: string | null
+        }
+        Update: {
+          digest_enabled?: boolean
+          digest_hour_local?: number
+          digest_timezone?: string
+          last_digest_sent_for?: string | null
+          link_token?: string | null
+          link_token_expires_at?: string | null
+          linked_at?: string
+          sitter_id?: string
+          telegram_chat_id?: number
+          telegram_first_name?: string | null
+          telegram_username?: string | null
+        }
+        Relationships: []
+      }
       suppressed_emails: {
         Row: {
           created_at: string
@@ -1854,6 +1905,50 @@ export type Database = {
           reason?: string
         }
         Relationships: []
+      }
+      telegram_messages_log: {
+        Row: {
+          body: string | null
+          created_at: string
+          direction: string
+          id: string
+          message_type: string
+          raw_payload: Json | null
+          related_booking_id: string | null
+          sitter_id: string | null
+          telegram_chat_id: number
+        }
+        Insert: {
+          body?: string | null
+          created_at?: string
+          direction: string
+          id?: string
+          message_type: string
+          raw_payload?: Json | null
+          related_booking_id?: string | null
+          sitter_id?: string | null
+          telegram_chat_id: number
+        }
+        Update: {
+          body?: string | null
+          created_at?: string
+          direction?: string
+          id?: string
+          message_type?: string
+          raw_payload?: Json | null
+          related_booking_id?: string | null
+          sitter_id?: string | null
+          telegram_chat_id?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "telegram_messages_log_related_booking_id_fkey"
+            columns: ["related_booking_id"]
+            isOneToOne: false
+            referencedRelation: "bookings"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       user_roles: {
         Row: {
@@ -1949,6 +2044,7 @@ export type Database = {
         Args: { _booking_id: string; _request_group_id: string }
         Returns: number
       }
+      create_telegram_link_token: { Args: never; Returns: string }
       delete_email: {
         Args: { message_id: number; queue_name: string }
         Returns: boolean
@@ -1991,6 +2087,15 @@ export type Database = {
           msg_id: number
           read_ct: number
         }[]
+      }
+      redeem_telegram_link_token: {
+        Args: {
+          p_chat_id: number
+          p_first_name: string
+          p_token: string
+          p_username: string
+        }
+        Returns: string
       }
     }
     Enums: {
