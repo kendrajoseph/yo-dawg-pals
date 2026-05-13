@@ -251,7 +251,7 @@ export default function SitterToday() {
             <EmptyState
               icon={<Clock3 className="h-8 w-8" />}
               title="Nothing scheduled today"
-              description="Enjoy the quiet, or block off the day in your availability settings."
+              description={<>Enjoy the quiet, or block off the day in your <Link to="/sitter/settings/availability" className="underline hover:text-foreground">availability settings</Link>.</>}
             />
           ) : (
             <ul className="divide-y divide-border">
