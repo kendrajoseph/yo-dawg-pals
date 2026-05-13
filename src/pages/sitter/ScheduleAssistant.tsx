@@ -125,6 +125,7 @@ export default function SitterScheduleAssistant() {
     setBusy(true);
     setPlan(null);
     setMessages((m) => [...m, { id: `u-${Date.now()}`, role: "user", content: trimmed }]);
+    track("schedule_assistant_used", { command_length: trimmed.length });
     try {
       const { data, error } = await supabase.functions.invoke("assistant-schedule-plan", {
         body: { command: trimmed, context },
