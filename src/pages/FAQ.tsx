@@ -45,8 +45,27 @@ const faqItems = [
 ];
 
 const FAQ = () => {
+  const faqSchema = {
+    "@context": "https://schema.org",
+    "@type": "FAQPage",
+    mainEntity: faqItems.map((i) => ({
+      "@type": "Question",
+      name: i.question,
+      acceptedAnswer: { "@type": "Answer", text: i.answer },
+    })),
+  };
   return (
     <main className="min-h-screen bg-background text-foreground">
+      <Helmet>
+        <title>FAQ — Yo Dawg Hamilton Dog Care</title>
+        <meta name="description" content="Answers about bookings, group walk fit, owner responsibilities, and emergency care for Yo Dawg's Hamilton dog walking, sitting, and boarding services." />
+        <link rel="canonical" href="https://yodawg.ca/faq" />
+        <meta property="og:title" content="FAQ — Yo Dawg Hamilton Dog Care" />
+        <meta property="og:description" content="Answers about bookings, group walk fit, owner responsibilities, and emergency care for Yo Dawg." />
+        <meta property="og:url" content="https://yodawg.ca/faq" />
+        <meta property="og:type" content="website" />
+      </Helmet>
+      <SeoJsonLd id="faq-page" data={faqSchema} />
       <section className="bg-primary text-primary-foreground">
         <SiteNav variant="dark" />
         <div className="mx-auto max-w-5xl px-5 pb-16 pt-6 sm:px-8 sm:pb-20 sm:pt-10">
