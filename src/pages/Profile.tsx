@@ -160,17 +160,13 @@ const Profile = () => {
     setErrors({});
     setSaving(true);
 
-    // Auto-enable text updates whenever a mobile is on file. Stays subtle — no
-    // checkbox required for it to work.
-    const smsOn = result.data.sms_opt_in || Boolean(result.data.mobile_phone?.trim());
-
     const { error } = await db
       .from("profiles")
       .update({
         full_name: result.data.full_name,
         phone: result.data.phone || null,
         mobile_phone: result.data.mobile_phone,
-        sms_opt_in: smsOn,
+        sms_opt_in: result.data.sms_opt_in,
         bio: result.data.bio || null,
       })
       .eq("id", user.id);
@@ -340,7 +336,24 @@ const Profile = () => {
                   </div>
                 </div>
 
-                {/* SMS opt-in is implicit when a mobile number is on file. */}
+                <div className="flex items-start gap-3 rounded-md border-2 border-primary bg-card p-4">
+                  <Checkbox
+                    id="sms_opt_in"
+                    checked={form.sms_opt_in}
+                    onCheckedChange={(checked) =>
+                      setForm({ ...form, sms_opt_in: checked === true })
+                    }
+                    className="mt-0.5"
+                  />
+                  <Label htmlFor="sms_opt_in" className="cursor-pointer text-sm font-normal leading-relaxed">
+                    <span className="font-display uppercase">Text updates</span>
+                    <span className="mt-1 block text-muted-foreground">
+                      Send me text messages for pickup, drop-off, and care notes during my bookings.
+                      Standard message and data rates apply. Reply STOP at any time to opt out.
+                      Reply HELP for support.
+                    </span>
+                  </Label>
+                </div>
 
                 <div className="space-y-2">
                   <Label htmlFor="bio" className="font-display uppercase">

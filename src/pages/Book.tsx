@@ -214,6 +214,7 @@ const Book = () => {
   const [bundleItems, setBundleItems] = useState<BundleItem[]>([]);
   const [activeItemId, setActiveItemId] = useState<string | null>(null);
   const [bundleNotes, setBundleNotes] = useState("");
+  const [smsOptIn, setSmsOptIn] = useState(false);
   const [acceptedTerms, setAcceptedTerms] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const submittingRef = useRef(false);
@@ -890,6 +891,11 @@ const Book = () => {
       return;
     }
 
+    // Persist SMS opt-in preference to the profile if checked.
+    if (smsOptIn) {
+      await db.from("profiles").update({ sms_opt_in: true }).eq("id", user.id);
+    }
+
     submittingRef.current = true;
     setSubmitting(true);
 
@@ -1480,6 +1486,23 @@ const Book = () => {
                     I agree to the <Link to="/terms" target="_blank" rel="noreferrer" className="font-medium text-primary underline underline-offset-4">Terms &amp; Conditions</Link>. All prices include tax. Submitting a request doesn't charge my card — AJ will review and be in touch.
                   </span>
                 </label>
+              </div>
+
+              <div className="mt-4 flex items-start gap-3 rounded-md border-2 border-primary bg-card p-4">
+                <Checkbox
+                  id="sms_opt_in"
+                  checked={smsOptIn}
+                  onCheckedChange={(checked) => setSmsOptIn(checked === true)}
+                  className="mt-0.5"
+                />
+                <Label htmlFor="sms_opt_in" className="cursor-pointer text-sm font-normal leading-relaxed">
+                  <span className="font-display uppercase">Text updates</span>
+                  <span className="mt-1 block text-muted-foreground">
+                    Send me text messages for pickup, drop-off, and care notes during my bookings.
+                    Standard message and data rates apply. Reply STOP at any time to opt out.
+                    Reply HELP for support.
+                  </span>
+                </Label>
               </div>
             </div>
           )}
