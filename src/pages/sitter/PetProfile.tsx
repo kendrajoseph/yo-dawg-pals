@@ -136,9 +136,14 @@ export default function SitterPetProfile() {
 
   return (
     <SitterShell action={
-      <Button size="sm" variant="outline" onClick={() => setComposeOpen(true)}>
-        <MessageSquare className="mr-1.5 h-4 w-4" />Message owner
-      </Button>
+      <div className="flex items-center gap-2">
+        <Button size="sm" variant="outline" onClick={() => setComposeOpen(true)}>
+          <MessageSquare className="mr-1.5 h-4 w-4" />Message owner
+        </Button>
+        <Button size="sm" variant="outline" className="text-destructive hover:text-destructive" onClick={() => setConfirmDelete(true)}>
+          <Trash2 className="mr-1.5 h-4 w-4" />Delete pet
+        </Button>
+      </div>
     }>
       <Link to="/sitter/pets" className="mb-4 inline-flex items-center gap-1 text-sm text-muted-foreground hover:text-foreground">
         <ArrowLeft className="h-3.5 w-3.5" />Back to pets
