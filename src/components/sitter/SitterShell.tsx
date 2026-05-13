@@ -55,7 +55,7 @@ const PRIMARY: NavItem[] = [
 ];
 
 const SECONDARY: NavItem[] = [
-  { to: "/sitter/assistant", label: "Schedule assistant", icon: Sparkles },
+  { to: "/sitter/assistant", label: "Assistant", icon: Sparkles },
   { to: "/sitter/reviews", label: "Reviews", icon: Star },
   { to: "/sitter/reports", label: "Reports", icon: PieChart },
   { to: "/sitter/settings/services", label: "Services", icon: Briefcase },
@@ -200,7 +200,7 @@ const titleFor = (path: string): string => {
   if (path.startsWith("/sitter/pets")) return "Pets";
   if (path.startsWith("/sitter/invoices")) return "Invoices";
   if (path.startsWith("/sitter/messages")) return "Messages";
-  if (path.startsWith("/sitter/assistant")) return "Schedule assistant";
+  if (path.startsWith("/sitter/assistant")) return "Assistant";
   if (path.startsWith("/sitter/reviews")) return "Reviews";
   if (path.startsWith("/sitter/reports")) return "Reports";
   if (path.startsWith("/sitter/settings/services")) return "Services & pricing";

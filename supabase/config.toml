@@ -37,3 +37,6 @@ verify_jwt = false
 
 [functions.handle-twilio-inbound]
 verify_jwt = false
+
+[functions.assistant-chat]
+verify_jwt = false
