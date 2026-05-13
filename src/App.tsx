@@ -87,9 +87,9 @@ const App = () => (
             <Route path="/sitter/settings" element={<ProtectedRoute requireSitter><SettingsHome /></ProtectedRoute>} />
             <Route path="/sitter/settings/services" element={<ProtectedRoute requireSitter><SettingsServices /></ProtectedRoute>} />
             <Route path="/sitter/settings/availability" element={<ProtectedRoute requireSitter><SettingsAvailability /></ProtectedRoute>} />
-            <Route path="/sitter/settings/reminders" element={<ProtectedRoute requireSitter><SettingsRedirect title="Reminders" description="Auto-send invoice reminders on a cadence." hash="#payments" /></ProtectedRoute>} />
-            <Route path="/sitter/settings/templates" element={<ProtectedRoute requireSitter><SettingsRedirect title="Templates" description="Email and SMS message templates." hash="#playbook" /></ProtectedRoute>} />
-            <Route path="/sitter/settings/branding" element={<ProtectedRoute requireSitter><SettingsRedirect title="Branding" description="Logo and colours on invoices and emails." hash="#playbook" /></ProtectedRoute>} />
+            <Route path="/sitter/settings/reminders" element={<ProtectedRoute requireSitter><SettingsReminders /></ProtectedRoute>} />
+            <Route path="/sitter/settings/templates" element={<ProtectedRoute requireSitter><SettingsTemplates /></ProtectedRoute>} />
+            <Route path="/sitter/settings/branding" element={<ProtectedRoute requireSitter><SettingsBranding /></ProtectedRoute>} />
             
             <Route path="/unsubscribe" element={<Unsubscribe />} />
             <Route path="/faq" element={<FAQ />} />
