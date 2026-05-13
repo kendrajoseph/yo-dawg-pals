@@ -214,6 +214,7 @@ const Book = () => {
   const [bundleItems, setBundleItems] = useState<BundleItem[]>([]);
   const [activeItemId, setActiveItemId] = useState<string | null>(null);
   const [bundleNotes, setBundleNotes] = useState("");
+  const [smsOptIn, setSmsOptIn] = useState(false);
   const [acceptedTerms, setAcceptedTerms] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const submittingRef = useRef(false);
