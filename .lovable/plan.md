@@ -1,29 +1,37 @@
-## Problem
+## Plan: Twilio inbound SMS handler
 
-The logo upload to the `avatars` storage bucket fails with `new row violates row-level security policy`.
+### 1. Database migration
+Create `inbound_sms_messages` table:
+- `id` uuid PK
+- `twilio_message_sid` text
+- `from_phone` text not null
+- `to_phone` text
+- `body` text not null
+- `matched_profile_id` uuid (nullable)
+- `is_stop` boolean default false
+- `is_help` boolean default false
+- `created_at` timestamptz default now()
 
-The bucket's INSERT policy requires the **first folder of the object path to equal the user's id**:
+RLS: enable, allow admins to SELECT, service_role for INSERT.
 
+Add column to `profiles`:
+- `sms_unsubscribed_at` timestamptz nullable
+
+### 2. Edge function `handle-twilio-inbound`
+- Public webhook (no JWT)
+- Parses `application/x-www-form-urlencoded` Twilio payload (`From`, `To`, `Body`, `MessageSid`)
+- Returns TwiML XML responses (`<Response>...</Response>`)
+- Phone normalization helper (digits-only comparison)
+- Implements user-supplied STOP/HELP/START logic verbatim
+- Helpers `emptyResponse()` returns `<Response/>`, `replyResponse(msg)` returns `<Response><Message>msg</Message></Response>`
+
+### 3. config.toml
+Add:
 ```
-(auth.uid())::text = (storage.foldername(name))[1]
+[functions.handle-twilio-inbound]
+verify_jwt = false
 ```
 
-But `src/pages/sitter/settings/Branding.tsx` uploads to:
-
-```
-branding/{user.id}/logo-{timestamp}.{ext}
-```
-
-So the first folder is `branding`, not the user id — RLS rejects it.
-
-## Fix
-
-Change the upload path in `Branding.tsx` so the user id comes first:
-
-```
-{user.id}/branding/logo-{timestamp}.{ext}
-```
-
-That's a one-line change in `onUploadLogo` and matches the existing avatar/pets RLS pattern. No database migration needed.
-
-Existing logos uploaded under the old path (if any succeeded) keep working because they're already public — only new uploads change location.
+### 4. Post-deploy
+Tell user to set the Twilio phone number's "A message comes in" webhook to:
+`https://bffvaeolyqyiawpeyeex.supabase.co/functions/v1/handle-twilio-inbound` (POST)
