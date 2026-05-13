@@ -134,4 +134,4 @@ const MeetTheTeam = () => {
   );
 };
 
-export default MeetSitter;
+export default MeetTheTeam;
