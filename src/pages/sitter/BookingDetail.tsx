@@ -19,6 +19,7 @@ import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
 import { PaymentDrawer, type PaymentDrawerBooking } from "@/components/payments/PaymentDrawer";
 import AddPetToBookingDialog from "@/components/sitter/AddPetToBookingDialog";
+import AddServiceToBookingDialog from "@/components/sitter/AddServiceToBookingDialog";
 import { formatCents } from "@/lib/invoices";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
@@ -72,6 +73,7 @@ export default function SitterBookingDetail() {
   const [loading, setLoading] = useState(true);
   const [drawerOpen, setDrawerOpen] = useState(false);
   const [addPetOpen, setAddPetOpen] = useState(false);
+  const [addServiceOpen, setAddServiceOpen] = useState(false);
 
   const load = async () => {
     if (!id || !user?.id) return;
@@ -230,6 +232,9 @@ export default function SitterBookingDetail() {
             <Button variant="outline" onClick={() => setAddPetOpen(true)}>
               <Plus className="mr-1.5 h-4 w-4" />Add pet to booking
             </Button>
+            <Button variant="outline" onClick={() => setAddServiceOpen(true)}>
+              <Plus className="mr-1.5 h-4 w-4" />Add extra service
+            </Button>
             <Button variant="outline" onClick={() => navigate(`/sitter/clients/${booking.customer_id}`)}>
               Open client
             </Button>
@@ -243,6 +248,14 @@ export default function SitterBookingDetail() {
       <AddPetToBookingDialog
         open={addPetOpen}
         onOpenChange={setAddPetOpen}
+        bookingId={booking.id}
+        customerId={booking.customer_id}
+        onAdded={load}
+      />
+
+      <AddServiceToBookingDialog
+        open={addServiceOpen}
+        onOpenChange={setAddServiceOpen}
         bookingId={booking.id}
         customerId={booking.customer_id}
         onAdded={load}
