@@ -320,6 +320,23 @@ export default function SitterPetProfile() {
         onOpenChange={setComposeOpen}
         initialCustomerId={owner.id}
       />
+
+      <AlertDialog open={confirmDelete} onOpenChange={(v) => !v && setConfirmDelete(false)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Delete {pet.name}?</AlertDialogTitle>
+            <AlertDialogDescription>
+              This permanently removes {pet.name}'s profile and care details. Past bookings will be kept on record but will no longer be linked to this pet. This can't be undone.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={deleting}>Cancel</AlertDialogCancel>
+            <AlertDialogAction disabled={deleting} onClick={handleDelete}>
+              {deleting ? "Deleting…" : "Delete pet"}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </SitterShell>
   );
 }
