@@ -11,20 +11,41 @@ const localBusinessSchema = {
   "@type": "LocalBusiness",
   name: "Yo Dawg",
   description:
-    "Trusted local dog walking, pet sitting, boarding and basic training. Yo Dawg — for every kind of good boy (and girl).",
+    "Trusted local dog walking, pet sitting, boarding and basic training. Yo Dawg, for every kind of good boy (and girl).",
   url: "https://yodawg.ca/",
-  image: "https://yodawg.ca/favicon.png",
-  telephone: "",
-  priceRange: "$$",
-  areaServed: { "@type": "City", name: "Toronto" },
-  address: { "@type": "PostalAddress", addressCountry: "CA", addressRegion: "ON" },
-  sameAs: [],
+  image: "https://yodawg.ca/og-image.jpg",
+  telephone: "+1-647-278-4483",
+  priceRange: "$",
+  areaServed: [
+    { "@type": "City", name: "Hamilton" },
+    { "@type": "City", name: "Burlington" },
+    { "@type": "City", name: "Dundas" },
+    { "@type": "City", name: "Ancaster" },
+    { "@type": "City", name: "Stoney Creek" },
+    { "@type": "City", name: "Waterdown" },
+  ],
+  address: {
+    "@type": "PostalAddress",
+    addressLocality: "Hamilton",
+    addressRegion: "ON",
+    addressCountry: "CA",
+  },
+  sameAs: [
+    "https://www.instagram.com/yodawg.ca/",
+  ],
   makesOffer: [
     { "@type": "Offer", itemOffered: { "@type": "Service", name: "Dog walking" } },
     { "@type": "Offer", itemOffered: { "@type": "Service", name: "Pet sitting" } },
     { "@type": "Offer", itemOffered: { "@type": "Service", name: "Boarding" } },
     { "@type": "Offer", itemOffered: { "@type": "Service", name: "Basic training" } },
   ],
+  aggregateRating: {
+    "@type": "AggregateRating",
+    ratingValue: "5.0",
+    reviewCount: "3",
+    bestRating: "5",
+    worstRating: "1",
+  },
 };
 
 const Index = () => {
