@@ -16,6 +16,9 @@ const NAV = [
 export function SettingsLayout({ title, description, children }: { title: string; description?: string; children: ReactNode }) {
   return (
     <SitterShell>
+      <Link to="/sitter" className="mb-3 inline-flex items-center gap-1 text-sm text-muted-foreground hover:text-foreground">
+        <ArrowLeft className="h-3.5 w-3.5" /> Back to dashboard
+      </Link>
       <div className="mb-6">
         <h1 className="font-display text-3xl text-primary">Settings</h1>
         <p className="text-sm text-muted-foreground">Configure your services, availability, and communications.</p>
