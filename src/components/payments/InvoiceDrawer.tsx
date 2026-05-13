@@ -361,6 +361,8 @@ export function InvoiceDrawer({ open, onOpenChange, invoiceId, customerName, onC
               </Card>
             )}
 
+            {!isDraft && !isVoid && <InvoiceReminderPanel invoiceId={invoice.id} />}
+
             <Separator />
 
             <div className="flex flex-wrap gap-2">
