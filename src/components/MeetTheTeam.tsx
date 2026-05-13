@@ -21,7 +21,7 @@ const carouselPhotos = [
   { src: anneke5, alt: "Anneke and a happy dog at a glowing beach sunset" },
 ];
 
-const MeetSitter = () => {
+const MeetTheTeam = () => {
   const [index, setIndex] = useState(0);
 
   useEffect(() => {
