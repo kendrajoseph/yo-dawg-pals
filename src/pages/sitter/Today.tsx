@@ -105,6 +105,7 @@ export default function SitterToday() {
       return;
     }
     toast({ title: kindToast[kind], description: data?.message ?? "Update sent." });
+    track("sitter_update_sent", { kind, service_slug: booking.services?.slug });
     setUpdateTarget(null);
     setUpdateNote("");
   };
