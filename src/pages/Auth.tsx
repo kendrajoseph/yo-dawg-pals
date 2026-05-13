@@ -61,6 +61,7 @@ const Auth = () => {
       return;
     }
     toast({ title: "Welcome to the pack!", description: "You're signed in." });
+    track("user_signed_up", { source: from });
     navigate(from, { replace: true });
   };
 
