@@ -3,6 +3,7 @@ import { Link, useNavigate } from "react-router-dom";
 import { format } from "date-fns";
 import { ArrowLeft, Inbox as InboxIcon, AlertTriangle, CreditCard, PawPrint, Bell } from "lucide-react";
 import { SitterShell } from "@/components/sitter/SitterShell";
+import { SitterPageHeader } from "@/components/sitter/SitterPageHeader";
 import { EmptyState } from "@/components/sitter/EmptyState";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";

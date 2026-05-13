@@ -3,6 +3,7 @@ import { Link } from "react-router-dom";
 import { addDays, addMonths, endOfMonth, endOfWeek, format, isSameDay, isSameMonth, startOfMonth, startOfWeek, subMonths } from "date-fns";
 import { ArrowLeft, ChevronLeft, ChevronRight, CalendarDays, Plus } from "lucide-react";
 import { SitterShell } from "@/components/sitter/SitterShell";
+import { SitterPageHeader } from "@/components/sitter/SitterPageHeader";
 import { EmptyState } from "@/components/sitter/EmptyState";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
