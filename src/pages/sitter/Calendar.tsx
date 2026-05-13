@@ -176,7 +176,7 @@ export default function SitterCalendar() {
       <SitterPageHeader
         back={{ to: "/sitter", label: "Back to dashboard" }}
         title="Calendar"
-        description="Confirmed bookings (solid), pending requests (dashed), personal events (lavender). Multi-day stays appear on every day."
+        description={<>Confirmed bookings (solid), pending requests (dashed), personal events (lavender). Multi-day stays appear on every day. Manage availability in <Link to="/sitter/settings/availability" className="underline hover:text-foreground">Settings</Link>.</>}
       />
       <div className="mb-6 flex justify-end">
         <Tabs value={view} onValueChange={(v) => setView(v as View)}>
