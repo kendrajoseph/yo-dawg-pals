@@ -3,7 +3,9 @@ import { useLocation } from "react-router-dom";
 import posthog from "posthog-js";
 import { useAuth } from "@/hooks/useAuth";
 
-const POSTHOG_KEY = import.meta.env.VITE_POSTHOG_KEY;
+const POSTHOG_KEY =
+  import.meta.env.VITE_POSTHOG_KEY ||
+  "phc_uew7bjdMcHVcgzV8crJdLN3wsoY2Mgq6GFcxntqiTXZG";
 const POSTHOG_HOST = import.meta.env.VITE_POSTHOG_HOST || "https://us.i.posthog.com";
 
 // Initialize PostHog once at module load.
