@@ -135,12 +135,12 @@ export default function SitterToday() {
       const end = new Date();
       end.setHours(23, 59, 59, 999);
 
-      const [bookingsRes, requestsRes, approvalsRes, invoicesRes] = await Promise.all([
+      const [bookingsRes, requestsRes, approvalsRes, invoicesRes, personalRes] = await Promise.all([
         supabase.from("bookings")
           .select("id, scheduled_start_at, scheduled_end_at, start_at, end_at, status, pets(name), services(name, slug)")
           .eq("sitter_id", sitterId)
-          .gte("start_at", start.toISOString())
           .lte("start_at", end.toISOString())
+          .gte("end_at", start.toISOString())
           .not("status", "in", "(cancelled,refunded)")
           .order("start_at", { ascending: true }),
         supabase.from("bookings")
@@ -154,11 +154,25 @@ export default function SitterToday() {
           .select("total_cents, amount_paid_cents, due_date, status")
           .eq("sitter_id", sitterId)
           .in("status", ["sent", "overdue", "partial"]),
+        (supabase as any).from("personal_events")
+          .select("id, title, notes, start_at, end_at, all_day, category")
+          .eq("sitter_id", sitterId)
+          .lte("start_at", end.toISOString())
+          .gte("end_at", start.toISOString())
+          .order("start_at", { ascending: true }),
       ]);
 
       if (cancelled) return;
 
-      setTodayBookings((bookingsRes.data ?? []) as any);
+      const startMs = start.getTime();
+      const endMs = end.getTime();
+      const enrichedBookings = ((bookingsRes.data ?? []) as any[]).map((b) => {
+        const s = new Date(b.scheduled_start_at ?? b.start_at).getTime();
+        const e = new Date(b.scheduled_end_at ?? b.end_at).getTime();
+        return { ...b, starts_today: s >= startMs && s <= endMs, ends_today: e >= startMs && e <= endMs, spans_today: s < startMs && e > endMs };
+      });
+      setTodayBookings(enrichedBookings as any);
+      setTodayPersonal((personalRes.data ?? []) as TodayPersonalEvent[]);
 
       const inbox: InboxItem[] = [];
       for (const r of (requestsRes.data ?? []) as any[]) {
