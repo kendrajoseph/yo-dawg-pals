@@ -228,7 +228,17 @@ function ShellInner({ children, action }: { children: ReactNode; action?: ReactN
             <ChevronRight className="hidden h-3.5 w-3.5 sm:inline" />
             <span className="truncate font-medium text-foreground">{titleFor(location.pathname)}</span>
           </div>
-          <div className="ml-auto flex items-center gap-2">{action}</div>
+          <div className="ml-auto flex items-center gap-2">
+            {action}
+            <Link
+              to="/"
+              className="hidden sm:inline-flex items-center gap-1.5 rounded-md border border-border px-2.5 py-1.5 text-xs font-medium text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
+              title="Switch to customer view"
+            >
+              <ArrowLeftRight className="h-3.5 w-3.5" />
+              Customer view
+            </Link>
+          </div>
         </header>
         <main className="flex-1 px-3 py-4 pb-24 sm:px-6 sm:py-6 md:px-8 md:pb-6">
           <div className="mx-auto max-w-6xl">{children}</div>
