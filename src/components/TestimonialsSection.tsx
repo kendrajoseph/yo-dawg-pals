@@ -14,7 +14,7 @@ const testimonials = [
   {
     quote:
       "Anneke was kind enough to stay at our home while we were on vacation with our 6 mo old Aussie. We had been working on training and Anneke kept up with it as well as improved his skills. She took wonderful care of our house too. Thank you!",
-    name: "Loie & Dexter",
+    name: "Lorie & Dexter",
     role: "Aussie shepherd parents",
     bg: "bg-accent text-accent-foreground",
     rotate: "rotate-1",
