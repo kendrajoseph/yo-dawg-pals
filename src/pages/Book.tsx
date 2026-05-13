@@ -730,6 +730,23 @@ const Book = () => {
   const next = () => {
     const message = step === 0 ? validateServiceStep() : step === 1 ? validateScheduleStep() : step === 2 ? validatePetStep() : null;
     if (message) return toast({ title: message, variant: "destructive" });
+    if (step === 0) {
+      track("booking_service_selected", {
+        service_slug: activeService?.slug,
+        variant_slug: activeVariant?.slug,
+        bundle_size: bundleItems.length,
+      });
+    } else if (step === 1) {
+      track("booking_schedule_selected", {
+        service_slug: activeService?.slug,
+        has_recurrence: activeItem?.repeatFrequency !== "none",
+        is_boarding: isActiveBoarding,
+      });
+    } else if (step === 2) {
+      track("booking_pets_selected", {
+        pet_count: activeItem?.petIds.length ?? 0,
+      });
+    }
     setStep((current) => Math.min(current + 1, STEPS.length - 1));
   };
 
