@@ -1,10 +1,7 @@
 import { supabase } from "@/integrations/supabase/client";
 
 /**
- * Shared approval / decline logic so the legacy /sitter-classic dashboard
- * and the new /sitter/requests/:id page stay in lock-step.
- *
- * Mirrors src/pages/SitterDashboard.tsx::approveRequest and ::declineRequest.
+ * Shared approval / decline logic for sitter request actions.
  */
 
 export type ApproveBookingInput = {

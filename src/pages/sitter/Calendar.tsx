@@ -100,7 +100,7 @@ export default function SitterCalendar() {
 
   return (
     <SitterShell action={
-      <Button size="sm" asChild><Link to="/sitter-classic#schedule"><Plus className="mr-1.5 h-4 w-4" />New booking</Link></Button>
+      <Button size="sm" asChild><Link to="/sitter/inbox"><Plus className="mr-1.5 h-4 w-4" />New booking</Link></Button>
     }>
       <SitterPageHeader
         back={{ to: "/sitter", label: "Back to dashboard" }}
