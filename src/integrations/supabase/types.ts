@@ -678,6 +678,27 @@ export type Database = {
           },
         ]
       }
+      invoice_reminder_overrides: {
+        Row: {
+          enabled: boolean
+          invoice_id: string
+          rules: Json | null
+          updated_at: string
+        }
+        Insert: {
+          enabled?: boolean
+          invoice_id: string
+          rules?: Json | null
+          updated_at?: string
+        }
+        Update: {
+          enabled?: boolean
+          invoice_id?: string
+          rules?: Json | null
+          updated_at?: string
+        }
+        Relationships: []
+      }
       invoices: {
         Row: {
           amount_paid_cents: number
@@ -1502,6 +1523,69 @@ export type Database = {
         }
         Relationships: []
       }
+      sitter_branding: {
+        Row: {
+          business_name: string | null
+          footer_address: string | null
+          footer_phone: string | null
+          footer_website: string | null
+          logo_url: string | null
+          sitter_id: string
+          updated_at: string
+        }
+        Insert: {
+          business_name?: string | null
+          footer_address?: string | null
+          footer_phone?: string | null
+          footer_website?: string | null
+          logo_url?: string | null
+          sitter_id: string
+          updated_at?: string
+        }
+        Update: {
+          business_name?: string | null
+          footer_address?: string | null
+          footer_phone?: string | null
+          footer_website?: string | null
+          logo_url?: string | null
+          sitter_id?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      sitter_message_templates: {
+        Row: {
+          body: string
+          channel: string
+          created_at: string
+          id: string
+          kind: string
+          sitter_id: string
+          subject: string | null
+          updated_at: string
+        }
+        Insert: {
+          body: string
+          channel: string
+          created_at?: string
+          id?: string
+          kind: string
+          sitter_id: string
+          subject?: string | null
+          updated_at?: string
+        }
+        Update: {
+          body?: string
+          channel?: string
+          created_at?: string
+          id?: string
+          kind?: string
+          sitter_id?: string
+          subject?: string | null
+          updated_at?: string
+        }
+        Relationships: []
+      }
       sitter_notifications: {
         Row: {
           booking_id: string | null
@@ -1593,6 +1677,27 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      sitter_reminder_settings: {
+        Row: {
+          enabled: boolean
+          rules: Json
+          sitter_id: string
+          updated_at: string
+        }
+        Insert: {
+          enabled?: boolean
+          rules?: Json
+          sitter_id: string
+          updated_at?: string
+        }
+        Update: {
+          enabled?: boolean
+          rules?: Json
+          sitter_id?: string
+          updated_at?: string
+        }
+        Relationships: []
       }
       sitter_settings: {
         Row: {
