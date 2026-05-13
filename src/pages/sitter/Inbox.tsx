@@ -9,6 +9,7 @@ import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
+import { track } from "@/integrations/posthog/PostHogProvider";
 
 type Filter = "all" | "requests" | "approvals" | "payments";
 
