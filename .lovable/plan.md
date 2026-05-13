@@ -1,23 +1,29 @@
-## Add PostHog Analytics
+## Problem
 
-Integrate PostHog for product analytics across the app.
+The logo upload to the `avatars` storage bucket fails with `new row violates row-level security policy`.
 
-### What you'll need
-- A PostHog **Project API Key** (starts with `phc_`) — get it from PostHog → Project Settings → Project API Key
-- Your PostHog **host** (usually `https://us.i.posthog.com` for US cloud or `https://eu.i.posthog.com` for EU)
+The bucket's INSERT policy requires the **first folder of the object path to equal the user's id**:
 
-These are publishable/client-side keys — safe to put in the codebase, no secrets vault needed.
+```
+(auth.uid())::text = (storage.foldername(name))[1]
+```
 
-### Steps
-1. Install `posthog-js`.
-2. Create `src/lib/posthog.ts` that initializes PostHog once on app start with the project key + host. Configure `capture_pageview: false` so we control pageviews via the router.
-3. Initialize PostHog in `src/main.tsx` (before the app renders).
-4. Add a small `PostHogPageview` component inside the router (in `App.tsx`) that listens to route changes via `useLocation` and calls `posthog.capture('$pageview')` — this works correctly with `createBrowserRouter`.
-5. Identify users when they're logged in: in the auth/session hook, call `posthog.identify(user.id, { email })` on login and `posthog.reset()` on logout.
+But `src/pages/sitter/settings/Branding.tsx` uploads to:
 
-### What I need from you
-Reply with:
-- Your PostHog **Project API Key** (`phc_...`)
-- Your **region** (US or EU) — or paste the host URL
+```
+branding/{user.id}/logo-{timestamp}.{ext}
+```
 
-Once you send those, I'll switch to build mode and wire it up.
+So the first folder is `branding`, not the user id — RLS rejects it.
+
+## Fix
+
+Change the upload path in `Branding.tsx` so the user id comes first:
+
+```
+{user.id}/branding/logo-{timestamp}.{ext}
+```
+
+That's a one-line change in `onUploadLogo` and matches the existing avatar/pets RLS pattern. No database migration needed.
+
+Existing logos uploaded under the old path (if any succeeded) keep working because they're already public — only new uploads change location.
