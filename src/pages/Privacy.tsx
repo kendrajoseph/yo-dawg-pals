@@ -11,7 +11,7 @@ const sections = [
   },
   {
     title: "Information we collect",
-    body: "When you book a service or contact us, we may collect:\n\n- Your name, email address, phone number, and home address\n- Your dog's name, breed, age, medical information, behavioural notes, and emergency veterinary contact\n- Service preferences, scheduling details, and special instructions\n- Payment information (processed through third-party payment providers, never stored by us directly)\n- Photos of your pet that you share with us, or that we take during our services to send you updates\n\nWe also collect basic technical information when you visit our website, such as your browser type, device, and pages viewed. We use this only to keep the site working properly.",
+    body: "When you book a service or contact us, we may collect:\n\n- Your name, email address, phone number, and home address\n- Your dog's name, breed, age, medical information, behavioural notes, and emergency veterinary contact\n- Service preferences, scheduling details, and special instructions\n- Payment information (processed through third-party payment providers, never stored by us directly)\n- Photos of your pet that you share with us, or that we take during our services to send you updates\n\nWe also collect basic technical information when you visit our website, such as your browser type, device, and pages viewed. We use this only to keep the site working properly and to understand how visitors use our service through privacy-focused analytics (PostHog). PostHog respects Do Not Track signals and does not use advertising trackers.",
   },
   {
     title: "How we use your information",
