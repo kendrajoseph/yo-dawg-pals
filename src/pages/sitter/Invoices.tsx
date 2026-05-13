@@ -219,6 +219,9 @@ export default function SitterInvoices() {
 
   return (
     <SitterShell>
+      <Link to="/sitter" className="mb-3 inline-flex items-center gap-1 text-sm text-muted-foreground hover:text-foreground">
+        <ArrowLeft className="h-3.5 w-3.5" /> Back to dashboard
+      </Link>
       <div className="mb-6 flex items-end justify-between gap-3">
         <div>
           <h1 className="font-display text-3xl text-primary">Invoices</h1>
