@@ -34,6 +34,19 @@ type TodayBooking = {
   status: string;
   pets: { name: string } | null;
   services: { name: string; slug: string | null } | null;
+  spans_today?: boolean;
+  starts_today?: boolean;
+  ends_today?: boolean;
+};
+
+type TodayPersonalEvent = {
+  id: string;
+  title: string;
+  notes: string | null;
+  start_at: string;
+  end_at: string;
+  all_day: boolean;
+  category: string;
 };
 
 type UpdateKind = "pickup" | "dropoff" | "arrived" | "departed";
@@ -86,6 +99,7 @@ export default function SitterToday() {
   const { user } = useAuth();
   const navigate = useNavigate();
   const [todayBookings, setTodayBookings] = useState<TodayBooking[]>([]);
+  const [todayPersonal, setTodayPersonal] = useState<TodayPersonalEvent[]>([]);
   const [inboxPreview, setInboxPreview] = useState<InboxItem[]>([]);
   const [outstandingCents, setOutstandingCents] = useState(0);
   const [overdueCents, setOverdueCents] = useState(0);
@@ -121,12 +135,12 @@ export default function SitterToday() {
       const end = new Date();
       end.setHours(23, 59, 59, 999);
 
-      const [bookingsRes, requestsRes, approvalsRes, invoicesRes] = await Promise.all([
+      const [bookingsRes, requestsRes, approvalsRes, invoicesRes, personalRes] = await Promise.all([
         supabase.from("bookings")
           .select("id, scheduled_start_at, scheduled_end_at, start_at, end_at, status, pets(name), services(name, slug)")
           .eq("sitter_id", sitterId)
-          .gte("start_at", start.toISOString())
           .lte("start_at", end.toISOString())
+          .gte("end_at", start.toISOString())
           .not("status", "in", "(cancelled,refunded)")
           .order("start_at", { ascending: true }),
         supabase.from("bookings")
@@ -140,11 +154,25 @@ export default function SitterToday() {
           .select("total_cents, amount_paid_cents, due_date, status")
           .eq("sitter_id", sitterId)
           .in("status", ["sent", "overdue", "partial"]),
+        (supabase as any).from("personal_events")
+          .select("id, title, notes, start_at, end_at, all_day, category")
+          .eq("sitter_id", sitterId)
+          .lte("start_at", end.toISOString())
+          .gte("end_at", start.toISOString())
+          .order("start_at", { ascending: true }),
       ]);
 
       if (cancelled) return;
 
-      setTodayBookings((bookingsRes.data ?? []) as any);
+      const startMs = start.getTime();
+      const endMs = end.getTime();
+      const enrichedBookings = ((bookingsRes.data ?? []) as any[]).map((b) => {
+        const s = new Date(b.scheduled_start_at ?? b.start_at).getTime();
+        const e = new Date(b.scheduled_end_at ?? b.end_at).getTime();
+        return { ...b, starts_today: s >= startMs && s <= endMs, ends_today: e >= startMs && e <= endMs, spans_today: s < startMs && e > endMs };
+      });
+      setTodayBookings(enrichedBookings as any);
+      setTodayPersonal((personalRes.data ?? []) as TodayPersonalEvent[]);
 
       const inbox: InboxItem[] = [];
       for (const r of (requestsRes.data ?? []) as any[]) {
@@ -219,7 +247,7 @@ export default function SitterToday() {
             <h2 className="font-display text-xl text-primary">Today's run of show</h2>
             <Button variant="ghost" size="sm" asChild><Link to="/sitter/calendar">Open calendar →</Link></Button>
           </div>
-          {todayBookings.length === 0 ? (
+          {todayBookings.length === 0 && todayPersonal.length === 0 ? (
             <EmptyState
               icon={<Clock3 className="h-8 w-8" />}
               title="Nothing scheduled today"
@@ -227,6 +255,19 @@ export default function SitterToday() {
             />
           ) : (
             <ul className="divide-y divide-border">
+              {todayPersonal.map((e) => (
+                <li key={`pe-${e.id}`} className="flex flex-wrap items-center gap-3 py-3">
+                  <div className="w-16 text-right">
+                    <div className="font-display text-sm text-violet-900">{e.all_day ? "All day" : format(new Date(e.start_at), "h:mm a")}</div>
+                    {!e.all_day && <div className="text-[11px] text-muted-foreground">{format(new Date(e.end_at), "h:mm a")}</div>}
+                  </div>
+                  <div className="min-w-0 flex-1">
+                    <div className="truncate font-medium">{e.title}</div>
+                    <div className="truncate text-xs text-muted-foreground capitalize">{e.category}{e.notes ? ` · ${e.notes}` : ""}</div>
+                  </div>
+                  <Badge variant="outline" className="border-violet-400 bg-violet-50 text-violet-900">Personal</Badge>
+                </li>
+              ))}
               {todayBookings.map((b) => {
                 const startAt = new Date(b.scheduled_start_at ?? b.start_at);
                 const endAt = new Date(b.scheduled_end_at ?? b.end_at);
@@ -234,9 +275,16 @@ export default function SitterToday() {
                 const [startEvent, endEvent] = events ?? [];
                 return (
                   <li key={b.id} className="flex flex-wrap items-center gap-3 py-3">
-                    <div className="w-16 text-right">
-                      <div className="font-display text-sm text-primary">{format(startAt, "h:mm a")}</div>
-                      <div className="text-[11px] text-muted-foreground">{format(endAt, "h:mm a")}</div>
+                    <div className="w-20 text-right">
+                      <div className="font-display text-sm text-primary">
+                        {b.spans_today ? "Ongoing" : b.starts_today ? format(startAt, "h:mm a") : `Ends ${format(endAt, "h:mm a")}`}
+                      </div>
+                      {!b.spans_today && b.starts_today && b.ends_today && (
+                        <div className="text-[11px] text-muted-foreground">{format(endAt, "h:mm a")}</div>
+                      )}
+                      {(b.spans_today || (b.starts_today && !b.ends_today) || (!b.starts_today && b.ends_today)) && (
+                        <div className="text-[11px] text-muted-foreground">multi-day</div>
+                      )}
                     </div>
                     <div className="min-w-0 flex-1">
                       <div className="truncate font-medium">{b.services?.name ?? "Service"}</div>
