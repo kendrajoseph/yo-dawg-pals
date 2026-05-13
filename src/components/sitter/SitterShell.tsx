@@ -246,6 +246,7 @@ function ShellInner({ children, action }: { children: ReactNode; action?: ReactN
         </main>
       </div>
       <MobileBottomNav />
+      <FloatingAssistant />
     </div>
   );
 }
