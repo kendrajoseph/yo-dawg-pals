@@ -160,9 +160,7 @@ const Profile = () => {
     setErrors({});
     setSaving(true);
 
-    // Auto-enable text updates whenever a mobile is on file. Stays subtle — no
-    // checkbox required for it to work.
-    const smsOn = result.data.sms_opt_in || Boolean(result.data.mobile_phone?.trim());
+    setSaving(true);
 
     const { error } = await db
       .from("profiles")
@@ -170,7 +168,7 @@ const Profile = () => {
         full_name: result.data.full_name,
         phone: result.data.phone || null,
         mobile_phone: result.data.mobile_phone,
-        sms_opt_in: smsOn,
+        sms_opt_in: result.data.sms_opt_in,
         bio: result.data.bio || null,
       })
       .eq("id", user.id);
