@@ -31,9 +31,9 @@ const testimonials = [
   },
   {
     quote:
-      "Anneke was amazing with my 5 month old havoc potato, Jax. She was super engaged with him and created a fun environment. He was having such a time and a half, he barely noticed when I got home. Will definitely be using Yo Dawg again.",
+      "Anneke was amazing with my 5 month old Doberman, Jax. She was super engaged with him and created a fun environment. He was having such a time and a half, he barely noticed when I got home. Will definitely be using Yo Dawg again.",
     name: "Jax's human",
-    role: "5-month-old havoc potato",
+    role: "5-month-old Doberman",
     bg: "bg-secondary text-secondary-foreground",
     rotate: "rotate-1",
     dog: dog5,
