@@ -253,6 +253,14 @@ export default function SitterBookingDetail() {
         onAdded={load}
       />
 
+      <AddServiceToBookingDialog
+        open={addServiceOpen}
+        onOpenChange={setAddServiceOpen}
+        bookingId={booking.id}
+        customerId={booking.customer_id}
+        onAdded={load}
+      />
+
       <PaymentDrawer
         open={drawerOpen}
         onOpenChange={setDrawerOpen}
