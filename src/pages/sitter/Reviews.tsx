@@ -90,6 +90,9 @@ export default function SitterReviews() {
 
   return (
     <SitterShell>
+      <Link to="/sitter" className="mb-3 inline-flex items-center gap-1 text-sm text-muted-foreground hover:text-foreground">
+        <ArrowLeft className="h-3.5 w-3.5" /> Back to dashboard
+      </Link>
       <div className="mx-auto max-w-4xl space-y-6 p-4 sm:p-6">
         <header>
           <h1 className="font-display text-3xl uppercase text-primary">Client reviews</h1>

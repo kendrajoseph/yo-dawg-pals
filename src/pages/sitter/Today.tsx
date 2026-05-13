@@ -197,6 +197,9 @@ export default function SitterToday() {
         </>
       }
     >
+      <Link to="/" className="mb-3 inline-flex items-center gap-1 text-sm text-muted-foreground hover:text-foreground">
+        <ArrowLeft className="h-3.5 w-3.5" /> Back to home
+      </Link>
       <div className="mb-6">
         <h1 className="font-display text-3xl text-primary sm:text-4xl">{greeting}</h1>
         <p className="text-sm text-muted-foreground">Here's your day at a glance — {format(new Date(), "EEEE, MMM d")}</p>

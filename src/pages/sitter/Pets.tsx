@@ -78,6 +78,9 @@ export default function SitterPets() {
 
   return (
     <SitterShell>
+      <Link to="/sitter" className="mb-3 inline-flex items-center gap-1 text-sm text-muted-foreground hover:text-foreground">
+        <ArrowLeft className="h-3.5 w-3.5" /> Back to dashboard
+      </Link>
       <div className="mb-6">
         <h1 className="font-display text-3xl text-primary">Pets</h1>
         <p className="text-sm text-muted-foreground">{pets.length} pet{pets.length === 1 ? "" : "s"} across all clients.</p>
