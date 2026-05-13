@@ -134,9 +134,20 @@ export default function SitterClients() {
                     ))}
                   </div>
                 </Link>
-                <Button size="sm" variant="ghost" onClick={() => setPetTarget({ id: c.id, name: c.full_name })} className="mr-2">
+                <Button size="sm" variant="ghost" onClick={() => setPetTarget({ id: c.id, name: c.full_name })} className="mr-1">
                   <PawPrint className="h-4 w-4" /> Pet
                 </Button>
+                {c.is_manual && (
+                  <Button
+                    size="sm"
+                    variant="ghost"
+                    className="text-muted-foreground hover:text-destructive"
+                    disabled={c.bookings_count > 0}
+                    onClick={() => setDeleteTarget(c)}
+                  >
+                    <Trash2 className="h-4 w-4" />
+                  </Button>
+                )}
               </li>
             ))}
           </ul>
@@ -153,6 +164,38 @@ export default function SitterClients() {
           onAdded={() => load()}
         />
       )}
+
+      <AlertDialog open={!!deleteTarget} onOpenChange={(v) => !v && setDeleteTarget(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Remove this client?</AlertDialogTitle>
+            <AlertDialogDescription>
+              "{deleteTarget?.full_name ?? "Unnamed client"}" will be permanently deleted along with their pets and profile data.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={deleting}>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              disabled={deleting}
+              onClick={async () => {
+                if (!deleteTarget) return;
+                setDeleting(true);
+                const { error } = await supabase.from("profiles").delete().eq("id", deleteTarget.id);
+                setDeleting(false);
+                if (error) {
+                  toast({ title: "Couldn't remove client", description: error.message, variant: "destructive" });
+                  return;
+                }
+                toast({ title: "Client removed" });
+                setDeleteTarget(null);
+                load();
+              }}
+            >
+              {deleting ? "Removing…" : "Remove"}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </SitterShell>
   );
 }
