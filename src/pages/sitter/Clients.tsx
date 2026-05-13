@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState, useCallback } from "react";
 import { Link } from "react-router-dom";
-import { Search, UserRound, Star, Plus, PawPrint } from "lucide-react";
+import { Search, UserRound, Star, Plus, PawPrint, Trash2 } from "lucide-react";
 import { SitterShell } from "@/components/sitter/SitterShell";
 import { EmptyState } from "@/components/sitter/EmptyState";
 import { Card } from "@/components/ui/card";
@@ -12,6 +12,17 @@ import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import NewClientDialog from "@/components/sitter/NewClientDialog";
 import AddPetDialog from "@/components/sitter/AddPetDialog";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
+import { toast } from "@/hooks/use-toast";
 
 type ClientRow = {
   id: string;
