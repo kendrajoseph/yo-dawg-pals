@@ -201,6 +201,7 @@ const titleFor = (path: string): string => {
   if (path.startsWith("/sitter/assistant")) return "Schedule assistant";
   if (path.startsWith("/sitter/reviews")) return "Reviews";
   if (path.startsWith("/sitter/reports")) return "Reports";
+  if (path.startsWith("/sitter/settings/services")) return "Services & pricing";
   if (path.startsWith("/sitter/settings")) return "Settings";
   return "Sitter";
 };
