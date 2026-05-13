@@ -42,7 +42,7 @@ import SettingsServices from "./pages/sitter/settings/Services.tsx";
 import SettingsReminders from "./pages/sitter/settings/Reminders.tsx";
 import SettingsTemplates from "./pages/sitter/settings/Templates.tsx";
 import SettingsBranding from "./pages/sitter/settings/Branding.tsx";
-import Unsubscribe from "./pages/Unsubscribe.tsx";
+import SettingsTelegram from "./pages/sitter/settings/Telegram.tsx";
 import FAQ from "./pages/FAQ.tsx";
 import Terms from "./pages/Terms.tsx";
 import Privacy from "./pages/Privacy.tsx";
@@ -93,6 +93,7 @@ const App = () => (
             <Route path="/sitter/settings/reminders" element={<ProtectedRoute requireSitter><SettingsReminders /></ProtectedRoute>} />
             <Route path="/sitter/settings/templates" element={<ProtectedRoute requireSitter><SettingsTemplates /></ProtectedRoute>} />
             <Route path="/sitter/settings/branding" element={<ProtectedRoute requireSitter><SettingsBranding /></ProtectedRoute>} />
+            <Route path="/sitter/settings/telegram" element={<ProtectedRoute requireSitter><SettingsTelegram /></ProtectedRoute>} />
             
             <Route path="/unsubscribe" element={<Unsubscribe />} />
             <Route path="/faq" element={<FAQ />} />
