@@ -891,6 +891,11 @@ const Book = () => {
       return;
     }
 
+    // Persist SMS opt-in preference to the profile if checked.
+    if (smsOptIn) {
+      await db.from("profiles").update({ sms_opt_in: true }).eq("id", user.id);
+    }
+
     submittingRef.current = true;
     setSubmitting(true);
 
