@@ -405,6 +405,10 @@ const Book = () => {
     try {
       localStorage.setItem(DRAFT_KEY, JSON.stringify({ bundleItems, bundleNotes, step, ts: Date.now() }));
     } catch { /* ignore */ }
+    track("booking_auth_required", {
+      step,
+      has_service: bundleItems.some((item) => item.serviceId),
+    });
     navigate("/auth", {
       state: {
         from: `${location.pathname}${location.search}`,
