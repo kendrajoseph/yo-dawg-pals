@@ -4,11 +4,11 @@
 // Main chat endpoint. Handles a single user message:
 //   1. Persist user message
 //   2. Load conversation history
-//   3. Loop: call Claude → execute tools → append results → repeat (max 8 iters)
+//   3. Loop: call Lovable AI → execute tools → append results → repeat (max 8 iters)
 //   4. Persist final assistant message
 //   5. Return response with any pending actions
 //
-// Uses Claude Haiku 4.5 via Lovable AI gateway (function calling support).
+// Uses a supported Lovable AI gateway chat model with function calling support.
 // ============================================================================
 
 import { corsHeaders } from "npm:@supabase/supabase-js@2/cors";
@@ -21,7 +21,7 @@ import {
 } from "../_shared/assistant-tools.ts";
 
 const MAX_TOOL_ITERATIONS = 8;
-const MODEL = "anthropic/claude-haiku-4-5";
+const MODEL = "google/gemini-3-flash-preview";
 
 const bodySchema = z.object({
   conversation_id: z.string().uuid().nullish(),
@@ -158,7 +158,8 @@ Deno.serve(async (req) => {
       const aiResponse = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
         method: "POST",
         headers: {
-          Authorization: `Bearer ${lovableApiKey}`,
+          "Lovable-API-Key": lovableApiKey,
+          "X-Lovable-AIG-SDK": "openai-compatible-fetch",
           "Content-Type": "application/json",
         },
         body: JSON.stringify({
@@ -176,7 +177,13 @@ Deno.serve(async (req) => {
       if (!aiResponse.ok) {
         const text = await aiResponse.text();
         console.error("AI call failed", { status: aiResponse.status, text });
-        return json({ error: `AI call failed (${aiResponse.status})` }, 500);
+        return json(
+          {
+            error: "The assistant could not reach AI right now. Please try again.",
+            fallback: true,
+          },
+          aiResponse.status >= 500 ? 503 : 200,
+        );
       }
 
       const aiJson = await aiResponse.json();
