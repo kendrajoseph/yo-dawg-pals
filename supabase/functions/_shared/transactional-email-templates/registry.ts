@@ -19,8 +19,24 @@ import { template as paymentReceipt } from './payment-receipt.tsx'
 import { template as paymentReminder } from './payment-reminder.tsx'
 import { template as refundIssued } from './refund-issued.tsx'
 import { template as bookingDeclined } from './booking-declined.tsx'
+import { NightlyScheduleDigestEmail } from './nightly-schedule-digest.tsx'
 
 export const TEMPLATES: Record<string, TemplateEntry> = {
+  'nightly-schedule-digest': {
+    component: NightlyScheduleDigestEmail,
+    subject: (data: Record<string, any>) =>
+      `Tomorrow's schedule — ${data.dateStr ?? 'tomorrow'}`,
+    displayName: 'Nightly schedule digest (to AJ)',
+    previewData: {
+      dateStr: 'Tuesday, Nov 18',
+      summary: '4 walks · 1 boarding',
+      bookings: [
+        { index: 1, time: '9:00 AM', serviceName: 'Solo Walk', petName: 'Moose' },
+        { index: 2, time: '10:30 AM', serviceName: 'Group Walk', petName: 'Dexter' },
+        { index: 3, time: '2:00 PM', serviceName: 'Boarding pickup', petName: 'Poppy' },
+      ],
+    },
+  },
   'booking-paid-notification': bookingPaidNotification,
   'client-direct-message': clientDirectMessage,
   'group-walk-payment-request': groupWalkPaymentRequest,
