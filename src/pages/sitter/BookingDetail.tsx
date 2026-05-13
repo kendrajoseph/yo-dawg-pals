@@ -232,6 +232,9 @@ export default function SitterBookingDetail() {
             <Button variant="outline" onClick={() => setAddPetOpen(true)}>
               <Plus className="mr-1.5 h-4 w-4" />Add pet to booking
             </Button>
+            <Button variant="outline" onClick={() => setAddServiceOpen(true)}>
+              <Plus className="mr-1.5 h-4 w-4" />Add extra service
+            </Button>
             <Button variant="outline" onClick={() => navigate(`/sitter/clients/${booking.customer_id}`)}>
               Open client
             </Button>
