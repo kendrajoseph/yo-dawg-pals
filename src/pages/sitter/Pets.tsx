@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import { Link } from "react-router-dom";
-import { Search, PawPrint, AlertTriangle } from "lucide-react";
+import { ArrowLeft, Search, PawPrint, AlertTriangle } from "lucide-react";
 import { SitterShell } from "@/components/sitter/SitterShell";
 import { EmptyState } from "@/components/sitter/EmptyState";
 import { Card } from "@/components/ui/card";
@@ -78,6 +78,9 @@ export default function SitterPets() {
 
   return (
     <SitterShell>
+      <Link to="/sitter" className="mb-3 inline-flex items-center gap-1 text-sm text-muted-foreground hover:text-foreground">
+        <ArrowLeft className="h-3.5 w-3.5" /> Back to dashboard
+      </Link>
       <div className="mb-6">
         <h1 className="font-display text-3xl text-primary">Pets</h1>
         <p className="text-sm text-muted-foreground">{pets.length} pet{pets.length === 1 ? "" : "s"} across all clients.</p>

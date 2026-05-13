@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { Link } from "react-router-dom";
 import { addDays, addMonths, endOfMonth, endOfWeek, format, isSameDay, isSameMonth, startOfMonth, startOfWeek, subMonths } from "date-fns";
-import { ChevronLeft, ChevronRight, CalendarDays, Plus } from "lucide-react";
+import { ArrowLeft, ChevronLeft, ChevronRight, CalendarDays, Plus } from "lucide-react";
 import { SitterShell } from "@/components/sitter/SitterShell";
 import { EmptyState } from "@/components/sitter/EmptyState";
 import { Card } from "@/components/ui/card";
@@ -101,6 +101,9 @@ export default function SitterCalendar() {
     <SitterShell action={
       <Button size="sm" asChild><Link to="/sitter-classic#schedule"><Plus className="mr-1.5 h-4 w-4" />New booking</Link></Button>
     }>
+      <Link to="/sitter" className="mb-3 inline-flex items-center gap-1 text-sm text-muted-foreground hover:text-foreground">
+        <ArrowLeft className="h-3.5 w-3.5" /> Back to dashboard
+      </Link>
       <div className="mb-6 flex flex-wrap items-end justify-between gap-3">
         <div>
           <h1 className="font-display text-3xl text-primary">Calendar</h1>

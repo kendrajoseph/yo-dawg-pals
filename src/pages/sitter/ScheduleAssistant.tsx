@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from "react";
-import { Sparkles, Send, AlertTriangle, Bell } from "lucide-react";
+import { Link } from "react-router-dom";
+import { ArrowLeft, Sparkles, Send, AlertTriangle, Bell } from "lucide-react";
 import { format } from "date-fns";
 import { SitterShell } from "@/components/sitter/SitterShell";
 import { Card } from "@/components/ui/card";
@@ -207,6 +208,9 @@ export default function SitterScheduleAssistant() {
 
   return (
     <SitterShell>
+      <Link to="/sitter" className="mb-3 inline-flex items-center gap-1 text-sm text-muted-foreground hover:text-foreground">
+        <ArrowLeft className="h-3.5 w-3.5" /> Back to dashboard
+      </Link>
       <div className="mb-6 flex flex-wrap items-end justify-between gap-3">
         <div>
           <h1 className="font-display text-3xl text-primary inline-flex items-center gap-2">
