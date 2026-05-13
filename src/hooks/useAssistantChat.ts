@@ -1,137 +1,182 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
+import { useAuth } from "@/hooks/useAuth";
 import { toast } from "@/hooks/use-toast";
-import { track } from "@/integrations/posthog/PostHogProvider";
 
-type ChatMsg = {
-  role: "system" | "user" | "assistant" | "tool";
+export type AssistantMessage = {
+  id: string;
+  role: "user" | "assistant";
   content: string | null;
-  name?: string;
-  tool_call_id?: string;
-  tool_calls?: Array<{
-    id: string;
-    type: "function";
-    function: { name: string; arguments: string };
-  }>;
+  created_at: string;
+  pending_actions?: AssistantPendingAction[];
 };
 
-type PendingApproval = {
-  toolCallId: string;
-  toolName: string;
-  args: Record<string, unknown>;
-  summary: string;
-  preview: Record<string, unknown>;
+export type AssistantPendingAction = {
+  id: string;
+  action_type: string;
+  action_summary: string;
+  status: "pending" | "confirmed" | "cancelled" | "failed" | "expired";
 };
-
-const STORAGE_KEY = "yodawg-assistant-convo-v1";
 
 export function useAssistantChat() {
-  const [messages, setMessages] = useState<ChatMsg[]>([]);
+  const { user } = useAuth();
+  const [conversationId, setConversationId] = useState<string | null>(null);
+  const [messages, setMessages] = useState<AssistantMessage[]>([]);
   const [input, setInput] = useState("");
   const [busy, setBusy] = useState(false);
-  const [pending, setPending] = useState<PendingApproval | null>(null);
+  const [actionsBusy, setActionsBusy] = useState<Set<string>>(new Set());
   const textareaRef = useRef<HTMLTextAreaElement>(null);
 
-  // Load persisted conversation
   useEffect(() => {
-    if (typeof window === "undefined") return;
-    try {
-      const raw = window.localStorage.getItem(STORAGE_KEY);
-      if (raw) {
-        const parsed = JSON.parse(raw);
-        if (Array.isArray(parsed.messages)) setMessages(parsed.messages);
-        if (parsed.pending) setPending(parsed.pending);
+    if (!user?.id) return;
+    (async () => {
+      const { data: convo } = await supabase
+        .from("assistant_conversations")
+        .select("id")
+        .eq("sitter_id", user.id)
+        .order("last_message_at", { ascending: false })
+        .limit(1)
+        .maybeSingle();
+      if (convo) {
+        setConversationId((convo as any).id);
+        await loadMessages((convo as any).id);
       }
-    } catch {}
-    textareaRef.current?.focus();
-  }, []);
+    })();
+  }, [user?.id]);
 
-  // Persist on change
-  useEffect(() => {
-    if (typeof window === "undefined") return;
-    try {
-      window.localStorage.setItem(STORAGE_KEY, JSON.stringify({ messages, pending }));
-    } catch {}
-  }, [messages, pending]);
+  const loadMessages = async (convoId: string) => {
+    const { data } = await supabase
+      .from("assistant_messages")
+      .select("id, role, content, created_at")
+      .eq("conversation_id", convoId)
+      .in("role", ["user", "assistant"])
+      .order("created_at", { ascending: true });
+    if (!data) return;
 
-  const visibleMessages = useMemo(
-    () => messages.filter((m) => m.role === "user" || (m.role === "assistant" && m.content)),
-    [messages]
-  );
+    const assistantIds = data.filter((m: any) => m.role === "assistant").map((m: any) => m.id);
+    const { data: pending } = assistantIds.length
+      ? await supabase
+          .from("assistant_pending_actions")
+          .select("id, message_id, action_type, action_summary, status")
+          .in("message_id", assistantIds)
+      : { data: [] };
 
-  const callAssistant = useCallback(async (
-    nextMessages: ChatMsg[],
-    approval?: PendingApproval & { approved: boolean }
-  ) => {
+    const pendingByMessage = new Map<string, AssistantPendingAction[]>();
+    for (const p of pending ?? []) {
+      const list = pendingByMessage.get((p as any).message_id) ?? [];
+      list.push(p as any);
+      pendingByMessage.set((p as any).message_id, list);
+    }
+
+    setMessages(
+      data
+        .filter((m: any) => m.content)
+        .map((m: any) => ({ ...m, pending_actions: pendingByMessage.get(m.id) ?? [] })),
+    );
+  };
+
+  const send = async (textOverride?: string) => {
+    const text = (textOverride ?? input).trim();
+    if (!text || busy) return;
     setBusy(true);
+    setInput("");
+    const tempUser: AssistantMessage = {
+      id: `temp-${Date.now()}`,
+      role: "user",
+      content: text,
+      created_at: new Date().toISOString(),
+    };
+    setMessages((m) => [...m, tempUser]);
     try {
       const { data, error } = await supabase.functions.invoke("assistant-chat", {
-        body: {
-          messages: nextMessages,
-          approval: approval
-            ? {
-                toolCallId: approval.toolCallId,
-                toolName: approval.toolName,
-                args: approval.args,
-                approved: approval.approved,
-              }
-            : undefined,
-        },
+        body: { conversation_id: conversationId, message: text },
       });
       if (error) throw error;
-      const result = data as {
-        ok?: boolean;
-        messages?: ChatMsg[];
-        pendingApproval?: PendingApproval | null;
-        error?: string;
-      };
-      if (!result?.ok) throw new Error(result?.error ?? "Assistant failed");
-      setMessages(result.messages ?? []);
-      setPending(result.pendingApproval ?? null);
+      const result = data as any;
+      if (result.conversation_id) {
+        setConversationId(result.conversation_id);
+        await loadMessages(result.conversation_id);
+      }
     } catch (err) {
-      const msg = err instanceof Error ? err.message : "Unknown error";
-      toast({ title: "Assistant error", description: msg, variant: "destructive" });
+      toast({
+        title: "Couldn't reach the assistant",
+        description: err instanceof Error ? err.message : String(err),
+        variant: "destructive",
+      });
+      setMessages((m) => m.filter((msg) => msg.id !== tempUser.id));
     } finally {
       setBusy(false);
       setTimeout(() => textareaRef.current?.focus(), 50);
     }
-  }, []);
+  };
 
-  const send = useCallback(async (textOverride?: string) => {
-    const text = (textOverride ?? input).trim();
-    if (!text || busy) return;
-    track("assistant_chat_send", { length: text.length });
-    const next: ChatMsg[] = [...messages, { role: "user", content: text }];
-    setMessages(next);
-    setInput("");
-    await callAssistant(next);
-  }, [input, busy, messages, callAssistant]);
+  const confirmAction = async (actionId: string) => {
+    setActionsBusy((s) => new Set(s).add(actionId));
+    try {
+      const { error } = await supabase.functions.invoke("assistant-execute-action", {
+        body: { pending_action_id: actionId },
+      });
+      if (error) throw error;
+      toast({ title: "Done ✓" });
+      if (conversationId) await loadMessages(conversationId);
+    } catch (err) {
+      toast({
+        title: "Action failed",
+        description: err instanceof Error ? err.message : String(err),
+        variant: "destructive",
+      });
+    } finally {
+      setActionsBusy((s) => {
+        const n = new Set(s);
+        n.delete(actionId);
+        return n;
+      });
+    }
+  };
 
-  const approve = useCallback(async (approved: boolean) => {
-    if (!pending) return;
-    const decision = pending;
-    setPending(null);
-    await callAssistant(messages, { ...decision, approved });
-  }, [pending, messages, callAssistant]);
+  const cancelAction = async (actionId: string) => {
+    setActionsBusy((s) => new Set(s).add(actionId));
+    try {
+      const { error } = await supabase.functions.invoke("assistant-cancel-action", {
+        body: { pending_action_id: actionId },
+      });
+      if (error) throw error;
+      if (conversationId) await loadMessages(conversationId);
+    } catch (err) {
+      toast({ title: "Couldn't cancel", description: String(err), variant: "destructive" });
+    } finally {
+      setActionsBusy((s) => {
+        const n = new Set(s);
+        n.delete(actionId);
+        return n;
+      });
+    }
+  };
 
-  const reset = useCallback(() => {
-    if (busy) return;
-    setMessages([]);
-    setPending(null);
-    if (typeof window !== "undefined") window.localStorage.removeItem(STORAGE_KEY);
-    textareaRef.current?.focus();
-  }, [busy]);
+  const reset = async () => {
+    if (!user?.id || busy) return;
+    const { data } = await supabase
+      .from("assistant_conversations")
+      .insert({ sitter_id: user.id, title: "New chat" })
+      .select("id")
+      .single();
+    if (data) {
+      setConversationId((data as any).id);
+      setMessages([]);
+      textareaRef.current?.focus();
+    }
+  };
 
   return {
     messages,
-    visibleMessages,
     input,
     setInput,
     busy,
-    pending,
+    actionsBusy,
     textareaRef,
     send,
-    approve,
+    confirmAction,
+    cancelAction,
     reset,
   };
 }
