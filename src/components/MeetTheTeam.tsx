@@ -12,13 +12,13 @@ import dogStick from "@/assets/anneke/dog-stick.jpeg";
 import dogsCar from "@/assets/anneke/dogs-car.jpeg";
 
 const carouselPhotos = [
-  { src: anneke1, alt: "Anneke on a sunny walk with a golden retriever" },
-  { src: anneke2, alt: "Anneke getting a big slobbery kiss from a brindle pup" },
-  { src: anneke3, alt: "Anneke cuddling a happy schnauzer outdoors" },
+  { src: anneke1, alt: "AJ on a sunny walk with a golden retriever" },
+  { src: anneke2, alt: "AJ getting a big slobbery kiss from a brindle pup" },
+  { src: anneke3, alt: "AJ cuddling a happy schnauzer outdoors" },
   { src: dogStick, alt: "A very pleased Aussie shepherd guarding the world's best stick" },
-  { src: anneke4, alt: "Anneke walking a chocolate lab through a golden field" },
+  { src: anneke4, alt: "AJ walking a chocolate lab through a golden field" },
   { src: dogsCar, alt: "Two road-trip dogs riding shotgun together" },
-  { src: anneke5, alt: "Anneke and a happy dog at a glowing beach sunset" },
+  { src: anneke5, alt: "AJ and a happy dog at a glowing beach sunset" },
 ];
 
 const MeetTheTeam = () => {
@@ -40,7 +40,7 @@ const MeetTheTeam = () => {
         <div className="relative mx-auto md:mx-0">
           {/* sticker badge */}
           <div className="absolute -right-2 -top-3 z-20 grid h-16 w-16 -rotate-12 place-items-center rounded-full border-2 border-primary bg-secondary text-center font-display text-secondary-foreground shadow-pop-sm sm:-right-3 sm:-top-4 sm:h-20 sm:w-20">
-            <span className="text-[10px] leading-tight sm:text-xs">Hi.<br />I'm Anneke</span>
+            <span className="text-[10px] leading-tight sm:text-xs">Hi.<br />I'm AJ</span>
           </div>
           <div className="-rotate-2 overflow-hidden rounded-3xl border-2 border-primary bg-card shadow-pop transition-transform duration-500 hover:rotate-0">
             <div className="relative h-72 w-64 sm:h-96 sm:w-80">
@@ -93,7 +93,7 @@ const MeetTheTeam = () => {
             Local, personal care
           </span>
           <h2 className="mt-4 font-display text-[2.2rem] leading-[0.95] text-primary sm:text-[2.8rem] md:text-[3.5rem]">
-            Meet <span className="font-serif italic text-clay">Anneke.</span>
+            Meet <span className="font-serif italic text-clay">AJ.</span>
           </h2>
           <p className="mt-4 max-w-xl text-base leading-relaxed text-foreground/75 sm:text-[1.05rem]">
             I’m the person behind every Yo Dawg walk, visit, and overnight stay. I keep things small on purpose so I can learn your dog properly, make smart group decisions, and give you care that feels consistent, calm, and personal.

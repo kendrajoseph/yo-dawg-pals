@@ -4,7 +4,7 @@ import { dog2, dog6, dog1, dog5 } from "@/assets/dogs";
 const testimonials = [
   {
     quote:
-      "Anneke is always my first choice. My Moose adores her and that makes me extra happy when he's with someone he loves.",
+      "AJ is always my first choice. My Moose adores her and that makes me extra happy when he's with someone he loves.",
     name: "Natalia & Moose",
     role: "Aussie shepherd mix",
     bg: "bg-card",
@@ -13,7 +13,7 @@ const testimonials = [
   },
   {
     quote:
-      "Anneke was kind enough to stay at our home while we were on vacation with our 6 mo old Aussie. We had been working on training and Anneke kept up with it as well as improved his skills. She took wonderful care of our house too. Thank you!",
+      "AJ was kind enough to stay at our home while we were on vacation with our 6 mo old Aussie. We had been working on training and AJ kept up with it as well as improved his skills. She took wonderful care of our house too. Thank you!",
     name: "Lorie & Dexter",
     role: "Aussie shepherd parents",
     bg: "bg-accent text-accent-foreground",
@@ -22,7 +22,7 @@ const testimonials = [
   },
   {
     quote:
-      "Anneke has worked with all kinds of dogs, all with certain needs and issues. She approaches confidently while also emanating a sense of calm, making dogs want to approach her. She cares deeply for all animals and that shines through especially with rescues.",
+      "AJ has worked with all kinds of dogs, all with certain needs and issues. She approaches confidently while also emanating a sense of calm, making dogs want to approach her. She cares deeply for all animals and that shines through especially with rescues.",
     name: "Shaun Harnack",
     role: "Owner, Dog Hero",
     bg: "bg-card",
@@ -31,7 +31,7 @@ const testimonials = [
   },
   {
     quote:
-      "Anneke was amazing with my 5 month old Doberman, Jax. She was super engaged with him and created a fun environment. He was having such a time and a half, he barely noticed when I got home. Will definitely be using Yo Dawg again.",
+      "AJ was amazing with my 5 month old Doberman, Jax. She was super engaged with him and created a fun environment. He was having such a time and a half, he barely noticed when I got home. Will definitely be using Yo Dawg again.",
     name: "Jax's human",
     role: "5-month-old Doberman",
     bg: "bg-secondary text-secondary-foreground",
