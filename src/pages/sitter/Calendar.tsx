@@ -106,12 +106,7 @@ export default function SitterCalendar() {
         title="Calendar"
         description="Confirmed bookings (solid) and pending requests (dashed). Manage availability in Settings."
       />
-      <div className="mb-6 flex flex-wrap items-end justify-between gap-3">
-        <div>
-          <p className="hidden">
-            
-          </p>
-        </div>
+      <div className="mb-6 flex justify-end">
         <div className="flex items-center gap-2">
           <Tabs value={view} onValueChange={(v) => setView(v as View)}>
             <TabsList>
