@@ -24,7 +24,7 @@ const MAX_TOOL_ITERATIONS = 8;
 const MODEL = "anthropic/claude-haiku-4-5";
 
 const bodySchema = z.object({
-  conversation_id: z.string().uuid().optional(),
+  conversation_id: z.string().uuid().nullish(),
   message: z.string().trim().min(1).max(4000),
 });
 
