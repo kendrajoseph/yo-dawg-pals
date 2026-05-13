@@ -247,7 +247,7 @@ export default function SitterToday() {
             <h2 className="font-display text-xl text-primary">Today's run of show</h2>
             <Button variant="ghost" size="sm" asChild><Link to="/sitter/calendar">Open calendar →</Link></Button>
           </div>
-          {todayBookings.length === 0 ? (
+          {todayBookings.length === 0 && todayPersonal.length === 0 ? (
             <EmptyState
               icon={<Clock3 className="h-8 w-8" />}
               title="Nothing scheduled today"
@@ -255,6 +255,19 @@ export default function SitterToday() {
             />
           ) : (
             <ul className="divide-y divide-border">
+              {todayPersonal.map((e) => (
+                <li key={`pe-${e.id}`} className="flex flex-wrap items-center gap-3 py-3">
+                  <div className="w-16 text-right">
+                    <div className="font-display text-sm text-violet-900">{e.all_day ? "All day" : format(new Date(e.start_at), "h:mm a")}</div>
+                    {!e.all_day && <div className="text-[11px] text-muted-foreground">{format(new Date(e.end_at), "h:mm a")}</div>}
+                  </div>
+                  <div className="min-w-0 flex-1">
+                    <div className="truncate font-medium">{e.title}</div>
+                    <div className="truncate text-xs text-muted-foreground capitalize">{e.category}{e.notes ? ` · ${e.notes}` : ""}</div>
+                  </div>
+                  <Badge variant="outline" className="border-violet-400 bg-violet-50 text-violet-900">Personal</Badge>
+                </li>
+              ))}
               {todayBookings.map((b) => {
                 const startAt = new Date(b.scheduled_start_at ?? b.start_at);
                 const endAt = new Date(b.scheduled_end_at ?? b.end_at);
