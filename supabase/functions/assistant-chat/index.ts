@@ -266,6 +266,7 @@ Deno.serve(async (req) => {
 function buildAnthropicMessages(rows: any[]): any[] {
   const out: any[] = [];
   let pendingToolResults: any[] = [];
+  const validToolUseIds = new Set<string>();
 
   const flushToolResults = () => {
     if (pendingToolResults.length > 0) {
@@ -284,13 +285,23 @@ function buildAnthropicMessages(rows: any[]): any[] {
         const blocks: any[] = [];
         if (r.content) blocks.push({ type: "text", text: r.content });
         for (const tc of r.tool_calls) {
-          blocks.push(tc);
+          const toolUse = normalizeAnthropicToolUse(tc);
+          if (toolUse) {
+            validToolUseIds.add(toolUse.id);
+            blocks.push(toolUse);
+          }
+        }
+        if (blocks.length === 0) {
+          continue;
         }
         out.push({ role: "assistant", content: blocks });
       } else {
         out.push({ role: "assistant", content: r.content ?? "" });
       }
     } else if (r.role === "tool") {
+      if (!r.tool_call_id || !validToolUseIds.has(r.tool_call_id)) {
+        continue;
+      }
       pendingToolResults.push({
         type: "tool_result",
         tool_use_id: r.tool_call_id,
@@ -300,4 +311,57 @@ function buildAnthropicMessages(rows: any[]): any[] {
   }
   flushToolResults();
   return out;
+}
+
+function normalizeAnthropicToolUse(toolCall: any): any | null {
+  if (!toolCall || typeof toolCall !== "object") return null;
+
+  if (toolCall.type === "tool_use") {
+    const id = typeof toolCall.id === "string" ? toolCall.id : null;
+    const name = typeof toolCall.name === "string" ? toolCall.name : null;
+    if (!id || !name) return null;
+    return {
+      type: "tool_use",
+      id,
+      name,
+      input: normalizeToolInput(toolCall.input),
+    };
+  }
+
+  const id = typeof toolCall.id === "string" ? toolCall.id : null;
+  const functionCall = toolCall.function;
+  const name =
+    typeof toolCall.name === "string"
+      ? toolCall.name
+      : typeof functionCall?.name === "string"
+        ? functionCall.name
+        : null;
+
+  if (!id || !name) return null;
+
+  return {
+    type: "tool_use",
+    id,
+    name,
+    input: normalizeToolInput(toolCall.input ?? functionCall?.arguments ?? toolCall.arguments),
+  };
+}
+
+function normalizeToolInput(input: unknown): Record<string, unknown> {
+  if (input && typeof input === "object" && !Array.isArray(input)) {
+    return input as Record<string, unknown>;
+  }
+
+  if (typeof input === "string" && input.trim()) {
+    try {
+      const parsed = JSON.parse(input);
+      if (parsed && typeof parsed === "object" && !Array.isArray(parsed)) {
+        return parsed as Record<string, unknown>;
+      }
+    } catch {
+      return {};
+    }
+  }
+
+  return {};
 }
