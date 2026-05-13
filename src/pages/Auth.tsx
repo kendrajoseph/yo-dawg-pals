@@ -82,6 +82,7 @@ const Auth = () => {
       toast({ title: "Sign in failed", description: error.message, variant: "destructive" });
       return;
     }
+    track("user_signed_in");
     navigate(from, { replace: true });
   };
 
