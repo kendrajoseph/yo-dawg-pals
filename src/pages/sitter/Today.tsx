@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { format } from "date-fns";
-import { CalendarPlus, CalendarCheck, CreditCard, Inbox as InboxIcon, MessageSquarePlus, AlertTriangle, Clock3, LogIn, LogOut } from "lucide-react";
+import { ArrowLeft, CalendarPlus, CalendarCheck, CreditCard, Inbox as InboxIcon, MessageSquarePlus, AlertTriangle, Clock3, LogIn, LogOut } from "lucide-react";
 import { SitterShell } from "@/components/sitter/SitterShell";
 import { KpiTile } from "@/components/sitter/KpiTile";
 import { EmptyState } from "@/components/sitter/EmptyState";

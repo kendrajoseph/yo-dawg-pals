@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
-import { TrendingUp, CreditCard, AlertTriangle, CalendarCheck, Download, FileSpreadsheet } from "lucide-react";
+import { Link } from "react-router-dom";
+import { ArrowLeft, TrendingUp, CreditCard, AlertTriangle, CalendarCheck, Download, FileSpreadsheet } from "lucide-react";
 import { SitterShell } from "@/components/sitter/SitterShell";
 import { KpiTile } from "@/components/sitter/KpiTile";
 import { Card } from "@/components/ui/card";

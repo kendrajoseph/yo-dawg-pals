@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
-import { Star } from "lucide-react";
+import { Link } from "react-router-dom";
+import { ArrowLeft, Star } from "lucide-react";
 import { SitterShell } from "@/components/sitter/SitterShell";
 import { Card } from "@/components/ui/card";
 import { StarRating } from "@/components/StarRating";

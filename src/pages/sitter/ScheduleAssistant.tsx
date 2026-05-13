@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from "react";
-import { Sparkles, Send, AlertTriangle, Bell } from "lucide-react";
+import { Link } from "react-router-dom";
+import { ArrowLeft, Sparkles, Send, AlertTriangle, Bell } from "lucide-react";
 import { format } from "date-fns";
 import { SitterShell } from "@/components/sitter/SitterShell";
 import { Card } from "@/components/ui/card";

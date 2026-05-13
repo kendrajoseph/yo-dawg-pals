@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import { format } from "date-fns";
-import { Inbox as InboxIcon, AlertTriangle, CreditCard, PawPrint, Bell } from "lucide-react";
+import { ArrowLeft, Inbox as InboxIcon, AlertTriangle, CreditCard, PawPrint, Bell } from "lucide-react";
 import { SitterShell } from "@/components/sitter/SitterShell";
 import { EmptyState } from "@/components/sitter/EmptyState";
 import { Card } from "@/components/ui/card";
