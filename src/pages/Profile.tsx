@@ -160,8 +160,6 @@ const Profile = () => {
     setErrors({});
     setSaving(true);
 
-    setSaving(true);
-
     const { error } = await db
       .from("profiles")
       .update({
