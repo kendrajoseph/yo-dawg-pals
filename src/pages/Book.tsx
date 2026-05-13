@@ -274,6 +274,11 @@ const Book = () => {
       const sid = (a ?? [])[0]?.sitter_id ?? (ww ?? [])[0]?.sitter_id ?? null;
       setSitterId(sid);
 
+      track("booking_started", {
+        preset_service: presetSlug,
+        is_authenticated: !!user,
+      });
+
       if (sid) {
         const { data: bk } = await db
           .from("bookings")
