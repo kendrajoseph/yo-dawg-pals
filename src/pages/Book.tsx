@@ -988,6 +988,9 @@ const Book = () => {
       });
     } catch (err: any) {
       toast({ title: "Couldn't save request", description: err?.message ?? "Please try again.", variant: "destructive" });
+      track("booking_submit_failed", {
+        error: err?.message || "unknown",
+      });
     } finally {
       submittingRef.current = false;
       setSubmitting(false);
