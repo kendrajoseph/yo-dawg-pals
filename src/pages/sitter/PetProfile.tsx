@@ -1,13 +1,23 @@
 import { useEffect, useState } from "react";
-import { Link, useParams } from "react-router-dom";
+import { Link, useParams, useNavigate } from "react-router-dom";
 import { format } from "date-fns";
-import { ArrowLeft, PawPrint, Stethoscope, Phone, AlertTriangle, KeyRound, Heart, ShieldCheck, MessageSquare, CheckCircle2, XCircle, Circle } from "lucide-react";
+import { ArrowLeft, PawPrint, Stethoscope, Phone, AlertTriangle, KeyRound, Heart, ShieldCheck, MessageSquare, CheckCircle2, XCircle, Circle, Trash2 } from "lucide-react";
 import { SitterShell } from "@/components/sitter/SitterShell";
 import { EmptyState } from "@/components/sitter/EmptyState";
 import { Card } from "@/components/ui/card";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { MessageComposer } from "@/components/sitter/MessageComposer";
@@ -37,6 +47,7 @@ function Block({ label, value }: { label: string; value: string | null | undefin
 
 export default function SitterPetProfile() {
   const { id } = useParams<{ id: string }>();
+  const navigate = useNavigate();
   const { user } = useAuth();
   const [pet, setPet] = useState<any>(null);
   const [tags, setTags] = useState<any[]>([]);
@@ -47,6 +58,8 @@ export default function SitterPetProfile() {
   const [loading, setLoading] = useState(true);
   const [composeOpen, setComposeOpen] = useState(false);
   const [savingId, setSavingId] = useState<string | null>(null);
+  const [confirmDelete, setConfirmDelete] = useState(false);
+  const [deleting, setDeleting] = useState(false);
 
   useEffect(() => {
     if (!id || !user?.id) return;
@@ -101,6 +114,20 @@ export default function SitterPetProfile() {
     toast.success(`Marked ${status}`);
   };
 
+  const handleDelete = async () => {
+    if (!id) return;
+    setDeleting(true);
+    const { error } = await supabase.from("pets").delete().eq("id", id);
+    setDeleting(false);
+    if (error) {
+      toast.error(error.message || "Couldn't delete pet");
+      return;
+    }
+    toast.success("Pet deleted");
+    setConfirmDelete(false);
+    navigate("/sitter/pets");
+  };
+
   if (loading) return <SitterShell><div className="p-6 text-sm text-muted-foreground">Loading…</div></SitterShell>;
   if (!pet) return <SitterShell><EmptyState title="Pet not found" /></SitterShell>;
 
@@ -109,9 +136,14 @@ export default function SitterPetProfile() {
 
   return (
     <SitterShell action={
-      <Button size="sm" variant="outline" onClick={() => setComposeOpen(true)}>
-        <MessageSquare className="mr-1.5 h-4 w-4" />Message owner
-      </Button>
+      <div className="flex items-center gap-2">
+        <Button size="sm" variant="outline" onClick={() => setComposeOpen(true)}>
+          <MessageSquare className="mr-1.5 h-4 w-4" />Message owner
+        </Button>
+        <Button size="sm" variant="outline" className="text-destructive hover:text-destructive" onClick={() => setConfirmDelete(true)}>
+          <Trash2 className="mr-1.5 h-4 w-4" />Delete pet
+        </Button>
+      </div>
     }>
       <Link to="/sitter/pets" className="mb-4 inline-flex items-center gap-1 text-sm text-muted-foreground hover:text-foreground">
         <ArrowLeft className="h-3.5 w-3.5" />Back to pets
@@ -288,6 +320,23 @@ export default function SitterPetProfile() {
         onOpenChange={setComposeOpen}
         initialCustomerId={owner.id}
       />
+
+      <AlertDialog open={confirmDelete} onOpenChange={(v) => !v && setConfirmDelete(false)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Delete {pet.name}?</AlertDialogTitle>
+            <AlertDialogDescription>
+              This permanently removes {pet.name}'s profile and care details. Past bookings will be kept on record but will no longer be linked to this pet. This can't be undone.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={deleting}>Cancel</AlertDialogCancel>
+            <AlertDialogAction disabled={deleting} onClick={handleDelete}>
+              {deleting ? "Deleting…" : "Delete pet"}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </SitterShell>
   );
 }

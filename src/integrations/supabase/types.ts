@@ -236,7 +236,7 @@ export type Database = {
           paid_at: string | null
           payment_amount_cents: number | null
           payment_status: string
-          pet_id: string
+          pet_id: string | null
           recurrence_label: string | null
           recurrence_pattern: Json | null
           refund_amount_cents: number
@@ -284,7 +284,7 @@ export type Database = {
           paid_at?: string | null
           payment_amount_cents?: number | null
           payment_status?: string
-          pet_id: string
+          pet_id?: string | null
           recurrence_label?: string | null
           recurrence_pattern?: Json | null
           refund_amount_cents?: number
@@ -332,7 +332,7 @@ export type Database = {
           paid_at?: string | null
           payment_amount_cents?: number | null
           payment_status?: string
-          pet_id?: string
+          pet_id?: string | null
           recurrence_label?: string | null
           recurrence_pattern?: Json | null
           refund_amount_cents?: number
