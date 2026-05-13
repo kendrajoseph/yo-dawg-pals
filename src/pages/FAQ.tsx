@@ -1,3 +1,5 @@
+import { Link } from "react-router-dom";
+import { ArrowLeft } from "lucide-react";
 import SiteFooter from "@/components/SiteFooter";
 import SiteNav from "@/components/SiteNav";
 import {
@@ -46,6 +48,9 @@ const FAQ = () => {
       <section className="bg-primary text-primary-foreground">
         <SiteNav variant="dark" />
         <div className="mx-auto max-w-5xl px-5 pb-16 pt-6 sm:px-8 sm:pb-20 sm:pt-10">
+          <Link to="/" className="mb-3 inline-flex items-center gap-1 text-sm text-primary-foreground/75 hover:text-primary-foreground">
+            <ArrowLeft className="h-3.5 w-3.5" /> Back to home
+          </Link>
           <p className="font-tag text-accent">FAQ</p>
           <h1 className="mt-4 max-w-3xl font-display text-4xl leading-none sm:text-6xl">
             Questions owners ask before booking care.

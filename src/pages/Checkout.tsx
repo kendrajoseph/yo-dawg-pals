@@ -7,7 +7,7 @@ import SiteFooter from "@/components/SiteFooter";
 import { BookingCheckout } from "@/components/BookingCheckout";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Loader2 } from "lucide-react";
+import { ArrowLeft, Loader2 } from "lucide-react";
 import { formatBookingSchedule, formatPriceWithDecimals, STATUS_LABELS } from "@/lib/booking";
 import { getStripeEnvironment } from "@/lib/stripe";
 
@@ -121,7 +121,10 @@ const Checkout = () => {
     <main className="min-h-screen bg-background texture-grain">
       <SiteNav />
       <section className="mx-auto max-w-3xl px-5 py-10 sm:px-8 sm:py-14">
-        <span className="inline-block -rotate-2 font-tag text-2xl text-tag">last step</span>
+        <Link to="/account" className="inline-flex items-center gap-1 text-sm text-muted-foreground hover:text-foreground">
+          <ArrowLeft className="h-3.5 w-3.5" /> Back to account
+        </Link>
+        <span className="mt-3 inline-block -rotate-2 font-tag text-2xl text-tag">last step</span>
         <h1 className="font-display text-5xl text-primary sm:text-6xl spray-glow">
           Pay & <span className="text-gradient-sunrise">confirm.</span>
         </h1>

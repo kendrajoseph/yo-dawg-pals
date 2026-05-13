@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
-import { useSearchParams } from "react-router-dom";
+import { Link, useSearchParams } from "react-router-dom";
+import { ArrowLeft } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -68,35 +69,40 @@ export default function Unsubscribe() {
   return (
     <div className="min-h-screen flex flex-col bg-background">
       <SiteNav />
-      <main className="flex-1 flex items-center justify-center px-4 py-16">
-        <Card className="w-full max-w-md">
-          <CardHeader>
-            <CardTitle>Email preferences</CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            {state.kind === "loading" && <p className="text-muted-foreground">Checking your link…</p>}
-            {state.kind === "valid" && (
-              <>
-                <p>Click below to unsubscribe from these emails.</p>
-                <Button onClick={confirm} className="w-full">Confirm unsubscribe</Button>
-              </>
-            )}
-            {state.kind === "submitting" && <p className="text-muted-foreground">Unsubscribing…</p>}
-            {state.kind === "success" && (
-              <p>You've been unsubscribed. You won't receive these emails anymore.</p>
-            )}
-            {state.kind === "already" && <p>This address is already unsubscribed.</p>}
-            {state.kind === "invalid" && (
-              <p className="text-destructive">{state.message}</p>
-            )}
-            {state.kind === "error" && (
-              <>
+      <main className="flex-1 flex flex-col items-center justify-center px-4 py-16">
+        <div className="w-full max-w-md">
+          <Link to="/" className="mb-3 inline-flex items-center gap-1 text-sm text-muted-foreground hover:text-foreground">
+            <ArrowLeft className="h-3.5 w-3.5" /> Back to home
+          </Link>
+          <Card className="w-full">
+            <CardHeader>
+              <CardTitle>Email preferences</CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              {state.kind === "loading" && <p className="text-muted-foreground">Checking your link…</p>}
+              {state.kind === "valid" && (
+                <>
+                  <p>Click below to unsubscribe from these emails.</p>
+                  <Button onClick={confirm} className="w-full">Confirm unsubscribe</Button>
+                </>
+              )}
+              {state.kind === "submitting" && <p className="text-muted-foreground">Unsubscribing…</p>}
+              {state.kind === "success" && (
+                <p>You've been unsubscribed. You won't receive these emails anymore.</p>
+              )}
+              {state.kind === "already" && <p>This address is already unsubscribed.</p>}
+              {state.kind === "invalid" && (
                 <p className="text-destructive">{state.message}</p>
-                <Button onClick={confirm} variant="outline" className="w-full">Try again</Button>
-              </>
-            )}
-          </CardContent>
-        </Card>
+              )}
+              {state.kind === "error" && (
+                <>
+                  <p className="text-destructive">{state.message}</p>
+                  <Button onClick={confirm} variant="outline" className="w-full">Try again</Button>
+                </>
+              )}
+            </CardContent>
+          </Card>
+        </div>
       </main>
       <SiteFooter />
     </div>
