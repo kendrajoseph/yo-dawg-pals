@@ -32,7 +32,7 @@ import SitterPetProfile from "./pages/sitter/PetProfile.tsx";
 import SitterRequestDetail from "./pages/sitter/RequestDetail.tsx";
 import GroupRequestDetail from "./pages/sitter/GroupRequestDetail.tsx";
 import SitterBookingDetail from "./pages/sitter/BookingDetail.tsx";
-import SitterScheduleAssistant from "./pages/sitter/ScheduleAssistant.tsx";
+import SitterAssistant from "./pages/sitter/Assistant.tsx";
 import SitterMessages from "./pages/sitter/Messages.tsx";
 import SitterReports from "./pages/sitter/Reports.tsx";
 import SitterReviews from "./pages/sitter/Reviews.tsx";
@@ -76,7 +76,7 @@ const App = () => (
             <Route path="/sitter/requests/group/:groupId" element={<ProtectedRoute requireSitter><GroupRequestDetail /></ProtectedRoute>} />
             <Route path="/sitter/requests/:id" element={<ProtectedRoute requireSitter><SitterRequestDetail /></ProtectedRoute>} />
             <Route path="/sitter/bookings/:id" element={<ProtectedRoute requireSitter><SitterBookingDetail /></ProtectedRoute>} />
-            <Route path="/sitter/assistant" element={<ProtectedRoute requireSitter><SitterScheduleAssistant /></ProtectedRoute>} />
+            <Route path="/sitter/assistant" element={<ProtectedRoute requireSitter><SitterAssistant /></ProtectedRoute>} />
             <Route path="/sitter/invoices" element={<ProtectedRoute requireSitter><SitterInvoices /></ProtectedRoute>} />
             <Route path="/sitter/calendar" element={<ProtectedRoute requireSitter><SitterCalendar /></ProtectedRoute>} />
             <Route path="/sitter/map" element={<ProtectedRoute requireSitter><SitterMap /></ProtectedRoute>} />
