@@ -18,7 +18,7 @@ import Profile from "./pages/Profile.tsx";
 import Book from "./pages/Book.tsx";
 import Checkout from "./pages/Checkout.tsx";
 import BookingSuccess from "./pages/BookingSuccess.tsx";
-import SitterDashboard from "./pages/SitterDashboard.tsx";
+
 import SitterToday from "./pages/sitter/Today.tsx";
 import SitterInbox from "./pages/sitter/Inbox.tsx";
 import SitterInvoices from "./pages/sitter/Invoices.tsx";
