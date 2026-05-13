@@ -114,6 +114,20 @@ export default function SitterPetProfile() {
     toast.success(`Marked ${status}`);
   };
 
+  const handleDelete = async () => {
+    if (!id) return;
+    setDeleting(true);
+    const { error } = await supabase.from("pets").delete().eq("id", id);
+    setDeleting(false);
+    if (error) {
+      toast.error(error.message || "Couldn't delete pet");
+      return;
+    }
+    toast.success("Pet deleted");
+    setConfirmDelete(false);
+    navigate("/sitter/pets");
+  };
+
   if (loading) return <SitterShell><div className="p-6 text-sm text-muted-foreground">Loading…</div></SitterShell>;
   if (!pet) return <SitterShell><EmptyState title="Pet not found" /></SitterShell>;
 
