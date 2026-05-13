@@ -1,127 +1,200 @@
-import { useEffect, useMemo, useRef, useState } from "react";
-import { Send, RotateCcw, Check, X, ChevronDown, Wrench } from "lucide-react";
+import { useEffect, useRef, useState } from "react";
+import { Send, Sparkles, Check, X, Loader2, RotateCcw } from "lucide-react";
 import { SitterShell } from "@/components/sitter/SitterShell";
 import { SitterPageHeader } from "@/components/sitter/SitterPageHeader";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
+import { Badge } from "@/components/ui/badge";
 import { supabase } from "@/integrations/supabase/client";
+import { useAuth } from "@/hooks/useAuth";
 import { toast } from "@/hooks/use-toast";
-import { track } from "@/integrations/posthog/PostHogProvider";
+import { cn } from "@/lib/utils";
 import assistantAvatar from "@/assets/assistant-avatar.png";
 
-type ChatMsg = {
-  role: "system" | "user" | "assistant" | "tool";
+type Message = {
+  id: string;
+  role: "user" | "assistant" | "tool" | "system";
   content: string | null;
-  name?: string;
-  tool_call_id?: string;
-  tool_calls?: Array<{ id: string; type: "function"; function: { name: string; arguments: string } }>;
+  created_at: string;
+  pending_actions?: PendingAction[];
 };
 
-type PendingApproval = {
-  toolCallId: string;
-  toolName: string;
-  args: Record<string, unknown>;
-  summary: string;
-  preview: Record<string, unknown>;
+type PendingAction = {
+  id: string;
+  action_type: string;
+  action_summary: string;
+  status: "pending" | "confirmed" | "cancelled" | "failed" | "expired";
 };
 
-const STORAGE_KEY = "yodawg-assistant-convo-v1";
-
-const SUGGESTIONS = [
-  "What's on my schedule today?",
-  "Show me pending walk requests",
-  "Find bookings for the Smiths",
-  "Which invoices are still unpaid?",
+const SAMPLE_PROMPTS = [
+  "Find overdue invoices",
+  "Who hasn't paid this month?",
+  "What's tomorrow look like?",
+  "Show me Moose's recent bookings",
+  "How much did I make last week?",
+  "What's in my inbox?",
 ];
 
 export default function SitterAssistant() {
-  const [messages, setMessages] = useState<ChatMsg[]>([]);
+  const { user } = useAuth();
+  const [conversationId, setConversationId] = useState<string | null>(null);
+  const [messages, setMessages] = useState<Message[]>([]);
   const [input, setInput] = useState("");
-  const [busy, setBusy] = useState(false);
-  const [pending, setPending] = useState<PendingApproval | null>(null);
-  const scrollerRef = useRef<HTMLDivElement>(null);
+  const [sending, setSending] = useState(false);
+  const [actionsBusy, setActionsBusy] = useState<Set<string>>(new Set());
+  const scrollRef = useRef<HTMLDivElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
 
-  // Load persisted conversation
   useEffect(() => {
-    if (typeof window === "undefined") return;
-    try {
-      const raw = window.localStorage.getItem(STORAGE_KEY);
-      if (raw) {
-        const parsed = JSON.parse(raw);
-        if (Array.isArray(parsed.messages)) setMessages(parsed.messages);
-        if (parsed.pending) setPending(parsed.pending);
+    if (!user?.id) return;
+    (async () => {
+      const { data: convo } = await supabase
+        .from("assistant_conversations")
+        .select("id")
+        .eq("sitter_id", user.id)
+        .order("last_message_at", { ascending: false })
+        .limit(1)
+        .maybeSingle();
+
+      if (convo) {
+        setConversationId((convo as any).id);
+        await loadMessages((convo as any).id);
       }
-    } catch {}
-    textareaRef.current?.focus();
-  }, []);
-
-  // Persist on change
-  useEffect(() => {
-    if (typeof window === "undefined") return;
-    try {
-      window.localStorage.setItem(STORAGE_KEY, JSON.stringify({ messages, pending }));
-    } catch {}
-  }, [messages, pending]);
+      textareaRef.current?.focus();
+    })();
+  }, [user?.id]);
 
   useEffect(() => {
-    scrollerRef.current?.scrollTo({ top: scrollerRef.current.scrollHeight, behavior: "smooth" });
-  }, [messages.length, pending, busy]);
+    scrollRef.current?.scrollTo({ top: scrollRef.current.scrollHeight, behavior: "smooth" });
+  }, [messages.length, sending]);
 
-  const visibleMessages = useMemo(
-    () => messages.filter((m) => m.role === "user" || (m.role === "assistant" && m.content)),
-    [messages]
-  );
+  const loadMessages = async (convoId: string) => {
+    const { data } = await supabase
+      .from("assistant_messages")
+      .select("id, role, content, created_at")
+      .eq("conversation_id", convoId)
+      .in("role", ["user", "assistant"])
+      .order("created_at", { ascending: true });
 
-  const callAssistant = async (nextMessages: ChatMsg[], approval?: PendingApproval & { approved: boolean }) => {
-    setBusy(true);
+    if (!data) return;
+
+    const assistantIds = data.filter((m: any) => m.role === "assistant").map((m: any) => m.id);
+    const { data: pending } = assistantIds.length
+      ? await supabase
+          .from("assistant_pending_actions")
+          .select("id, message_id, action_type, action_summary, status")
+          .in("message_id", assistantIds)
+      : { data: [] };
+
+    const pendingByMessage = new Map<string, PendingAction[]>();
+    for (const p of pending ?? []) {
+      const list = pendingByMessage.get((p as any).message_id) ?? [];
+      list.push(p as any);
+      pendingByMessage.set((p as any).message_id, list);
+    }
+
+    setMessages(
+      data
+        .filter((m: any) => m.content)
+        .map((m: any) => ({ ...m, pending_actions: pendingByMessage.get(m.id) ?? [] })),
+    );
+  };
+
+  const sendMessage = async (text?: string) => {
+    const messageText = (text ?? input).trim();
+    if (!messageText || sending) return;
+
+    setSending(true);
+    setInput("");
+
+    const tempUserMsg: Message = {
+      id: `temp-${Date.now()}`,
+      role: "user",
+      content: messageText,
+      created_at: new Date().toISOString(),
+    };
+    setMessages((m) => [...m, tempUserMsg]);
+
     try {
       const { data, error } = await supabase.functions.invoke("assistant-chat", {
-        body: {
-          messages: nextMessages,
-          approval: approval
-            ? { toolCallId: approval.toolCallId, toolName: approval.toolName, args: approval.args, approved: approval.approved }
-            : undefined,
-        },
+        body: { conversation_id: conversationId, message: messageText },
       });
       if (error) throw error;
-      const result = data as { ok?: boolean; messages?: ChatMsg[]; pendingApproval?: PendingApproval | null; error?: string };
-      if (!result?.ok) throw new Error(result?.error ?? "Assistant failed");
-      setMessages(result.messages ?? []);
-      setPending(result.pendingApproval ?? null);
+      const result = data as any;
+
+      if (result.conversation_id) {
+        setConversationId(result.conversation_id);
+        await loadMessages(result.conversation_id);
+      }
     } catch (err) {
-      const msg = err instanceof Error ? err.message : "Unknown error";
-      toast({ title: "Assistant error", description: msg, variant: "destructive" });
+      toast({
+        title: "Couldn't reach the assistant",
+        description: err instanceof Error ? err.message : String(err),
+        variant: "destructive",
+      });
+      setMessages((m) => m.filter((msg) => msg.id !== tempUserMsg.id));
     } finally {
-      setBusy(false);
+      setSending(false);
       setTimeout(() => textareaRef.current?.focus(), 50);
     }
   };
 
-  const send = async (textOverride?: string) => {
-    const text = (textOverride ?? input).trim();
-    if (!text || busy) return;
-    track("assistant_chat_send", { length: text.length });
-    const next: ChatMsg[] = [...messages, { role: "user", content: text }];
-    setMessages(next);
-    setInput("");
-    await callAssistant(next);
+  const confirmAction = async (actionId: string) => {
+    setActionsBusy((s) => new Set(s).add(actionId));
+    try {
+      const { error } = await supabase.functions.invoke("assistant-execute-action", {
+        body: { pending_action_id: actionId },
+      });
+      if (error) throw error;
+      toast({ title: "Done ✓" });
+      if (conversationId) await loadMessages(conversationId);
+    } catch (err) {
+      toast({
+        title: "Action failed",
+        description: err instanceof Error ? err.message : String(err),
+        variant: "destructive",
+      });
+    } finally {
+      setActionsBusy((s) => {
+        const next = new Set(s);
+        next.delete(actionId);
+        return next;
+      });
+    }
   };
 
-  const approve = async (approved: boolean) => {
-    if (!pending) return;
-    const decision = pending;
-    setPending(null);
-    await callAssistant(messages, { ...decision, approved });
+  const cancelAction = async (actionId: string) => {
+    setActionsBusy((s) => new Set(s).add(actionId));
+    try {
+      const { error } = await supabase.functions.invoke("assistant-cancel-action", {
+        body: { pending_action_id: actionId },
+      });
+      if (error) throw error;
+      if (conversationId) await loadMessages(conversationId);
+    } catch (err) {
+      toast({ title: "Couldn't cancel", description: String(err), variant: "destructive" });
+    } finally {
+      setActionsBusy((s) => {
+        const next = new Set(s);
+        next.delete(actionId);
+        return next;
+      });
+    }
   };
 
-  const reset = () => {
-    if (busy) return;
-    setMessages([]);
-    setPending(null);
-    if (typeof window !== "undefined") window.localStorage.removeItem(STORAGE_KEY);
-    textareaRef.current?.focus();
+  const startNewConversation = async () => {
+    if (!user?.id || sending) return;
+    const { data } = await supabase
+      .from("assistant_conversations")
+      .insert({ sitter_id: user.id, title: "New chat" })
+      .select("id")
+      .single();
+    if (data) {
+      setConversationId((data as any).id);
+      setMessages([]);
+      textareaRef.current?.focus();
+    }
   };
 
   return (
@@ -129,66 +202,63 @@ export default function SitterAssistant() {
       <SitterPageHeader
         title={
           <span className="inline-flex items-center gap-2">
-            <img src={assistantAvatar} alt="" className="h-7 w-7" width={512} height={512} loading="lazy" />
+            <img src={assistantAvatar} alt="" className="h-7 w-7" width={28} height={28} loading="lazy" />
             Assistant
           </span>
         }
-        description="Ask me to find anything, change a booking, send an invoice, update the schedule — anything on the site."
+        description="Ask anything about your business. I can find things, draft messages, and propose actions."
         actions={
-          <Button variant="outline" size="sm" onClick={reset} disabled={busy || messages.length === 0}>
+          <Button size="sm" variant="outline" onClick={startNewConversation} disabled={sending}>
             <RotateCcw className="mr-1.5 h-3.5 w-3.5" />
             New chat
           </Button>
         }
       />
 
-      <Card className="border border-border p-0 shadow-soft flex flex-col h-[calc(100vh-220px)] min-h-[480px]">
-        <div ref={scrollerRef} className="flex-1 overflow-y-auto p-4 space-y-4">
-          {visibleMessages.length === 0 && !busy ? (
-            <EmptyState onPick={(s) => send(s)} />
+      <Card className="flex h-[calc(100vh-220px)] min-h-[480px] flex-col border border-border shadow-soft">
+        <div ref={scrollRef} className="flex-1 overflow-y-auto px-4 py-6 sm:px-6">
+          {messages.length === 0 && !sending ? (
+            <EmptyState onTry={sendMessage} />
           ) : (
-            visibleMessages.map((msg, i) => (
-              <MessageBubble key={i} msg={msg} />
-            ))
-          )}
-
-          {/* Render tool-call summaries inline (assistant messages with tool_calls but no content) */}
-          {messages.map((m, i) =>
-            m.role === "assistant" && m.tool_calls && m.tool_calls.length > 0 && !m.content ? (
-              <ToolCallStrip key={`tc-${i}`} toolCalls={m.tool_calls} results={collectToolResults(messages, m.tool_calls)} />
-            ) : null
-          )}
-
-          {pending && <ApprovalCard pending={pending} onApprove={() => approve(true)} onDecline={() => approve(false)} disabled={busy} />}
-
-          {busy && (
-            <div className="flex items-center gap-2 text-sm text-muted-foreground">
-              <span className="inline-block h-2 w-2 animate-pulse rounded-full bg-primary" />
-              Thinking…
+            <div className="space-y-4">
+              {messages.map((m) => (
+                <MessageBubble
+                  key={m.id}
+                  message={m}
+                  onConfirm={confirmAction}
+                  onCancel={cancelAction}
+                  busy={actionsBusy}
+                />
+              ))}
+              {sending && (
+                <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                  <Loader2 className="h-4 w-4 animate-spin" />
+                  Thinking…
+                </div>
+              )}
             </div>
           )}
         </div>
 
-        <div className="border-t border-border p-3">
+        <div className="border-t border-border p-3 sm:p-4">
           <div className="flex items-end gap-2">
             <Textarea
               ref={textareaRef}
-              placeholder="Ask anything about your bookings, clients, invoices, schedule…"
               value={input}
               onChange={(e) => setInput(e.target.value)}
               onKeyDown={(e) => {
                 if (e.key === "Enter" && !e.shiftKey) {
                   e.preventDefault();
-                  send();
+                  sendMessage();
                 }
               }}
+              placeholder="Find overdue invoices, what's tomorrow look like, how much did I make last week..."
               rows={2}
-              disabled={busy || !!pending}
               className="flex-1 resize-none"
+              disabled={sending}
             />
-            <Button onClick={() => send()} disabled={busy || !input.trim() || !!pending} className="self-end">
-              <Send className="mr-1.5 h-4 w-4" />
-              Send
+            <Button onClick={() => sendMessage()} disabled={sending || !input.trim()} className="self-end h-[60px]">
+              <Send className="h-4 w-4" />
             </Button>
           </div>
           <p className="mt-2 text-xs text-muted-foreground">
@@ -200,143 +270,114 @@ export default function SitterAssistant() {
   );
 }
 
-function collectToolResults(all: ChatMsg[], toolCalls: NonNullable<ChatMsg["tool_calls"]>) {
-  const ids = new Set(toolCalls.map((t) => t.id));
-  return all.filter((m) => m.role === "tool" && m.tool_call_id && ids.has(m.tool_call_id));
-}
+function MessageBubble({
+  message,
+  onConfirm,
+  onCancel,
+  busy,
+}: {
+  message: Message;
+  onConfirm: (id: string) => void;
+  onCancel: (id: string) => void;
+  busy: Set<string>;
+}) {
+  const isUser = message.role === "user";
+  const display = isUser && message.content
+    ? message.content.replace(/^\[Today is [^\]]+\]\s*/, "")
+    : message.content;
 
-function MessageBubble({ msg }: { msg: ChatMsg }) {
-  if (msg.role === "user") {
+  if (isUser) {
     return (
       <div className="flex justify-end">
-        <div className="max-w-[85%] rounded-lg bg-primary px-3 py-2 text-sm text-primary-foreground whitespace-pre-wrap">
-          {msg.content}
+        <div className="max-w-[85%] rounded-2xl bg-primary px-4 py-2.5 text-sm text-primary-foreground whitespace-pre-wrap">
+          {display}
         </div>
       </div>
     );
   }
-  if (msg.role === "assistant" && msg.content) {
-    return (
-      <div className="flex items-start gap-3">
-        <img src={assistantAvatar} alt="" className="mt-0.5 h-7 w-7 shrink-0" width={28} height={28} loading="lazy" />
-        <div className="flex-1 text-sm text-foreground whitespace-pre-wrap leading-relaxed">{msg.content}</div>
-      </div>
-    );
-  }
-  return null;
-}
 
-function ToolCallStrip({
-  toolCalls,
-  results,
-}: {
-  toolCalls: NonNullable<ChatMsg["tool_calls"]>;
-  results: ChatMsg[];
-}) {
   return (
-    <div className="ml-10 space-y-2">
-      {toolCalls.map((tc) => {
-        const result = results.find((r) => r.tool_call_id === tc.id);
-        return <ToolCallRow key={tc.id} name={tc.function.name} args={tc.function.arguments} result={result?.content ?? null} />;
-      })}
-    </div>
-  );
-}
-
-function ToolCallRow({ name, args, result }: { name: string; args: string; result: string | null }) {
-  const [open, setOpen] = useState(false);
-  const niceName = name.replace(/_/g, " ");
-  return (
-    <div className="rounded-md border border-border bg-muted/40 text-xs">
-      <button
-        type="button"
-        onClick={() => setOpen((o) => !o)}
-        className="flex w-full items-center gap-2 px-2 py-1.5 text-left"
-      >
-        <Wrench className="h-3 w-3 text-muted-foreground" />
-        <span className="font-medium">{niceName}</span>
-        <span className="ml-auto text-muted-foreground">{result ? "done" : "running…"}</span>
-        <ChevronDown className={`h-3 w-3 transition ${open ? "rotate-180" : ""}`} />
-      </button>
-      {open && (
-        <div className="border-t border-border px-2 py-2 space-y-1.5">
-          <div>
-            <div className="text-[10px] uppercase tracking-wide text-muted-foreground">arguments</div>
-            <pre className="overflow-x-auto whitespace-pre-wrap text-[11px]">{prettyJson(args)}</pre>
+    <div className="flex items-start gap-3">
+      <img src={assistantAvatar} alt="" className="mt-0.5 h-7 w-7 shrink-0 rounded-full" width={28} height={28} loading="lazy" />
+      <div className="flex-1 min-w-0">
+        <div className="text-sm whitespace-pre-wrap leading-relaxed text-foreground">{display}</div>
+        {message.pending_actions && message.pending_actions.length > 0 && (
+          <div className="mt-2 space-y-2">
+            {message.pending_actions.map((action) => (
+              <PendingActionCard
+                key={action.id}
+                action={action}
+                busy={busy.has(action.id)}
+                onConfirm={() => onConfirm(action.id)}
+                onCancel={() => onCancel(action.id)}
+              />
+            ))}
           </div>
-          {result && (
-            <div>
-              <div className="text-[10px] uppercase tracking-wide text-muted-foreground">result</div>
-              <pre className="max-h-64 overflow-auto whitespace-pre-wrap text-[11px]">{prettyJson(result)}</pre>
-            </div>
-          )}
-        </div>
-      )}
+        )}
+      </div>
     </div>
   );
 }
 
-function prettyJson(raw: string) {
-  try {
-    return JSON.stringify(JSON.parse(raw), null, 2);
-  } catch {
-    return raw;
-  }
-}
-
-function ApprovalCard({
-  pending,
-  onApprove,
-  onDecline,
-  disabled,
+function PendingActionCard({
+  action,
+  busy,
+  onConfirm,
+  onCancel,
 }: {
-  pending: PendingApproval;
-  onApprove: () => void;
-  onDecline: () => void;
-  disabled: boolean;
+  action: PendingAction;
+  busy: boolean;
+  onConfirm: () => void;
+  onCancel: () => void;
 }) {
-  return (
-    <div className="rounded-lg border-2 border-primary bg-primary/5 p-4 ml-10">
-      <div className="text-xs uppercase tracking-wide text-primary font-semibold mb-1">Confirm action</div>
-      <div className="text-sm font-medium">{pending.summary}</div>
-      <div className="mt-2 text-[11px] text-muted-foreground">
-        Tool: <span className="font-mono">{pending.toolName}</span>
+  if (action.status !== "pending") {
+    const label =
+      action.status === "confirmed" ? "✓ Done"
+      : action.status === "cancelled" ? "Cancelled"
+      : action.status === "failed" ? "⚠️ Failed"
+      : "Expired";
+    return (
+      <div className="rounded-lg border border-border bg-card px-3 py-2 text-xs">
+        <Badge variant={action.status === "confirmed" ? "default" : "outline"}>{label}</Badge>
+        <span className="ml-2 text-muted-foreground">{action.action_summary}</span>
       </div>
-      <pre className="mt-2 max-h-40 overflow-auto rounded bg-background p-2 text-[11px]">
-        {JSON.stringify(pending.preview, null, 2)}
-      </pre>
-      <div className="mt-3 flex justify-end gap-2">
-        <Button variant="outline" size="sm" onClick={onDecline} disabled={disabled}>
-          <X className="mr-1 h-3.5 w-3.5" />
-          Don't do it
+    );
+  }
+
+  return (
+    <div className="rounded-lg border-2 border-primary bg-primary/5 p-3">
+      <div className="text-xs font-semibold uppercase tracking-wide text-primary">Awaiting confirmation</div>
+      <div className="mt-1 text-sm">{action.action_summary}</div>
+      <div className="mt-3 flex gap-2">
+        <Button size="sm" onClick={onConfirm} disabled={busy}>
+          {busy ? <Loader2 className="mr-1 h-3.5 w-3.5 animate-spin" /> : <Check className="mr-1 h-3.5 w-3.5" />}
+          Confirm
         </Button>
-        <Button size="sm" onClick={onApprove} disabled={disabled}>
-          <Check className="mr-1 h-3.5 w-3.5" />
-          Yes, do it
+        <Button size="sm" variant="outline" onClick={onCancel} disabled={busy}>
+          <X className="mr-1 h-3.5 w-3.5" />
+          Cancel
         </Button>
       </div>
     </div>
   );
 }
 
-function EmptyState({ onPick }: { onPick: (s: string) => void }) {
+function EmptyState({ onTry }: { onTry: (text: string) => void }) {
   return (
-    <div className="flex flex-col items-center justify-center text-center py-8 space-y-4">
+    <div className="flex h-full flex-col items-center justify-center text-center">
       <img src={assistantAvatar} alt="" className="h-16 w-16" width={64} height={64} loading="lazy" />
-      <div>
-        <p className="text-base font-medium">Hey Anneke — what do you need?</p>
-        <p className="text-sm text-muted-foreground mt-1">
-          I can search, summarize, and run actions across the whole site. Try one of these:
-        </p>
-      </div>
-      <div className="flex flex-wrap justify-center gap-2 max-w-lg">
-        {SUGGESTIONS.map((s) => (
+      <h3 className="mt-4 font-display text-xl text-primary">How can I help?</h3>
+      <p className="mt-2 max-w-sm text-sm text-muted-foreground">
+        Ask anything about your bookings, invoices, clients, or schedule. I can also draft messages and propose actions.
+      </p>
+      <div className="mt-6 flex flex-wrap justify-center gap-2">
+        {SAMPLE_PROMPTS.map((p) => (
           <button
-            key={s}
-            onClick={() => onPick(s)}
-            className="rounded-full border border-border bg-background px-3 py-1.5 text-xs hover:bg-muted transition"
+            key={p}
+            onClick={() => onTry(p)}
+            className="rounded-full border border-border bg-card px-3 py-1.5 text-xs text-foreground/80 hover:bg-muted"
           >
-            {s}
+            {p}
           </button>
         ))}
       </div>

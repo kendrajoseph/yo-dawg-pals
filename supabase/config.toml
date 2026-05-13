@@ -39,7 +39,13 @@ verify_jwt = false
 verify_jwt = false
 
 [functions.assistant-chat]
-verify_jwt = false
+verify_jwt = true
+
+[functions.assistant-execute-action]
+verify_jwt = true
+
+[functions.assistant-cancel-action]
+verify_jwt = true
 
 [functions.handle-telegram-webhook]
 verify_jwt = false
