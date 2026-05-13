@@ -184,7 +184,7 @@ const SiteNav = ({ variant = "light" }: SiteNavProps) => {
                   asChild
                   className="h-12 w-full justify-center rounded-full bg-primary text-base font-semibold text-primary-foreground hover:bg-primary/90"
                 >
-                  <Link to="/auth" onClick={() => setOpen(false)}>Sign in</Link>
+                  <Link to="/auth" onClick={() => track("sign_in_clicked")}>Sign in</Link>
                 </Button>
               )}
             </div>
