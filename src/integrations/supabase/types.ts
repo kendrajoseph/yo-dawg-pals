@@ -860,6 +860,45 @@ export type Database = {
         }
         Relationships: []
       }
+      personal_events: {
+        Row: {
+          all_day: boolean
+          category: string
+          created_at: string
+          end_at: string
+          id: string
+          notes: string | null
+          sitter_id: string
+          start_at: string
+          title: string
+          updated_at: string
+        }
+        Insert: {
+          all_day?: boolean
+          category?: string
+          created_at?: string
+          end_at: string
+          id?: string
+          notes?: string | null
+          sitter_id: string
+          start_at: string
+          title: string
+          updated_at?: string
+        }
+        Update: {
+          all_day?: boolean
+          category?: string
+          created_at?: string
+          end_at?: string
+          id?: string
+          notes?: string | null
+          sitter_id?: string
+          start_at?: string
+          title?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       pet_fit_alerts: {
         Row: {
           approval_id: string | null
