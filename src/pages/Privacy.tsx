@@ -26,6 +26,10 @@ const sections = [
     body: "With your permission, we may share photos of your pet on our social media (Instagram @yodawg.ca) or website. We will always ask before posting. You can withdraw permission at any time by emailing us.",
   },
   {
+    title: "Text messages (SMS)",
+    body: "If you opt in to text updates, we use Twilio to send you transactional messages about your bookings, including pickup, drop-off, and care notes during your booking. Standard message and data rates from your mobile carrier apply.\n\nYou can opt out at any time by:\n\n- Replying STOP to any text we send you\n- Unchecking the text updates option in your profile\n- Emailing anneke@yodawg.ca\n\nReply HELP to any of our texts for help, or to confirm your opt-in status. We do not send marketing text messages and we do not share your phone number with third parties for marketing purposes.",
+  },
+  {
     title: "How we store your information",
     body: "Your information is stored securely using industry-standard tools. We keep your records for as long as you are an active client, and for up to seven years after your last booking for accounting and tax purposes.",
   },
