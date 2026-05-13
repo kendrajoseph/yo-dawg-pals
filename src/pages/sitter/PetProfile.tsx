@@ -1,13 +1,23 @@
 import { useEffect, useState } from "react";
-import { Link, useParams } from "react-router-dom";
+import { Link, useParams, useNavigate } from "react-router-dom";
 import { format } from "date-fns";
-import { ArrowLeft, PawPrint, Stethoscope, Phone, AlertTriangle, KeyRound, Heart, ShieldCheck, MessageSquare, CheckCircle2, XCircle, Circle } from "lucide-react";
+import { ArrowLeft, PawPrint, Stethoscope, Phone, AlertTriangle, KeyRound, Heart, ShieldCheck, MessageSquare, CheckCircle2, XCircle, Circle, Trash2 } from "lucide-react";
 import { SitterShell } from "@/components/sitter/SitterShell";
 import { EmptyState } from "@/components/sitter/EmptyState";
 import { Card } from "@/components/ui/card";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { MessageComposer } from "@/components/sitter/MessageComposer";
