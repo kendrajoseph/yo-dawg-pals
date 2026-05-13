@@ -96,7 +96,7 @@ const SiteNav = ({ variant = "light" }: SiteNavProps) => {
           aria-expanded={open}
           onClick={() => setOpen((o) => !o)}
         >
-          {open ? <Menu className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
+          {open ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
         </Button>
         {user ? (
           <Button

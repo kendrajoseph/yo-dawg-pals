@@ -441,7 +441,7 @@ export default function SitterMap() {
                 {orderedPins.map((p, idx) => (
                   <li key={p.id} className="flex items-start gap-3 rounded-md border border-border bg-muted/30 p-2.5">
                     <span
-                      className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full text-xs font-semibold text-white"
+                      className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full text-xs font-semibold text-primary-foreground"
                       style={{ background: statusColor(p) }}
                     >
                       {idx + 1}
@@ -479,7 +479,7 @@ export default function SitterMap() {
                   <Button
                     size="sm"
                     variant="outline"
-                    className="mt-2 border-amber-300 bg-white/60 text-amber-900 hover:bg-amber-100 dark:border-amber-800 dark:bg-amber-950/40 dark:text-amber-200"
+                    className="mt-2 border-amber-300 bg-card/60 text-amber-900 hover:bg-amber-100 dark:border-amber-800 dark:bg-amber-950/40 dark:text-amber-200"
                     onClick={() => setMissingDialogOpen(true)}
                   >
                     View & fix {missingAddress.length} booking{missingAddress.length === 1 ? "" : "s"}

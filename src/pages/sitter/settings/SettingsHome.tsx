@@ -1,10 +1,9 @@
 import { Link } from "react-router-dom";
-import { Briefcase, Clock, Bell, FileText, Palette } from "lucide-react";
+import { Clock, Bell, FileText, Palette } from "lucide-react";
 import { Card } from "@/components/ui/card";
 import { SettingsLayout } from "./SettingsLayout";
 
 const TILES = [
-  { to: "/sitter/settings/services", icon: Briefcase, title: "Services & pricing", desc: "Define what you offer and how it's priced." },
   { to: "/sitter/settings/availability", icon: Clock, title: "Availability", desc: "Weekly hours, walk windows, blocked dates." },
   { to: "/sitter/settings/reminders", icon: Bell, title: "Reminders", desc: "Auto-send invoice reminders on a cadence." },
   { to: "/sitter/settings/templates", icon: FileText, title: "Templates", desc: "Email and SMS message templates." },
