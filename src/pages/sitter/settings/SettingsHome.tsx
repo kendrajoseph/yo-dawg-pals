@@ -1,5 +1,5 @@
 import { Link } from "react-router-dom";
-import { Clock, Bell, FileText, Palette } from "lucide-react";
+import { Clock, Bell, FileText, Palette, Bot } from "lucide-react";
 import { Card } from "@/components/ui/card";
 import { SettingsLayout } from "./SettingsLayout";
 
@@ -8,6 +8,7 @@ const TILES = [
   { to: "/sitter/settings/reminders", icon: Bell, title: "Reminders", desc: "Auto-send invoice reminders on a cadence." },
   { to: "/sitter/settings/templates", icon: FileText, title: "Templates", desc: "Email and SMS message templates." },
   { to: "/sitter/settings/branding", icon: Palette, title: "Branding", desc: "Logo and colours on invoices and emails." },
+  { to: "/sitter/settings/telegram", icon: Bot, title: "Telegram", desc: "Nightly schedule + tap-to-log pickups in Telegram." },
 ];
 
 export default function SettingsHome() {
