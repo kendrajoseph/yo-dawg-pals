@@ -1,63 +1,92 @@
+## Goal
+Replace the three "coming soon" stubs (Reminders, Templates, Branding) with real, working settings backed by the database, and wire them into the invoice-sending flow.
 
-# Site audit — UX & code health
+## Scope (this loop)
+- **Branding**: business name, logo, address, phone, website. Used on invoice PDFs/emails and the public pay page.
+- **Templates**: editable subject + body for invoice emails (sent / paid / reminder / overdue), booking emails (request / approved / declined), and SMS versions of reminder + booking-status messages. Variables like `{{customer_name}}`, `{{invoice_number}}`, `{{amount}}`, `{{due_date}}`, `{{pay_url}}`, `{{business_name}}` are supported.
+- **Reminders**: a default cadence (e.g. "3 days before due", "on due date", "7 days overdue") with per-invoice override (enable/disable, custom rules).
 
-Scope: customer site + sitter dashboard. ~150 source files, 13.7k lines in pages alone.
+## Out of scope (next loop)
+- The actual cron job that sweeps invoices and dispatches reminders. We'll store the rules and provide a "Send reminder now" button that uses the rules immediately. The scheduled dispatcher can be added once you've reviewed the templates output.
+- Live preview rendering of templates with sample data (we'll show variable hints but not a live render).
 
----
+## Schema
 
-## Findings
+### `sitter_branding` (one row per sitter)
+- `sitter_id uuid PK` — references the auth user
+- `business_name text`
+- `logo_url text` (Supabase storage public URL)
+- `footer_address text`, `footer_phone text`, `footer_website text`
+- `updated_at`
 
-### A. Code health & architecture
+### `sitter_message_templates`
+- `id uuid PK`
+- `sitter_id uuid`
+- `kind text` — `invoice_sent | invoice_paid | invoice_reminder | invoice_overdue | booking_requested | booking_approved | booking_declined`
+- `channel text` — `email | sms`
+- `subject text` (null for SMS)
+- `body text`
+- `updated_at`
+- Unique on `(sitter_id, kind, channel)` — one template per (kind, channel)
 
-1. **`SitterDashboard.tsx` is 4,303 lines** and lives at `/sitter-classic`, parallel to the new `/sitter/*` page tree. It's the single biggest tech-debt item in the repo — likely 70%+ dead/duplicated code now that the new shell exists. Risk: any backend change has to be made in two places.
-2. **Two big payment drawers** — `PaymentDrawer.tsx` (479) and `InvoiceDrawer.tsx` (437) overlap heavily in concerns (status, line items, refund/reminder dialogs). Good candidates for a shared `<PaymentPanel>` skeleton + slot content.
-3. **116 `as any` casts**, mostly `supabase as any`. Types exist (`src/integrations/supabase/types.ts`) — these casts silently disable the only safety net we have on DB calls.
-4. **Repeated page-header pattern** — every sitter page hand-rolls the same block:
-   ```
-   <Link to="/sitter"><ArrowLeft /> Back to dashboard</Link>
-   <h1>Title</h1>
-   ```
-   Wording drifts ("Back to dashboard", "Back to today", "Back to inbox", "Back to clients"). And `SitterShell` already renders a breadcrumb in its header — so the per-page back link is largely redundant.
-5. **`useEffect` data-loading everywhere** with manual loading state — no React Query usage in sitter pages despite it being in `App.tsx`. Refetch-on-mutation is hand-managed via `load()` calls.
-6. **6 stray `console.log`/`console.error`** in production code paths.
+### `sitter_reminder_settings` (one row per sitter)
+- `sitter_id uuid PK`
+- `enabled boolean default true`
+- `rules jsonb` — array of `{ offset_days: int, channel: 'email'|'sms', label: string }`
+- `updated_at`
 
-### B. UX & design consistency
+### `invoice_reminder_overrides`
+- `invoice_id uuid PK`
+- `enabled boolean` (overrides sitter default)
+- `rules jsonb` (null = use sitter default)
+- `updated_at`
 
-7. **Mobile menu icon is broken** — `SiteNav.tsx` line 99 renders `<Menu />` for both open and closed states (should toggle to `X`).
-8. **Two navigation models** for the same user: customer SiteNav (top, sticky) vs sitter SitterShell (sidebar). When a sitter views customer-facing pages they get the public nav with no easy hop back to operator mode. Consider a persistent "Switch to operator" affordance for `canManageDashboard` users.
-9. **Hard-coded colors** in `pages/sitter/Map.tsx` (`text-white`, `bg-white/60`) — bypasses the design system's semantic tokens. Other instances are inside shadcn primitives (acceptable) but Map is app code.
-10. **OG/Twitter meta** in `index.html` still points to the Lovable preview image, and `twitter:site` is `@Lovable`. Replace with branded image + own handle (or remove).
-11. **No favicon-sized OG image** and no JSON-LD `LocalBusiness`/`Service` schema — easy SEO wins for a local services brand.
-12. **Settings sidebar duplicates the new top-level Services link** (we just added Services to the main sitter nav, but `/sitter/settings` Overview still shows the same "Services & pricing" tile). Decide: settings-only, or top-level shortcut + remove from settings overview.
-13. **Empty states** — only some pages use `EmptyState` (Today does); Invoices/Reviews/Reports use ad-hoc "No results" text. Inconsistent voice.
+### Storage
+- Reuse existing `avatars` bucket for logo uploads (path `branding/{sitter_id}/logo.{ext}`).
 
----
+### RLS
+- Sitters manage their own rows on all four tables.
+- `sitter_branding` is also publicly readable (so the public pay page can show the brand without auth).
 
-## Recommendations (prioritized)
+## UI
 
-| # | Fix | Effort | Impact |
-|---|---|---|---|
-| 1 | Delete `SitterDashboard.tsx` + `/sitter-classic` route after confirming no unique features | M | Huge — removes ~4k LOC and split-brain risk |
-| 2 | Extract `<SitterPageHeader title back={...} actions={...} />` and replace 14 hand-rolled headers | S | Consistency + ~200 LOC saved |
-| 3 | Fix mobile menu X-icon bug in `SiteNav.tsx` | XS | Visible polish |
-| 4 | Update `index.html` OG image, twitter handle; add `LocalBusiness` JSON-LD on Index | S | SEO + share previews |
-| 5 | Replace `text-white`/`bg-white` in `Map.tsx` with semantic tokens | XS | Theme correctness |
-| 6 | Remove `supabase as any` casts in 5–10 highest-traffic files (Today, Invoices, Inbox, Clients, BookingDetail) | M | Type safety |
-| 7 | Add a "Switch to operator / customer view" link in the relevant nav for dual-role users | S | UX clarity |
-| 8 | Consolidate settings overview tiles vs sidebar nav (one source of truth) | XS | Information architecture |
-| 9 | Standardize empty states using existing `EmptyState` across Invoices/Reviews/Reports/Messages | S | Consistency |
-| 10 | Remove stray `console.*` calls | XS | Hygiene |
+### `/sitter/settings/branding`
+- Form: logo upload (preview), business name, address, phone, website.
+- Save → writes to `sitter_branding`.
 
-Bigger refactors held for later (call out, not in first pass): migrate sitter data loading to React Query; split PaymentDrawer/InvoiceDrawer into shared skeleton.
+### `/sitter/settings/templates`
+- Two-column layout: left = template list grouped by category (Invoice / Booking) with channel badges, right = editor (subject + body textareas, variable chip helper, "Reset to default" button).
+- Defaults seeded in code (not DB) — empty rows mean "use built-in default".
 
----
+### `/sitter/settings/reminders`
+- Toggle: enabled.
+- Rule list with add/remove. Each rule = `[number] days [before/after] due, via [email/sms]`.
+- Sensible defaults pre-populated on first visit.
 
-## Proposed first implementation pass
+### Invoice integration
+- `InvoiceDrawer` gets a small "Reminder schedule" panel (read-only summary + "Customize" link that opens a per-invoice override dialog backed by `invoice_reminder_overrides`).
+- "Send reminder now" button on invoices already exists; we'll route it through the new template (uses the `invoice_reminder` email template).
 
-If approved, I'll ship the quick wins in one go:
+## Files
 
-1. **Quick polish (XS items):** mobile menu X-icon, Map.tsx color tokens, remove console logs, fix OG meta + twitter handle, dedupe settings tiles.
-2. **`<SitterPageHeader>` component** + roll out across all 14 sitter pages with consistent "Back to …" wording derived from `document.referrer` fallback to `/sitter`.
-3. **Add `LocalBusiness` JSON-LD** to `Index.tsx` head via a small `<SeoJsonLd>` component.
+**New:**
+- `src/pages/sitter/settings/Branding.tsx`
+- `src/pages/sitter/settings/Templates.tsx`
+- `src/pages/sitter/settings/Reminders.tsx`
+- `src/lib/sitterTemplates.ts` — default template strings + variable substitution helper.
 
-Held for follow-up plans (one each, on approval): delete `SitterDashboard.tsx`, type-safety pass on supabase calls, switch-role nav affordance.
+**Edited:**
+- `src/App.tsx` — replace the three `SettingsRedirect` routes with the real pages.
+- `src/pages/sitter/settings/SettingsHome.tsx` — keep tiles pointing to the new pages.
+- `src/components/sitter/InvoiceDrawer.tsx` — add reminder-schedule panel + per-invoice override.
+
+**Deleted:**
+- `src/pages/sitter/settings/SettingsRedirect.tsx` (no longer needed once all three routes have real pages).
+
+## Migration order
+1. Create the four tables + RLS in one migration.
+2. Build the three settings pages + the helper lib.
+3. Wire the override panel into `InvoiceDrawer`.
+4. (Defer) cron-based dispatcher.
+
+After approval I'll start with the migration, then implement the UI.
