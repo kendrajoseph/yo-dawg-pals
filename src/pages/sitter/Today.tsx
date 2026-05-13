@@ -114,11 +114,56 @@ export default function SitterToday() {
       body: { bookingId: booking.id, kind, note: note?.trim() || undefined, sendSms: true },
     });
     setSending(false);
+
     if (error) {
-      toast({ title: "Couldn't send update", description: error.message, variant: "destructive" });
+      toast({
+        title: "Update failed",
+        description: error.message,
+        variant: "destructive",
+      });
       return;
     }
-    toast({ title: kindToast[kind], description: data?.message ?? "Update sent." });
+
+    const result = data as {
+      ok?: boolean;
+      smsSent?: boolean;
+      emailSent?: boolean;
+      smsError?: string | null;
+      message?: string;
+    } | null;
+
+    if (result?.smsSent && result?.emailSent) {
+      toast({
+        title: kindToast[kind],
+        description: "Text and email sent.",
+      });
+    } else if (result?.smsSent && !result?.emailSent) {
+      toast({
+        title: kindToast[kind],
+        description: "Text sent. Email could not be sent.",
+      });
+    } else if (!result?.smsSent && result?.emailSent) {
+      const reason = result?.smsError
+        ? `Text failed: ${result.smsError.replace(/^SMS failed: /, "").slice(0, 80)}`
+        : "Client hasn't opted in to texts. Email sent instead.";
+      toast({
+        title: "Email sent (no text)",
+        description: reason,
+        variant: result?.smsError ? "destructive" : "default",
+      });
+    } else if (!result?.smsSent && !result?.emailSent && result?.smsError) {
+      toast({
+        title: "Update not delivered",
+        description: `${result.message ?? "The update was logged but couldn't be sent."} You may want to follow up directly.`,
+        variant: "destructive",
+      });
+    } else {
+      toast({
+        title: "Update logged",
+        description: result?.message ?? "Saved to the booking record.",
+      });
+    }
+
     track("sitter_update_sent", { kind, service_slug: booking.services?.slug });
     setUpdateTarget(null);
     setUpdateNote("");
