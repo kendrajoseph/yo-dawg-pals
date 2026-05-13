@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import { z } from "zod";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
@@ -7,7 +7,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { toast } from "@/hooks/use-toast";
 import SiteNav from "@/components/SiteNav";
-import { PawPrint } from "lucide-react";
+import { ArrowLeft, PawPrint } from "lucide-react";
 
 const schema = z.object({
   password: z.string().min(8, "At least 8 characters").max(72),
