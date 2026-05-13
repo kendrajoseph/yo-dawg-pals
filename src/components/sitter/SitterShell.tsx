@@ -1,6 +1,7 @@
 import { ReactNode, useEffect } from "react";
 import { NavLink, useLocation } from "react-router-dom";
 import {
+  Briefcase,
   CalendarDays,
   ChevronRight,
   CreditCard,
@@ -55,6 +56,7 @@ const SECONDARY: NavItem[] = [
   { to: "/sitter/assistant", label: "Schedule assistant", icon: Sparkles },
   { to: "/sitter/reviews", label: "Reviews", icon: Star },
   { to: "/sitter/reports", label: "Reports", icon: PieChart },
+  { to: "/sitter/settings/services", label: "Services", icon: Briefcase },
   { to: "/sitter/settings", label: "Settings", icon: Settings },
 ];
 
@@ -199,6 +201,7 @@ const titleFor = (path: string): string => {
   if (path.startsWith("/sitter/assistant")) return "Schedule assistant";
   if (path.startsWith("/sitter/reviews")) return "Reviews";
   if (path.startsWith("/sitter/reports")) return "Reports";
+  if (path.startsWith("/sitter/settings/services")) return "Services & pricing";
   if (path.startsWith("/sitter/settings")) return "Settings";
   return "Sitter";
 };
