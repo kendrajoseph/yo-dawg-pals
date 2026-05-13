@@ -35,7 +35,7 @@ const sections = [
   },
   {
     title: "Cookies",
-    body: "Our website uses minimal cookies, only what is needed for the site to function. We do not use advertising or tracking cookies.",
+    body: "Our website uses minimal cookies, only what is needed for the site to function. We use PostHog, a privacy-friendly product analytics tool, to understand how visitors use the site (pages visited, basic device info) so we can improve it; PostHog respects Do Not Track and does not share your data for advertising. We do not use advertising or tracking cookies.",
   },
   {
     title: "Children",
