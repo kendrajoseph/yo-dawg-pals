@@ -11,7 +11,7 @@ const sections = [
   },
   {
     title: "Information we collect",
-    body: "When you book a service or contact us, we may collect:\n\n- Your name, email address, phone number, and home address\n- Your dog's name, breed, age, medical information, behavioural notes, and emergency veterinary contact\n- Service preferences, scheduling details, and special instructions\n- Payment information (processed through third-party payment providers, never stored by us directly)\n- Photos of your pet that you share with us, or that we take during our services to send you updates\n\nWe also collect basic technical information when you visit our website, such as your browser type, device, and pages viewed. We use this only to keep the site working properly.",
+    body: "When you book a service or contact us, we may collect:\n\n- Your name, email address, phone number, and home address\n- Your dog's name, breed, age, medical information, behavioural notes, and emergency veterinary contact\n- Service preferences, scheduling details, and special instructions\n- Payment information (processed through third-party payment providers, never stored by us directly)\n- Photos of your pet that you share with us, or that we take during our services to send you updates\n\nWe also collect basic technical information when you visit our website, such as your browser type, device, and pages viewed. We use this only to keep the site working properly and to understand how visitors use our service through privacy-focused analytics (PostHog). PostHog respects Do Not Track signals and does not use advertising trackers.",
   },
   {
     title: "How we use your information",
@@ -24,6 +24,10 @@ const sections = [
   {
     title: "Photos and social media",
     body: "With your permission, we may share photos of your pet on our social media (Instagram @yodawg.ca) or website. We will always ask before posting. You can withdraw permission at any time by emailing us.",
+  },
+  {
+    title: "Text messages (SMS)",
+    body: "If you opt in to text updates, we use Twilio to send you transactional messages about your bookings, including pickup, drop-off, and care notes during your booking. Standard message and data rates from your mobile carrier apply.\n\nYou can opt out at any time by:\n\n- Replying STOP to any text we send you\n- Unchecking the text updates option in your profile\n- Emailing anneke@yodawg.ca\n\nReply HELP to any of our texts for help, or to confirm your opt-in status. We do not send marketing text messages and we do not share your phone number with third parties for marketing purposes.",
   },
   {
     title: "How we store your information",
