@@ -6,7 +6,7 @@ import SiteNav from "@/components/SiteNav";
 import SiteFooter from "@/components/SiteFooter";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Check, Loader2, PawPrint } from "lucide-react";
+import { ArrowLeft, Check, Loader2, PawPrint } from "lucide-react";
 import { formatBookingSchedule, formatPriceWithDecimals, STATUS_LABELS } from "@/lib/booking";
 
 type Booking = {
@@ -119,6 +119,9 @@ const BookingSuccess = () => {
     <main className="min-h-screen bg-background texture-grain">
       <SiteNav />
       <section className="mx-auto max-w-2xl px-5 py-12 sm:px-8 sm:py-20">
+        <Link to="/account" className="mb-4 inline-flex items-center gap-1 text-sm text-muted-foreground hover:text-foreground">
+          <ArrowLeft className="h-3.5 w-3.5" /> Back to account
+        </Link>
         {loading ? (
           <p className="text-center text-muted-foreground">Loading…</p>
         ) : !booking ? (
