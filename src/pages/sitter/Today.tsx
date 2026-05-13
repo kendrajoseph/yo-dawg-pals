@@ -3,6 +3,7 @@ import { Link, useNavigate } from "react-router-dom";
 import { format } from "date-fns";
 import { ArrowLeft, CalendarPlus, CalendarCheck, CreditCard, Inbox as InboxIcon, MessageSquarePlus, AlertTriangle, Clock3, LogIn, LogOut } from "lucide-react";
 import { SitterShell } from "@/components/sitter/SitterShell";
+import { SitterPageHeader } from "@/components/sitter/SitterPageHeader";
 import { KpiTile } from "@/components/sitter/KpiTile";
 import { EmptyState } from "@/components/sitter/EmptyState";
 import { Card } from "@/components/ui/card";
@@ -197,13 +198,11 @@ export default function SitterToday() {
         </>
       }
     >
-      <Link to="/" className="mb-3 inline-flex items-center gap-1 text-sm text-muted-foreground hover:text-foreground">
-        <ArrowLeft className="h-3.5 w-3.5" /> Back to home
-      </Link>
-      <div className="mb-6">
-        <h1 className="font-display text-3xl text-primary sm:text-4xl">{greeting}</h1>
-        <p className="text-sm text-muted-foreground">Here's your day at a glance — {format(new Date(), "EEEE, MMM d")}</p>
-      </div>
+      <SitterPageHeader
+        back={{ to: "/", label: "Back to home" }}
+        title={greeting}
+        description={`Here's your day at a glance — ${format(new Date(), "EEEE, MMM d")}`}
+      />
 
       <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
         <KpiTile label="Today's visits" value={loading ? "—" : todayBookings.length} icon={<CalendarCheck className="h-5 w-5" />} />

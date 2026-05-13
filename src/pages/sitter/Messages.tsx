@@ -3,6 +3,7 @@ import { Link } from "react-router-dom";
 import { formatDistanceToNow } from "date-fns";
 import { ArrowLeft, MessageSquare, Search, Plus, Trash2 } from "lucide-react";
 import { SitterShell } from "@/components/sitter/SitterShell";
+import { SitterPageHeader } from "@/components/sitter/SitterPageHeader";
 import { EmptyState } from "@/components/sitter/EmptyState";
 import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -127,13 +128,11 @@ export default function SitterMessages() {
     <SitterShell action={
       <Button size="sm" onClick={() => setComposeOpen(true)}><Plus className="mr-1.5 h-4 w-4" />Compose</Button>
     }>
-      <Link to="/sitter" className="mb-3 inline-flex items-center gap-1 text-sm text-muted-foreground hover:text-foreground">
-        <ArrowLeft className="h-3.5 w-3.5" /> Back to dashboard
-      </Link>
-      <div className="mb-6">
-        <h1 className="font-display text-3xl text-primary">Messages</h1>
-        <p className="text-sm text-muted-foreground">Conversations with your clients.</p>
-      </div>
+      <SitterPageHeader
+        back={{ to: "/sitter", label: "Back to dashboard" }}
+        title="Messages"
+        description="Conversations with your clients."
+      />
 
       <Card className="border border-border p-4 shadow-soft">
         <div className="relative mb-3">

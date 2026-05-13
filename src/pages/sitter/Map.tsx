@@ -7,6 +7,7 @@ import "leaflet/dist/leaflet.css";
 import { ArrowLeft, MapPin, Filter, Calendar as CalendarIcon, Info, ExternalLink, UserCog } from "lucide-react";
 
 import { SitterShell } from "@/components/sitter/SitterShell";
+import { SitterPageHeader } from "@/components/sitter/SitterPageHeader";
 import { EmptyState } from "@/components/sitter/EmptyState";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -281,18 +282,11 @@ export default function SitterMap() {
 
   return (
     <SitterShell>
-      <Link to="/sitter" className="mb-3 inline-flex items-center gap-1 text-sm text-muted-foreground hover:text-foreground">
-        <ArrowLeft className="h-3.5 w-3.5" /> Back to today
-      </Link>
-
-      <div className="mb-4 flex flex-wrap items-end justify-between gap-3">
-        <div>
-          <h1 className="font-display text-3xl text-primary">Route map</h1>
-          <p className="text-sm text-muted-foreground">
-            See where your bookings are. Use it to spot clusters, decide which requests to accept, and plan a sensible loop.
-          </p>
-        </div>
-      </div>
+      <SitterPageHeader
+        back={{ to: "/sitter", label: "Back to dashboard" }}
+        title="Route map"
+        description="See where your bookings are. Use it to spot clusters, decide which requests to accept, and plan a sensible loop."
+      />
 
       {/* Filters */}
       <Card className="mb-4 border border-border p-4 shadow-soft">
@@ -441,7 +435,7 @@ export default function SitterMap() {
                 {orderedPins.map((p, idx) => (
                   <li key={p.id} className="flex items-start gap-3 rounded-md border border-border bg-muted/30 p-2.5">
                     <span
-                      className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full text-xs font-semibold text-white"
+                      className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full text-xs font-semibold text-primary-foreground"
                       style={{ background: statusColor(p) }}
                     >
                       {idx + 1}
@@ -479,7 +473,7 @@ export default function SitterMap() {
                   <Button
                     size="sm"
                     variant="outline"
-                    className="mt-2 border-amber-300 bg-white/60 text-amber-900 hover:bg-amber-100 dark:border-amber-800 dark:bg-amber-950/40 dark:text-amber-200"
+                    className="mt-2 border-amber-300 bg-card/60 text-amber-900 hover:bg-amber-100 dark:border-amber-800 dark:bg-amber-950/40 dark:text-amber-200"
                     onClick={() => setMissingDialogOpen(true)}
                   >
                     View & fix {missingAddress.length} booking{missingAddress.length === 1 ? "" : "s"}

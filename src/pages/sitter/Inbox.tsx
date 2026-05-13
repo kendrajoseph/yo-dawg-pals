@@ -3,6 +3,7 @@ import { Link, useNavigate } from "react-router-dom";
 import { format } from "date-fns";
 import { ArrowLeft, Inbox as InboxIcon, AlertTriangle, CreditCard, PawPrint, Bell } from "lucide-react";
 import { SitterShell } from "@/components/sitter/SitterShell";
+import { SitterPageHeader } from "@/components/sitter/SitterPageHeader";
 import { EmptyState } from "@/components/sitter/EmptyState";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -163,13 +164,11 @@ export default function SitterInbox() {
 
   return (
     <SitterShell>
-      <Link to="/sitter" className="mb-3 inline-flex items-center gap-1 text-sm text-muted-foreground hover:text-foreground">
-        <ArrowLeft className="h-3.5 w-3.5" /> Back to dashboard
-      </Link>
-      <div className="mb-6">
-        <h1 className="font-display text-3xl text-primary">Inbox</h1>
-        <p className="text-sm text-muted-foreground">Everything that needs your attention, in one queue.</p>
-      </div>
+      <SitterPageHeader
+        back={{ to: "/sitter", label: "Back to dashboard" }}
+        title="Inbox"
+        description="Everything that needs your attention, in one queue."
+      />
 
       <div className="mb-4 flex flex-wrap gap-2">
         {([

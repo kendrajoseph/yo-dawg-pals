@@ -3,6 +3,7 @@ import { Link } from "react-router-dom";
 import { addDays, addMonths, endOfMonth, endOfWeek, format, isSameDay, isSameMonth, startOfMonth, startOfWeek, subMonths } from "date-fns";
 import { ArrowLeft, ChevronLeft, ChevronRight, CalendarDays, Plus } from "lucide-react";
 import { SitterShell } from "@/components/sitter/SitterShell";
+import { SitterPageHeader } from "@/components/sitter/SitterPageHeader";
 import { EmptyState } from "@/components/sitter/EmptyState";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -101,16 +102,12 @@ export default function SitterCalendar() {
     <SitterShell action={
       <Button size="sm" asChild><Link to="/sitter-classic#schedule"><Plus className="mr-1.5 h-4 w-4" />New booking</Link></Button>
     }>
-      <Link to="/sitter" className="mb-3 inline-flex items-center gap-1 text-sm text-muted-foreground hover:text-foreground">
-        <ArrowLeft className="h-3.5 w-3.5" /> Back to dashboard
-      </Link>
-      <div className="mb-6 flex flex-wrap items-end justify-between gap-3">
-        <div>
-          <h1 className="font-display text-3xl text-primary">Calendar</h1>
-          <p className="text-sm text-muted-foreground">
-            Confirmed bookings (solid) and pending requests (dashed). Manage availability in Settings.
-          </p>
-        </div>
+      <SitterPageHeader
+        back={{ to: "/sitter", label: "Back to dashboard" }}
+        title="Calendar"
+        description="Confirmed bookings (solid) and pending requests (dashed). Manage availability in Settings."
+      />
+      <div className="mb-6 flex justify-end">
         <div className="flex items-center gap-2">
           <Tabs value={view} onValueChange={(v) => setView(v as View)}>
             <TabsList>

@@ -3,6 +3,7 @@ import { Link } from "react-router-dom";
 import { ArrowLeft, Sparkles, Send, AlertTriangle, Bell } from "lucide-react";
 import { format } from "date-fns";
 import { SitterShell } from "@/components/sitter/SitterShell";
+import { SitterPageHeader } from "@/components/sitter/SitterPageHeader";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
@@ -208,24 +209,18 @@ export default function SitterScheduleAssistant() {
 
   return (
     <SitterShell>
-      <Link to="/sitter" className="mb-3 inline-flex items-center gap-1 text-sm text-muted-foreground hover:text-foreground">
-        <ArrowLeft className="h-3.5 w-3.5" /> Back to dashboard
-      </Link>
-      <div className="mb-6 flex flex-wrap items-end justify-between gap-3">
-        <div>
-          <h1 className="font-display text-3xl text-primary inline-flex items-center gap-2">
-            <Sparkles className="h-6 w-6" />Schedule assistant
-          </h1>
-          <p className="text-sm text-muted-foreground">
-            Type a natural-language command — e.g. "Approve all walk requests for Friday morning" or "Block off May 6–8 for vet".
-          </p>
-        </div>
-        <div className="flex flex-wrap gap-2">
-          <Badge variant="outline">{counts.services} services</Badge>
-          <Badge variant="outline">{counts.availability} availability blocks</Badge>
-          <Badge variant="outline">{counts.requests} pending requests</Badge>
-        </div>
-      </div>
+      <SitterPageHeader
+        back={{ to: "/sitter", label: "Back to dashboard" }}
+        title={<span className="inline-flex items-center gap-2"><Sparkles className="h-6 w-6" />Schedule assistant</span>}
+        description={`Type a natural-language command — e.g. "Approve all walk requests for Friday morning" or "Block off May 6–8 for vet".`}
+        actions={
+          <>
+            <Badge variant="outline">{counts.services} services</Badge>
+            <Badge variant="outline">{counts.availability} availability blocks</Badge>
+            <Badge variant="outline">{counts.requests} pending requests</Badge>
+          </>
+        }
+      />
 
       {unavailable && (
         <Card className="mb-4 border border-amber-200 bg-amber-50 p-4">
