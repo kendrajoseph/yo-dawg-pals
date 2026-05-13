@@ -54,7 +54,7 @@ export default function SettingsBranding() {
     setUploading(true);
     try {
       const ext = file.name.split(".").pop()?.toLowerCase() || "png";
-      const path = `branding/${user.id}/logo-${Date.now()}.${ext}`;
+      const path = `${user.id}/branding/logo-${Date.now()}.${ext}`;
       const { error: upErr } = await supabase.storage.from("avatars").upload(path, file, {
         upsert: true,
         contentType: file.type,
