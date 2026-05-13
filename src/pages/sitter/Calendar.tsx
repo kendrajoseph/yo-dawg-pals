@@ -360,9 +360,9 @@ function DayList({ items, onEditEvent }: { items: DayItem[]; onEditEvent: (e: Pe
             : format(new Date(b.scheduled_start_at ?? b.start_at), "h:mm a");
         return (
           <li key={`b-${b.id}-${idx}`} className="py-1">
-            <Link to={href} className={cn("flex items-center gap-3 rounded-md px-2 py-2 transition-colors hover:bg-muted", isRequested && "ring-1 ring-dashed ring-amber-400/60")}>
+            <Link to={href} className={cn("flex items-center gap-3 rounded-md px-2 py-2 transition-colors hover:bg-muted", isRequested ? "bg-slate-50 ring-1 ring-dashed ring-slate-300" : "bg-orange-50/40")}>
               <div className="w-24 text-right">
-                <div className={cn("font-display text-sm", isRequested ? "text-amber-900" : "text-primary")}>{timeText}</div>
+                <div className={cn("font-display text-sm", isRequested ? "text-slate-700" : "text-orange-800")}>{timeText}</div>
                 {!it.spans && !isRequested && (
                   <div className="text-[11px] text-muted-foreground">{format(new Date(b.scheduled_end_at ?? b.end_at), "h:mm a")}</div>
                 )}
@@ -372,7 +372,7 @@ function DayList({ items, onEditEvent }: { items: DayItem[]; onEditEvent: (e: Pe
                 <div className="truncate font-medium">{b.services?.name ?? "Service"}</div>
                 <div className="truncate text-xs text-muted-foreground">{b.profiles?.full_name ?? "Client"} · {b.pets?.name ?? "Pet"}</div>
               </div>
-              <Badge variant="outline" className={cn("capitalize", isRequested && "border-amber-400 bg-amber-50 text-amber-900")}>
+              <Badge variant="outline" className={cn("capitalize", isRequested ? "border-slate-300 bg-slate-100 text-slate-700" : "border-orange-300 bg-orange-100 text-orange-800")}>
                 {b.status.replace(/_/g, " ")}
               </Badge>
             </Link>
