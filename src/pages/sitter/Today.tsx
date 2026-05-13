@@ -99,6 +99,7 @@ export default function SitterToday() {
   const { user } = useAuth();
   const navigate = useNavigate();
   const [todayBookings, setTodayBookings] = useState<TodayBooking[]>([]);
+  const [todayPersonal, setTodayPersonal] = useState<TodayPersonalEvent[]>([]);
   const [inboxPreview, setInboxPreview] = useState<InboxItem[]>([]);
   const [outstandingCents, setOutstandingCents] = useState(0);
   const [overdueCents, setOverdueCents] = useState(0);
