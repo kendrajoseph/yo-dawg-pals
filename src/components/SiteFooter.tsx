@@ -41,6 +41,7 @@ const SiteFooter = () => (
         <div className="flex flex-wrap items-center justify-center gap-x-4 gap-y-2 sm:justify-end">
           <Link to="/faq" className="transition-colors hover:text-accent">FAQ</Link>
           <Link to="/terms" className="transition-colors hover:text-accent">Terms &amp; Conditions</Link>
+          <Link to="/privacy" className="transition-colors hover:text-accent">Privacy Policy</Link>
         </div>
       </div>
     </div>
