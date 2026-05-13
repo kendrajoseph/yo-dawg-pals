@@ -44,6 +44,7 @@ import SettingsBranding from "./pages/sitter/settings/Branding.tsx";
 import Unsubscribe from "./pages/Unsubscribe.tsx";
 import FAQ from "./pages/FAQ.tsx";
 import Terms from "./pages/Terms.tsx";
+import Privacy from "./pages/Privacy.tsx";
 import PublicInvoice from "./pages/PublicInvoice.tsx";
 
 const queryClient = new QueryClient();
@@ -94,6 +95,7 @@ const App = () => (
             <Route path="/unsubscribe" element={<Unsubscribe />} />
             <Route path="/faq" element={<FAQ />} />
             <Route path="/terms" element={<Terms />} />
+            <Route path="/privacy" element={<Privacy />} />
             <Route path="/pay/:token" element={<PublicInvoice />} />
             {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
             <Route path="*" element={<NotFound />} />
