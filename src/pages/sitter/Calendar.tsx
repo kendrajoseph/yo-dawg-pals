@@ -311,8 +311,8 @@ function ChipCell({ item, large }: { item: DayItem; large?: boolean }) {
         "truncate rounded px-1.5 py-0.5",
         large ? "text-[11px]" : "text-[10px]",
         isRequested
-          ? "border border-dashed border-amber-400 bg-amber-50 text-amber-900"
-          : "bg-primary/10 text-primary",
+          ? "border border-dashed border-slate-300 bg-slate-100 text-slate-700"
+          : "border border-orange-300 bg-orange-100 text-orange-800",
       )}
     >
       {timeLabel} {b.pets?.name ?? b.services?.name ?? "Booking"}
