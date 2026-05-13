@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from "react";
 import { Link } from "react-router-dom";
 import { ArrowLeft, Star } from "lucide-react";
 import { SitterShell } from "@/components/sitter/SitterShell";
+import { SitterPageHeader } from "@/components/sitter/SitterPageHeader";
 import { Card } from "@/components/ui/card";
 import { StarRating } from "@/components/StarRating";
 import { supabase } from "@/integrations/supabase/client";
@@ -90,14 +91,12 @@ export default function SitterReviews() {
 
   return (
     <SitterShell>
-      <Link to="/sitter" className="mb-3 inline-flex items-center gap-1 text-sm text-muted-foreground hover:text-foreground">
-        <ArrowLeft className="h-3.5 w-3.5" /> Back to dashboard
-      </Link>
+      <SitterPageHeader
+        back={{ to: "/sitter", label: "Back to dashboard" }}
+        title="Client reviews"
+        description="Private feedback from clients after completed services. Only you can see this."
+      />
       <div className="mx-auto max-w-4xl space-y-6 p-4 sm:p-6">
-        <header>
-          <h1 className="font-display text-3xl uppercase text-primary">Client reviews</h1>
-          <p className="mt-1 text-sm text-muted-foreground">Private feedback from clients after completed services. Only you can see this.</p>
-        </header>
 
         <Card className="border-4 border-primary p-5 shadow-pop sm:p-6">
           {loading ? (

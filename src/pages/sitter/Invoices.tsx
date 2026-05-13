@@ -15,6 +15,7 @@ import {
 } from "@/components/ui/alert-dialog";
 import { toast } from "sonner";
 import { SitterShell } from "@/components/sitter/SitterShell";
+import { SitterPageHeader } from "@/components/sitter/SitterPageHeader";
 import { KpiTile } from "@/components/sitter/KpiTile";
 import { EmptyState } from "@/components/sitter/EmptyState";
 import { Card } from "@/components/ui/card";
@@ -221,18 +222,16 @@ export default function SitterInvoices() {
 
   return (
     <SitterShell>
-      <Link to="/sitter" className="mb-3 inline-flex items-center gap-1 text-sm text-muted-foreground hover:text-foreground">
-        <ArrowLeft className="h-3.5 w-3.5" /> Back to dashboard
-      </Link>
-      <div className="mb-6 flex items-end justify-between gap-3">
-        <div>
-          <h1 className="font-display text-3xl text-primary">Invoices</h1>
-          <p className="text-sm text-muted-foreground">Manage bills, charges, refunds, and reminders.</p>
-        </div>
-        <Button onClick={() => setNewInvoiceOpen(true)} size="sm">
-          <Plus className="mr-1.5 h-4 w-4" /> New invoice
-        </Button>
-      </div>
+      <SitterPageHeader
+        back={{ to: "/sitter", label: "Back to dashboard" }}
+        title="Invoices"
+        description="Manage bills, charges, refunds, and reminders."
+        actions={
+          <Button onClick={() => setNewInvoiceOpen(true)} size="sm">
+            <Plus className="mr-1.5 h-4 w-4" /> New invoice
+          </Button>
+        }
+      />
 
       <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
         <KpiTile label="Outstanding" value={formatCents(stats.outstanding)} tone="warning" icon={<CreditCard className="h-5 w-5" />} />

@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from "react";
 import { Link } from "react-router-dom";
 import { ArrowLeft, TrendingUp, CreditCard, AlertTriangle, CalendarCheck, Download, FileSpreadsheet } from "lucide-react";
 import { SitterShell } from "@/components/sitter/SitterShell";
+import { SitterPageHeader } from "@/components/sitter/SitterPageHeader";
 import { KpiTile } from "@/components/sitter/KpiTile";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -277,13 +278,11 @@ export default function SitterReports() {
 
   return (
     <SitterShell>
-      <Link to="/sitter" className="mb-3 inline-flex items-center gap-1 text-sm text-muted-foreground hover:text-foreground">
-        <ArrowLeft className="h-3.5 w-3.5" /> Back to dashboard
-      </Link>
-      <div className="mb-6">
-        <h1 className="font-display text-3xl text-primary">Reports</h1>
-        <p className="text-sm text-muted-foreground">A snapshot of your business performance.</p>
-      </div>
+      <SitterPageHeader
+        back={{ to: "/sitter", label: "Back to dashboard" }}
+        title="Reports"
+        description="A snapshot of your business performance."
+      />
 
       <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
         <KpiTile label="Revenue this month" value={loading ? "—" : formatCents(revenueMonth)} tone="success" icon={<TrendingUp className="h-5 w-5" />} />
