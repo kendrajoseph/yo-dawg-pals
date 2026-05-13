@@ -90,8 +90,11 @@ const HeroSection = () => {
           <img
             src={dog3}
             alt="Illustration of a happy dog"
+            width={512}
+            height={508}
             className="relative h-auto w-full max-w-[360px] rotate-[-4deg] drop-shadow-[0_20px_40px_hsl(220_50%_4%/0.5)] sm:max-w-[420px]"
             loading="eager"
+            fetchPriority="high"
           />
 
            <div className="absolute -right-1 top-2 z-10 grid h-20 w-20 -rotate-12 place-items-center rounded-full border-2 border-primary bg-secondary text-center font-display text-secondary-foreground shadow-pop-sm sm:right-4 sm:top-4 sm:h-28 sm:w-28">

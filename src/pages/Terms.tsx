@@ -80,6 +80,15 @@ const sections = [
 const Terms = () => {
   return (
     <main className="min-h-screen bg-background text-foreground">
+      <Helmet>
+        <title>Terms &amp; Conditions — Yo Dawg</title>
+        <meta name="description" content="Yo Dawg service terms: booking approvals, owner responsibilities, emergency authority, payment, and liability terms for dog walking, sitting, and boarding." />
+        <link rel="canonical" href="https://yodawg.ca/terms" />
+        <meta property="og:title" content="Terms &amp; Conditions — Yo Dawg" />
+        <meta property="og:description" content="Service expectations, risk allocation, and liability terms for Yo Dawg dog care." />
+        <meta property="og:url" content="https://yodawg.ca/terms" />
+        <meta property="og:type" content="website" />
+      </Helmet>
       <section className="bg-primary text-primary-foreground">
         <SiteNav variant="dark" />
         <div className="mx-auto max-w-5xl px-5 pb-16 pt-6 sm:px-8 sm:pb-20 sm:pt-10">
