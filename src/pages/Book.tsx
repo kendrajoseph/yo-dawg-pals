@@ -294,8 +294,12 @@ const Book = () => {
   useEffect(() => {
     if (!user) return;
     (async () => {
-      const { data } = await supabase.from("pets").select("id, name, breed, photo_url").eq("owner_id", user.id).order("created_at");
-      setPets((data ?? []) as Pet[]);
+      const [{ data: pets }, { data: profile }] = await Promise.all([
+        supabase.from("pets").select("id, name, breed, photo_url").eq("owner_id", user.id).order("created_at"),
+        supabase.from("profiles").select("sms_opt_in").eq("id", user.id).maybeSingle(),
+      ]);
+      setPets((pets ?? []) as Pet[]);
+      if (profile?.sms_opt_in) setSmsOptIn(true);
     })();
   }, [user]);
 
