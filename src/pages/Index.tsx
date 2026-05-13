@@ -1,3 +1,4 @@
+import { Helmet } from "react-helmet-async";
 import HeroSection from "@/components/HeroSection";
 import MeetSitter from "@/components/MeetSitter";
 import ServicesSection from "@/components/ServicesSection";
@@ -29,6 +30,15 @@ const localBusinessSchema = {
 const Index = () => {
   return (
     <main className="min-h-screen bg-background">
+      <Helmet>
+        <title>Yo Dawg — Hamilton Dog Walking, Sitting &amp; Boarding</title>
+        <meta name="description" content="Hamilton, Ontario dog care since 2015. Premium solo walks, matched group walks, drop-in sitting, and home-style boarding." />
+        <link rel="canonical" href="https://yodawg.ca/" />
+        <meta property="og:title" content="Yo Dawg — Hamilton Dog Walking, Sitting &amp; Boarding" />
+        <meta property="og:description" content="Hamilton, Ontario dog care since 2015. Premium solo walks, matched group walks, drop-in sitting, and home-style boarding." />
+        <meta property="og:url" content="https://yodawg.ca/" />
+        <meta property="og:type" content="website" />
+      </Helmet>
       <SeoJsonLd id="local-business" data={localBusinessSchema} />
       <HeroSection />
       <MeetSitter />
