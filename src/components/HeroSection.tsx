@@ -3,7 +3,6 @@ import { Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import SiteNav from "@/components/SiteNav";
 import wordmark from "@/assets/yodawg-logo.svg";
-import { dog3 } from "@/assets/dogs";
 import { track } from "@/integrations/posthog/PostHogProvider";
 
 const HeroSection = () => {
