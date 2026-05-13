@@ -325,7 +325,7 @@ export default function SitterToday() {
       <Card className="mt-6 border border-border p-5 shadow-soft">
         <h2 className="mb-3 font-display text-xl text-primary">Quick actions</h2>
         <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-4">
-          <Button variant="outline" className="justify-start" asChild><Link to="/sitter/calendar"><CalendarPlus className="mr-2 h-4 w-4" />New booking</Link></Button>
+          <Button variant="outline" className="justify-start" asChild><Link to="/book"><CalendarPlus className="mr-2 h-4 w-4" />New booking</Link></Button>
           <Button variant="outline" className="justify-start" asChild><Link to="/sitter/invoices"><CreditCard className="mr-2 h-4 w-4" />New invoice</Link></Button>
           <Button variant="outline" className="justify-start" asChild><Link to="/sitter/messages"><MessageSquarePlus className="mr-2 h-4 w-4" />Message a client</Link></Button>
           <Button variant="outline" className="justify-start" asChild><Link to="/sitter/settings/availability">Block a date</Link></Button>
