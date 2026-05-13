@@ -20,6 +20,7 @@ import { InvoiceLineItemsEditor, type DraftLineItem } from "./InvoiceLineItemsEd
 import { RecipientCard } from "./RecipientCard";
 import { MarkPaidDialog } from "./MarkPaidDialog";
 import { SendReminderDialog } from "./SendReminderDialog";
+import { InvoiceReminderPanel } from "./InvoiceReminderPanel";
 import { downloadInvoicePdf } from "@/lib/invoicePdf";
 import {
   AlertDialog,
