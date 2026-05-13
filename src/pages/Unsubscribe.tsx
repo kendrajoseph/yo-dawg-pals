@@ -69,8 +69,12 @@ export default function Unsubscribe() {
   return (
     <div className="min-h-screen flex flex-col bg-background">
       <SiteNav />
-      <main className="flex-1 flex items-center justify-center px-4 py-16">
-        <Card className="w-full max-w-md">
+      <main className="flex-1 flex flex-col items-center justify-center px-4 py-16">
+        <div className="w-full max-w-md">
+          <Link to="/" className="mb-3 inline-flex items-center gap-1 text-sm text-muted-foreground hover:text-foreground">
+            <ArrowLeft className="h-3.5 w-3.5" /> Back to home
+          </Link>
+          <Card className="w-full">
           <CardHeader>
             <CardTitle>Email preferences</CardTitle>
           </CardHeader>
