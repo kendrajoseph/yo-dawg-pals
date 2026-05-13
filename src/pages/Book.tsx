@@ -980,6 +980,12 @@ const Book = () => {
         firstBookingId,
         bundle: data.length > 1,
       });
+      track("booking_submitted", {
+        total_cents: grandTotalCents,
+        bundle_size: bundleItems.length,
+        has_recurrence: bundleItems.some((i) => i.repeatFrequency !== "none"),
+        service_slugs: bundleItems.map((i) => serviceMap.get(i.serviceId ?? "")?.slug).filter(Boolean),
+      });
     } catch (err: any) {
       toast({ title: "Couldn't save request", description: err?.message ?? "Please try again.", variant: "destructive" });
     } finally {
