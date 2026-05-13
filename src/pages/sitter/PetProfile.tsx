@@ -47,6 +47,7 @@ function Block({ label, value }: { label: string; value: string | null | undefin
 
 export default function SitterPetProfile() {
   const { id } = useParams<{ id: string }>();
+  const navigate = useNavigate();
   const { user } = useAuth();
   const [pet, setPet] = useState<any>(null);
   const [tags, setTags] = useState<any[]>([]);
@@ -57,6 +58,8 @@ export default function SitterPetProfile() {
   const [loading, setLoading] = useState(true);
   const [composeOpen, setComposeOpen] = useState(false);
   const [savingId, setSavingId] = useState<string | null>(null);
+  const [confirmDelete, setConfirmDelete] = useState(false);
+  const [deleting, setDeleting] = useState(false);
 
   useEffect(() => {
     if (!id || !user?.id) return;
