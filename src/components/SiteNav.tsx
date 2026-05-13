@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/button";
 import { useAuth } from "@/hooks/useAuth";
 import { cn } from "@/lib/utils";
 import wordmark from "@/assets/yodawg-logo.svg";
+import { track } from "@/integrations/posthog/PostHogProvider";
 
 interface SiteNavProps {
   /** "dark" = on hero (light text on navy). "light" = on cream pages. */
@@ -119,7 +120,7 @@ const SiteNav = ({ variant = "light" }: SiteNavProps) => {
                 : "bg-primary text-primary-foreground hover:bg-primary/90",
             )}
           >
-            <Link to="/auth">Sign in</Link>
+            <Link to="/auth" onClick={() => track("sign_in_clicked")}>Sign in</Link>
           </Button>
         )}
       </div>
@@ -183,7 +184,7 @@ const SiteNav = ({ variant = "light" }: SiteNavProps) => {
                   asChild
                   className="h-12 w-full justify-center rounded-full bg-primary text-base font-semibold text-primary-foreground hover:bg-primary/90"
                 >
-                  <Link to="/auth" onClick={() => setOpen(false)}>Sign in</Link>
+                  <Link to="/auth" onClick={() => track("sign_in_clicked")}>Sign in</Link>
                 </Button>
               )}
             </div>

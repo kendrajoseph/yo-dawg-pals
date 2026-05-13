@@ -11,6 +11,7 @@ import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { toast } from "@/hooks/use-toast";
 import SiteNav from "@/components/SiteNav";
 import { PawPrint } from "lucide-react";
+import { track } from "@/integrations/posthog/PostHogProvider";
 
 const signUpSchema = z.object({
   fullName: z.string().trim().min(1, "Name required").max(100),
@@ -60,6 +61,7 @@ const Auth = () => {
       return;
     }
     toast({ title: "Welcome to the pack!", description: "You're signed in." });
+    track("user_signed_up", { source: from });
     navigate(from, { replace: true });
   };
 
@@ -80,6 +82,7 @@ const Auth = () => {
       toast({ title: "Sign in failed", description: error.message, variant: "destructive" });
       return;
     }
+    track("user_signed_in");
     navigate(from, { replace: true });
   };
 

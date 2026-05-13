@@ -9,6 +9,7 @@ import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
+import { track } from "@/integrations/posthog/PostHogProvider";
 
 type Filter = "all" | "requests" | "approvals" | "payments";
 
@@ -205,7 +206,7 @@ export default function SitterInbox() {
               const Icon = r.kind === "request" ? Bell : r.kind === "approval" ? PawPrint : r.kind === "payment" ? CreditCard : AlertTriangle;
               return (
                 <li key={`${r.kind}-${r.id}`}>
-                  <button onClick={() => navigate(r.href)} className="flex w-full items-center gap-3 px-4 py-3 text-left transition-colors hover:bg-muted">
+                  <button onClick={() => { track("sitter_request_opened", { kind: r.kind }); navigate(r.href); }} className="flex w-full items-center gap-3 px-4 py-3 text-left transition-colors hover:bg-muted">
                     <div className="rounded-md bg-muted p-2 text-foreground/70"><Icon className="h-4 w-4" /></div>
                     <div className="min-w-0 flex-1">
                       <div className="truncate text-sm font-medium">{r.title}</div>

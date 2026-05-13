@@ -7,6 +7,7 @@ import { AuthProvider } from "@/hooks/useAuth";
 import ProtectedRoute from "@/components/ProtectedRoute";
 import ScrollToHash from "@/components/ScrollToHash";
 import { PaymentTestModeBanner } from "@/components/PaymentTestModeBanner";
+import { PostHogProvider } from "@/integrations/posthog/PostHogProvider";
 import Index from "./pages/Index.tsx";
 import NotFound from "./pages/NotFound.tsx";
 import Auth from "./pages/Auth.tsx";
@@ -56,9 +57,10 @@ const App = () => (
       <Sonner />
       <BrowserRouter>
         <AuthProvider>
-          <ScrollToHash />
-          <PaymentTestModeBanner />
-          <Routes>
+          <PostHogProvider>
+            <ScrollToHash />
+            <PaymentTestModeBanner />
+            <Routes>
             <Route path="/" element={<Index />} />
             <Route path="/auth" element={<Auth />} />
             <Route path="/reset-password" element={<ResetPassword />} />
@@ -100,8 +102,9 @@ const App = () => (
             {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
             <Route path="*" element={<NotFound />} />
           </Routes>
-        </AuthProvider>
-      </BrowserRouter>
+        </PostHogProvider>
+      </AuthProvider>
+    </BrowserRouter>
     </TooltipProvider>
   </QueryClientProvider>
 );

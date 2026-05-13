@@ -4,6 +4,7 @@ import { Button } from "@/components/ui/button";
 import SiteNav from "@/components/SiteNav";
 import wordmark from "@/assets/yodawg-logo.svg";
 import { dog3 } from "@/assets/dogs";
+import { track } from "@/integrations/posthog/PostHogProvider";
 
 const HeroSection = () => {
   return (
@@ -50,7 +51,7 @@ const HeroSection = () => {
               size="lg"
               className="group h-13 w-full rounded-full bg-accent px-7 text-base font-semibold text-accent-foreground shadow-glow transition-transform hover:-translate-y-0.5 hover:bg-accent sm:h-14 sm:w-auto"
             >
-              <Link to="/book">
+              <Link to="/book" onClick={() => track("hero_cta_clicked", { cta: "book_care" })}>
                 Book care
                 <ArrowRight className="ml-1 h-4 w-4 transition-transform group-hover:translate-x-1" />
               </Link>

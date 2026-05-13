@@ -6,6 +6,7 @@ import { SitterShell } from "@/components/sitter/SitterShell";
 import { SitterPageHeader } from "@/components/sitter/SitterPageHeader";
 import { KpiTile } from "@/components/sitter/KpiTile";
 import { EmptyState } from "@/components/sitter/EmptyState";
+import { track } from "@/integrations/posthog/PostHogProvider";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -104,6 +105,7 @@ export default function SitterToday() {
       return;
     }
     toast({ title: kindToast[kind], description: data?.message ?? "Update sent." });
+    track("sitter_update_sent", { kind, service_slug: booking.services?.slug });
     setUpdateTarget(null);
     setUpdateNote("");
   };

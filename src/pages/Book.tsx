@@ -3,6 +3,7 @@ import { Link, useLocation, useNavigate, useSearchParams } from "react-router-do
 import { addDays, differenceInCalendarDays, format, isSameDay, startOfDay } from "date-fns";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
+import { track } from "@/integrations/posthog/PostHogProvider";
 import SiteNav from "@/components/SiteNav";
 import SiteFooter from "@/components/SiteFooter";
 import { Button } from "@/components/ui/button";
@@ -273,6 +274,11 @@ const Book = () => {
       const sid = (a ?? [])[0]?.sitter_id ?? (ww ?? [])[0]?.sitter_id ?? null;
       setSitterId(sid);
 
+      track("booking_started", {
+        preset_service: presetSlug,
+        is_authenticated: !!user,
+      });
+
       if (sid) {
         const { data: bk } = await db
           .from("bookings")
@@ -399,6 +405,10 @@ const Book = () => {
     try {
       localStorage.setItem(DRAFT_KEY, JSON.stringify({ bundleItems, bundleNotes, step, ts: Date.now() }));
     } catch { /* ignore */ }
+    track("booking_auth_required", {
+      step,
+      has_service: bundleItems.some((item) => item.serviceId),
+    });
     navigate("/auth", {
       state: {
         from: `${location.pathname}${location.search}`,
@@ -724,6 +734,23 @@ const Book = () => {
   const next = () => {
     const message = step === 0 ? validateServiceStep() : step === 1 ? validateScheduleStep() : step === 2 ? validatePetStep() : null;
     if (message) return toast({ title: message, variant: "destructive" });
+    if (step === 0) {
+      track("booking_service_selected", {
+        service_slug: activeService?.slug,
+        variant_slug: activeVariant?.slug,
+        bundle_size: bundleItems.length,
+      });
+    } else if (step === 1) {
+      track("booking_schedule_selected", {
+        service_slug: activeService?.slug,
+        has_recurrence: activeItem?.repeatFrequency !== "none",
+        is_boarding: isActiveBoarding,
+      });
+    } else if (step === 2) {
+      track("booking_pets_selected", {
+        pet_count: activeItem?.petIds.length ?? 0,
+      });
+    }
     setStep((current) => Math.min(current + 1, STEPS.length - 1));
   };
 
@@ -953,8 +980,17 @@ const Book = () => {
         firstBookingId,
         bundle: data.length > 1,
       });
+      track("booking_submitted", {
+        total_cents: grandTotalCents,
+        bundle_size: bundleItems.length,
+        has_recurrence: bundleItems.some((i) => i.repeatFrequency !== "none"),
+        service_slugs: bundleItems.map((i) => serviceMap.get(i.serviceId ?? "")?.slug).filter(Boolean),
+      });
     } catch (err: any) {
       toast({ title: "Couldn't save request", description: err?.message ?? "Please try again.", variant: "destructive" });
+      track("booking_submit_failed", {
+        error: err?.message || "unknown",
+      });
     } finally {
       submittingRef.current = false;
       setSubmitting(false);
