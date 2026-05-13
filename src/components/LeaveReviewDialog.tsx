@@ -86,7 +86,7 @@ export function LeaveReviewDialog({ bookingId, customerId, sitterId, serviceLabe
       toast({ title: "Couldn't save review", description: error.message, variant: "destructive" });
       return;
     }
-    toast({ title: existing ? "Review updated" : "Thanks for the review!", description: "Anneke will see your feedback." });
+    toast({ title: existing ? "Review updated" : "Thanks for the review!", description: "AJ will see your feedback." });
     if (data) setExisting(data);
     setOpen(false);
     onSubmitted?.();
@@ -105,7 +105,7 @@ export function LeaveReviewDialog({ bookingId, customerId, sitterId, serviceLabe
         <DialogHeader>
           <DialogTitle>{existing ? "Update your review" : "How was your service?"}</DialogTitle>
           <DialogDescription>
-            {serviceLabel}{petName ? ` for ${petName}` : ""}. Your feedback is private — only Anneke will see it.
+            {serviceLabel}{petName ? ` for ${petName}` : ""}. Your feedback is private — only AJ will see it.
           </DialogDescription>
         </DialogHeader>
         <div className="space-y-4 py-2">

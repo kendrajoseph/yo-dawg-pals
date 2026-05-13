@@ -296,7 +296,7 @@ const Account = () => {
               <div className="grid h-11 w-11 shrink-0 place-items-center rounded-full bg-highlight text-primary"><BellRing className="h-5 w-5" /></div>
               <div>
                 <h2 className="font-display text-xl uppercase text-primary">Service alerts</h2>
-                <p className="mt-1 text-sm text-muted-foreground">Hours changes, closures, and important announcements from Anneke live here.</p>
+                <p className="mt-1 text-sm text-muted-foreground">Hours changes, closures, and important announcements from AJ live here.</p>
               </div>
             </div>
             {serviceAlerts.length === 0 ? (
@@ -322,7 +322,7 @@ const Account = () => {
               <div className="grid h-11 w-11 shrink-0 place-items-center rounded-full bg-accent text-accent-foreground"><Mail className="h-5 w-5" /></div>
               <div>
                 <h2 className="font-display text-xl uppercase text-primary">Message hub</h2>
-                <p className="mt-1 text-sm text-muted-foreground">Direct notes from Anneke, with in-app delivery and optional email or text.</p>
+                <p className="mt-1 text-sm text-muted-foreground">Direct notes from AJ, with in-app delivery and optional email or text.</p>
               </div>
             </div>
             {clientMessages.length === 0 ? (
@@ -368,7 +368,7 @@ const Account = () => {
         ) : invoices.length === 0 ? (
           <Card className="mt-4 border-4 border-primary p-6 text-center shadow-pop">
             <p className="font-tag text-xl text-clay">no invoices yet</p>
-            <p className="mt-1 text-sm text-muted-foreground">Invoices Anneke sends you will appear here.</p>
+            <p className="mt-1 text-sm text-muted-foreground">Invoices AJ sends you will appear here.</p>
           </Card>
         ) : (
           <Card className="mt-4 border-4 border-primary p-0 shadow-pop">
@@ -428,9 +428,9 @@ const Account = () => {
               const canCancel = isUpcoming && ["requested", "pending_payment", "awaiting_payment", "confirmed"].includes(booking.status);
               const refundEligible = hoursUntil >= 24 && booking.status === "confirmed";
               const helperText = booking.status === "requested"
-                ? "Anneke is reviewing the match and will confirm the final time before payment opens."
+                ? "AJ is reviewing the match and will confirm the final time before payment opens."
                 : booking.status === "awaiting_payment" || booking.status === "pending_payment"
-                ? "Anneke has approved the match and confirmed the final time — payment is ready when you are."
+                ? "AJ has approved the match and confirmed the final time — payment is ready when you are."
                 : null;
               const updates = bookingUpdates[booking.id] ?? [];
               const displayName = booking.service_variants?.name ?? booking.services?.name ?? "Service";
@@ -543,7 +543,7 @@ const Account = () => {
                         ))}
                       </ul>
                     ) : (
-                      <p className="mt-3 text-sm text-muted-foreground">No updates yet — Anneke will add them here as the visit happens.</p>
+                      <p className="mt-3 text-sm text-muted-foreground">No updates yet — AJ will add them here as the visit happens.</p>
                     )}
                   </div>
                 </article>

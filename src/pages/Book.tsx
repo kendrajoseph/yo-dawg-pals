@@ -1465,9 +1465,9 @@ const Book = () => {
                   <span className="font-display text-lg uppercase text-primary">Estimated total if approved</span>
                   <span className="font-display text-3xl text-primary">{formatPriceWithDecimals(grandTotalCents)}</span>
                 </div>
-                <p className="mt-1 text-xs text-muted-foreground">All prices include tax. You won't be charged until Anneke confirms your request.</p>
+                <p className="mt-1 text-xs text-muted-foreground">All prices include tax. You won't be charged until AJ confirms your request.</p>
                 <p className="mt-2 text-[11px] leading-relaxed text-muted-foreground/80">
-                  Prices shown are starting rates and may be adjusted based on your pet's unique needs, length of stay, holiday periods, or other circumstances. Final pricing is confirmed by Anneke before any charge is made.
+                  Prices shown are starting rates and may be adjusted based on your pet's unique needs, length of stay, holiday periods, or other circumstances. Final pricing is confirmed by AJ before any charge is made.
                 </p>
               </div>
 
@@ -1477,7 +1477,7 @@ const Book = () => {
                 <label className="flex items-start gap-3 text-sm text-foreground/85">
                   <Checkbox checked={acceptedTerms} onCheckedChange={(checked) => setAcceptedTerms(checked === true)} className="mt-0.5" />
                   <span>
-                    I agree to the <Link to="/terms" target="_blank" rel="noreferrer" className="font-medium text-primary underline underline-offset-4">Terms &amp; Conditions</Link>. All prices include tax. Submitting a request doesn't charge my card — Anneke will review and be in touch.
+                    I agree to the <Link to="/terms" target="_blank" rel="noreferrer" className="font-medium text-primary underline underline-offset-4">Terms &amp; Conditions</Link>. All prices include tax. Submitting a request doesn't charge my card — AJ will review and be in touch.
                   </span>
                 </label>
               </div>
@@ -1512,7 +1512,7 @@ const Book = () => {
           <DialogHeader>
             <DialogTitle className="font-display text-2xl uppercase text-primary">Thanks — your request is in! 🐾</DialogTitle>
             <DialogDescription>
-              Anneke will personally review your request and be in touch soon — keep an eye on your inbox for a confirmation email.
+              AJ will personally review your request and be in touch soon — keep an eye on your inbox for a confirmation email.
             </DialogDescription>
           </DialogHeader>
 
@@ -1533,7 +1533,7 @@ const Book = () => {
                 <span className="font-display text-sm uppercase text-primary">Estimated total if approved</span>
                 <span className="font-display text-xl text-primary">{confirmation.totalLabel}</span>
               </div>
-              <p className="text-xs text-muted-foreground">All prices include tax. You won't be charged until Anneke confirms.</p>
+              <p className="text-xs text-muted-foreground">All prices include tax. You won't be charged until AJ confirms.</p>
             </div>
           )}
 

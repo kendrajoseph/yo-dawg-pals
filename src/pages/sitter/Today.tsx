@@ -53,9 +53,9 @@ const kindToast: Record<UpdateKind, string> = {
 };
 
 // Choose the two transition events appropriate for each service type.
-// - Walks (solo, group, dog walking): Anneke picks the pet up from home and drops them back off → pickup / dropoff
-// - Pet sitting (in client's home): Anneke arrives at the client's home and later leaves → arrived / departed
-// - Boarding: the client drops the pet off with Anneke and later picks them back up → dropoff / pickup
+// - Walks (solo, group, dog walking): AJ picks the pet up from home and drops them back off → pickup / dropoff
+// - Pet sitting (in client's home): AJ arrives at the client's home and later leaves → arrived / departed
+// - Boarding: the client drops the pet off with AJ and later picks them back up → dropoff / pickup
 //   (from the client's perspective these are still drop-off and pick-up events, just inverted in time)
 // - Training, meet & greet: in-person session at the client's home → arrived / departed
 const eventsForSlug = (slug: string | null | undefined): [UpdateKind, UpdateKind] | null => {

@@ -30,7 +30,7 @@ export default function SitterClientProfile() {
   const [addPetOpen, setAddPetOpen] = useState(false);
   const [reloadKey, setReloadKey] = useState(0);
 
-  // Internal admin profile (rating + private notes — only visible to Anneke/admins)
+  // Internal admin profile (rating + private notes — only visible to AJ/admins)
   const [adminProfileId, setAdminProfileId] = useState<string | null>(null);
   const [starRating, setStarRating] = useState<number>(3);
   const [internalNotes, setInternalNotes] = useState<string>("");
