@@ -20,7 +20,7 @@ type LinkRow = {
   digest_timezone: string;
 };
 
-const BOT_USERNAME = "yodawg_bot"; // Replace with AJ's actual bot username after setup
+const BOT_USERNAME = "YoDawgWalks_bot";
 
 export default function TelegramSettings() {
   const { user } = useAuth();
