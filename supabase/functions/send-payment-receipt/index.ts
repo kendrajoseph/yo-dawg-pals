@@ -55,7 +55,7 @@ Deno.serve(async (req) => {
 
     const receiptNumber = invoiceNumber ? invoiceNumber.replace("INV-", "RCP-") : `RCP-${Date.now()}`;
 
-    const { error: sendErr } = await admin.functions.invoke("send-transactional-email", {
+    const { data: sendData, error: sendErr } = await admin.functions.invoke("send-transactional-email", {
       body: {
         templateName: "payment-receipt",
         recipientEmail,
@@ -71,6 +71,14 @@ Deno.serve(async (req) => {
             label: li.label, quantity: Number(li.quantity), total_cents: li.total_cents,
           })),
         },
+        clientMessageLog: invoice?.sitter_id && customerId ? {
+          sitterId: invoice.sitter_id,
+          customerId,
+          bookingId: invoice?.booking_id ?? bookingId ?? null,
+          kind: "receipt",
+          subject: `Receipt ${receiptNumber}`,
+          message: `Payment received · $${(amountPaidCents / 100).toFixed(2)}${paymentMethod ? ` · ${paymentMethod}` : ""}`,
+        } : undefined,
       },
     });
     if (sendErr) return json({ error: sendErr.message }, 500);
@@ -81,7 +89,11 @@ Deno.serve(async (req) => {
       kind: "receipt_sent",
       channel: "email",
       amount_cents: amountPaidCents,
-      metadata: { receipt_number: receiptNumber, payment_method: paymentMethod ?? null },
+      metadata: {
+        receipt_number: receiptNumber,
+        payment_method: paymentMethod ?? null,
+        client_message_id: (sendData as any)?.clientMessageId ?? null,
+      },
     });
 
     return json({ ok: true });
