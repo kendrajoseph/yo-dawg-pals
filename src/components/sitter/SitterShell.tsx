@@ -8,10 +8,9 @@ import {
   CalendarDays,
   ChevronRight,
   CreditCard,
-  Inbox,
   LayoutDashboard,
+  Mail,
   Map as MapIcon,
-  MessageSquare,
   MoreHorizontal,
   PawPrint,
   PieChart,
@@ -46,13 +45,12 @@ type NavItem = {
 
 const PRIMARY: NavItem[] = [
   { to: "/sitter", label: "Today", icon: LayoutDashboard, end: true },
-  { to: "/sitter/inbox", label: "Inbox", icon: Inbox, badgeKey: "inbox" },
+  { to: "/sitter/emails", label: "Emails", icon: Mail, badgeKey: "inbox" },
   { to: "/sitter/calendar", label: "Calendar", icon: CalendarDays },
   { to: "/sitter/map", label: "Route map", icon: MapIcon },
   { to: "/sitter/clients", label: "Clients", icon: UserRound },
   { to: "/sitter/pets", label: "Pets", icon: PawPrint },
   { to: "/sitter/invoices", label: "Invoices", icon: CreditCard, badgeKey: "invoices" },
-  { to: "/sitter/messages", label: "Messages", icon: MessageSquare, badgeKey: "messages" },
 ];
 
 const SECONDARY: NavItem[] = [
@@ -66,7 +64,7 @@ const SECONDARY: NavItem[] = [
 // 4 most-used + a "More" button (which opens the full sidebar sheet on mobile)
 const BOTTOM_TABS: NavItem[] = [
   { to: "/sitter", label: "Today", icon: LayoutDashboard, end: true },
-  { to: "/sitter/inbox", label: "Inbox", icon: Inbox, badgeKey: "inbox" },
+  { to: "/sitter/emails", label: "Emails", icon: Mail, badgeKey: "inbox" },
   { to: "/sitter/calendar", label: "Calendar", icon: CalendarDays },
   { to: "/sitter/invoices", label: "Invoices", icon: CreditCard, badgeKey: "invoices" },
 ];
@@ -193,14 +191,15 @@ function MobileBottomNav() {
 
 const titleFor = (path: string): string => {
   if (path === "/sitter") return "Today";
-  if (path.startsWith("/sitter/inbox")) return "Inbox";
+  if (path.startsWith("/sitter/emails")) return "Emails";
+  if (path.startsWith("/sitter/inbox")) return "Emails";
+  if (path.startsWith("/sitter/messages")) return "Emails";
   if (path.startsWith("/sitter/requests")) return "Request";
   if (path.startsWith("/sitter/calendar")) return "Calendar";
   if (path.startsWith("/sitter/map")) return "Route map";
   if (path.startsWith("/sitter/clients")) return "Clients";
   if (path.startsWith("/sitter/pets")) return "Pets";
   if (path.startsWith("/sitter/invoices")) return "Invoices";
-  if (path.startsWith("/sitter/messages")) return "Messages";
   if (path.startsWith("/sitter/assistant")) return "Assistant";
   if (path.startsWith("/sitter/reviews")) return "Reviews";
   if (path.startsWith("/sitter/reports")) return "Reports";

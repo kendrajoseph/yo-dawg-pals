@@ -1,5 +1,5 @@
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { BrowserRouter, Route, Routes } from "react-router-dom";
+import { BrowserRouter, Navigate, Route, Routes } from "react-router-dom";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { Toaster } from "@/components/ui/toaster";
 import { TooltipProvider } from "@/components/ui/tooltip";
@@ -21,7 +21,7 @@ import Checkout from "./pages/Checkout.tsx";
 import BookingSuccess from "./pages/BookingSuccess.tsx";
 
 import SitterToday from "./pages/sitter/Today.tsx";
-import SitterInbox from "./pages/sitter/Inbox.tsx";
+import SitterEmails from "./pages/sitter/Emails.tsx";
 import SitterInvoices from "./pages/sitter/Invoices.tsx";
 import SitterCalendar from "./pages/sitter/Calendar.tsx";
 import SitterMap from "./pages/sitter/Map.tsx";
@@ -33,7 +33,7 @@ import SitterRequestDetail from "./pages/sitter/RequestDetail.tsx";
 import GroupRequestDetail from "./pages/sitter/GroupRequestDetail.tsx";
 import SitterBookingDetail from "./pages/sitter/BookingDetail.tsx";
 import SitterAssistant from "./pages/sitter/Assistant.tsx";
-import SitterMessages from "./pages/sitter/Messages.tsx";
+
 import SitterReports from "./pages/sitter/Reports.tsx";
 import SitterReviews from "./pages/sitter/Reviews.tsx";
 import SettingsHome from "./pages/sitter/settings/SettingsHome.tsx";
@@ -74,7 +74,8 @@ const App = () => (
             <Route path="/account/pets" element={<ProtectedRoute><Pets /></ProtectedRoute>} />
             <Route path="/account/profile" element={<ProtectedRoute><Profile /></ProtectedRoute>} />
             <Route path="/sitter" element={<ProtectedRoute requireSitter><SitterToday /></ProtectedRoute>} />
-            <Route path="/sitter/inbox" element={<ProtectedRoute requireSitter><SitterInbox /></ProtectedRoute>} />
+            <Route path="/sitter/emails" element={<ProtectedRoute requireSitter><SitterEmails /></ProtectedRoute>} />
+            <Route path="/sitter/inbox" element={<Navigate to="/sitter/emails?tab=inbox" replace />} />
             <Route path="/sitter/requests/group/:groupId" element={<ProtectedRoute requireSitter><GroupRequestDetail /></ProtectedRoute>} />
             <Route path="/sitter/requests/:id" element={<ProtectedRoute requireSitter><SitterRequestDetail /></ProtectedRoute>} />
             <Route path="/sitter/bookings/:id" element={<ProtectedRoute requireSitter><SitterBookingDetail /></ProtectedRoute>} />
@@ -86,7 +87,7 @@ const App = () => (
             <Route path="/sitter/clients/:id" element={<ProtectedRoute requireSitter><SitterClientProfile /></ProtectedRoute>} />
             <Route path="/sitter/pets" element={<ProtectedRoute requireSitter><SitterPets /></ProtectedRoute>} />
             <Route path="/sitter/pets/:id" element={<ProtectedRoute requireSitter><SitterPetProfile /></ProtectedRoute>} />
-            <Route path="/sitter/messages" element={<ProtectedRoute requireSitter><SitterMessages /></ProtectedRoute>} />
+            <Route path="/sitter/messages" element={<Navigate to="/sitter/emails?tab=sent" replace />} />
             <Route path="/sitter/reports" element={<ProtectedRoute requireSitter><SitterReports /></ProtectedRoute>} />
             <Route path="/sitter/reviews" element={<ProtectedRoute requireSitter><SitterReviews /></ProtectedRoute>} />
             <Route path="/sitter/settings" element={<ProtectedRoute requireSitter><SettingsHome /></ProtectedRoute>} />
