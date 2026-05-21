@@ -355,9 +355,13 @@ function SentTab({ onCompose }: { onCompose: () => void }) {
                     <Badge variant="outline" className={`gap-1 ${meta.className}`}>
                       <Icon className="h-3 w-3" />{meta.label}
                     </Badge>
-                    <Link to={`/sitter/clients/${r.customer_id}`} className="truncate font-medium hover:underline">
-                      {r.customer_name ?? "Client"}
-                    </Link>
+                    {r.customer_id ? (
+                      <Link to={`/sitter/clients/${r.customer_id}`} className="truncate font-medium hover:underline">
+                        {r.customer_name ?? "Client"}
+                      </Link>
+                    ) : (
+                      <span className="truncate font-medium text-muted-foreground">{r.customer_name ?? "Client"}</span>
+                    )}
                     <span className="ml-auto text-[11px] text-muted-foreground">
                       {formatDistanceToNow(new Date(r.created_at), { addSuffix: true })}
                     </span>
@@ -370,26 +374,30 @@ function SentTab({ onCompose }: { onCompose: () => void }) {
                         onClick={() => setViewer({ open: true, subject: r.subject, html: r.email_html, sentAt: r.created_at })}>
                         <Eye className="h-3.5 w-3.5" />View email
                       </Button>
+                    ) : r.source === "log" ? (
+                      <span className="text-[11px] text-muted-foreground">Sent before email archiving was enabled — original not stored.</span>
                     ) : null}
-                    <AlertDialog>
-                      <AlertDialogTrigger asChild>
-                        <Button variant="ghost" size="sm" className="h-7 gap-1.5 text-xs text-muted-foreground hover:text-destructive" disabled={deletingId === r.id}>
-                          <Trash2 className="h-3.5 w-3.5" />Delete
-                        </Button>
-                      </AlertDialogTrigger>
-                      <AlertDialogContent>
-                        <AlertDialogHeader>
-                          <AlertDialogTitle>Delete this item?</AlertDialogTitle>
-                          <AlertDialogDescription>
-                            This removes it from your hub. The email already sent to the client is unaffected.
-                          </AlertDialogDescription>
-                        </AlertDialogHeader>
-                        <AlertDialogFooter>
-                          <AlertDialogCancel>Keep</AlertDialogCancel>
-                          <AlertDialogAction onClick={() => handleDelete(r.id)}>Delete</AlertDialogAction>
-                        </AlertDialogFooter>
-                      </AlertDialogContent>
-                    </AlertDialog>
+                    {r.source === "archive" && (
+                      <AlertDialog>
+                        <AlertDialogTrigger asChild>
+                          <Button variant="ghost" size="sm" className="h-7 gap-1.5 text-xs text-muted-foreground hover:text-destructive" disabled={deletingId === r.id}>
+                            <Trash2 className="h-3.5 w-3.5" />Delete
+                          </Button>
+                        </AlertDialogTrigger>
+                        <AlertDialogContent>
+                          <AlertDialogHeader>
+                            <AlertDialogTitle>Delete this item?</AlertDialogTitle>
+                            <AlertDialogDescription>
+                              This removes it from your hub. The email already sent to the client is unaffected.
+                            </AlertDialogDescription>
+                          </AlertDialogHeader>
+                          <AlertDialogFooter>
+                            <AlertDialogCancel>Keep</AlertDialogCancel>
+                            <AlertDialogAction onClick={() => handleDelete(r.id)}>Delete</AlertDialogAction>
+                          </AlertDialogFooter>
+                        </AlertDialogContent>
+                      </AlertDialog>
+                    )}
                   </div>
                 </div>
               </li>
