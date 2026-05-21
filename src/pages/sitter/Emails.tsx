@@ -191,8 +191,9 @@ function InboxTab() {
 }
 
 type SentRow = {
-  id: string; customer_id: string; customer_name: string | null; avatar_url: string | null;
+  id: string; customer_id: string | null; customer_name: string | null; avatar_url: string | null;
   subject: string; message: string; created_at: string; kind: string; email_html: string | null;
+  source: "archive" | "log"; recipient_email?: string;
 };
 
 const KIND_META: Record<string, { label: string; icon: any; className: string }> = {
@@ -202,6 +203,19 @@ const KIND_META: Record<string, { label: string; icon: any; className: string }>
   service_update:   { label: "Update",    icon: MessageSquare, className: "bg-purple-100 text-purple-800 border-purple-200" },
   offer:            { label: "Offer",     icon: Mail,          className: "bg-pink-100 text-pink-800 border-pink-200" },
   customer_service: { label: "Message",   icon: MessageSquare, className: "bg-muted text-foreground border-border" },
+};
+
+const TEMPLATE_TO_KIND: Record<string, { kind: string; subject: string }> = {
+  "invoice-issued":              { kind: "invoice",          subject: "Invoice sent" },
+  "payment-receipt":             { kind: "receipt",          subject: "Payment receipt" },
+  "payment-reminder":            { kind: "reminder",         subject: "Payment reminder" },
+  "client-direct-message":       { kind: "customer_service", subject: "Direct message" },
+  "walk-request-received":       { kind: "service_update",   subject: "Walk request received" },
+  "walk-schedule-confirmed":     { kind: "service_update",   subject: "Walk schedule confirmed" },
+  "booking-declined":            { kind: "service_update",   subject: "Booking declined" },
+  "group-walk-payment-request":  { kind: "invoice",          subject: "Group walk payment request" },
+  "booking-paid-notification":   { kind: "receipt",          subject: "Payment received" },
+  "refund-issued":               { kind: "receipt",          subject: "Refund issued" },
 };
 
 const SENT_FILTERS = [
@@ -234,30 +248,68 @@ function SentTab({ onCompose }: { onCompose: () => void }) {
     let cancelled = false;
     (async () => {
       setLoading(true);
-      const { data, error } = await supabase
-        .from("client_messages")
-        .select("id, subject, message, created_at, customer_id, kind, email_html")
-        .eq("sitter_id", user.id).order("created_at", { ascending: false }).limit(300);
+      const sitterEmail = (user.email ?? "").toLowerCase();
+      const [archiveRes, logRes] = await Promise.all([
+        supabase.from("client_messages")
+          .select("id, subject, message, created_at, customer_id, kind, email_html")
+          .eq("sitter_id", user.id).order("created_at", { ascending: false }).limit(300),
+        supabase.from("email_send_log")
+          .select("id, message_id, template_name, recipient_email, status, created_at")
+          .eq("status", "sent").order("created_at", { ascending: false }).limit(500),
+      ]);
       if (cancelled) return;
-      if (error) { console.error(error); setLoading(false); return; }
-      const list = (data ?? []) as any[];
-      const ids = Array.from(new Set(list.map((r) => r.customer_id)));
+
+      const archived = (archiveRes.data ?? []) as any[];
+      const ids = Array.from(new Set(archived.map((r) => r.customer_id).filter(Boolean)));
       let profiles = new Map<string, { full_name: string | null; avatar_url: string | null }>();
       if (ids.length > 0) {
         const { data: p } = await supabase.from("profiles").select("id, full_name, avatar_url").in("id", ids);
         profiles = new Map((p ?? []).map((x: any) => [x.id, { full_name: x.full_name, avatar_url: x.avatar_url }]));
       }
-      setRows(list.map((m) => ({
+      const archivedRows: SentRow[] = archived.map((m) => ({
         id: m.id, customer_id: m.customer_id,
         customer_name: profiles.get(m.customer_id)?.full_name ?? null,
         avatar_url: profiles.get(m.customer_id)?.avatar_url ?? null,
         subject: m.subject, message: m.message, created_at: m.created_at,
         kind: m.kind ?? "customer_service", email_html: m.email_html ?? null,
-      })));
+        source: "archive",
+      }));
+
+      // Dedupe: skip log rows that match an archived row by same minute.
+      const archivedMinutes = new Set(
+        archived.map((m: any) => (m.created_at as string)?.slice(0, 16))
+      );
+
+      const logRows: SentRow[] = [];
+      for (const l of (logRes.data ?? []) as any[]) {
+        const recipient = (l.recipient_email ?? "").toLowerCase();
+        if (!recipient || recipient === sitterEmail) continue;
+        const tpl = TEMPLATE_TO_KIND[l.template_name];
+        if (!tpl) continue;
+        if (archivedMinutes.has((l.created_at as string)?.slice(0, 16))) continue;
+        logRows.push({
+          id: `log-${l.id}`,
+          customer_id: null,
+          customer_name: recipient,
+          avatar_url: null,
+          subject: tpl.subject,
+          message: `Sent to ${recipient}`,
+          created_at: l.created_at,
+          kind: tpl.kind,
+          email_html: null,
+          source: "log",
+          recipient_email: recipient,
+        });
+      }
+
+      const merged = [...archivedRows, ...logRows].sort(
+        (a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
+      );
+      setRows(merged);
       setLoading(false);
     })();
     return () => { cancelled = true; };
-  }, [user?.id]);
+  }, [user?.id, user?.email]);
 
   const filtered = useMemo(() => {
     const q = search.trim().toLowerCase();
@@ -303,9 +355,13 @@ function SentTab({ onCompose }: { onCompose: () => void }) {
                     <Badge variant="outline" className={`gap-1 ${meta.className}`}>
                       <Icon className="h-3 w-3" />{meta.label}
                     </Badge>
-                    <Link to={`/sitter/clients/${r.customer_id}`} className="truncate font-medium hover:underline">
-                      {r.customer_name ?? "Client"}
-                    </Link>
+                    {r.customer_id ? (
+                      <Link to={`/sitter/clients/${r.customer_id}`} className="truncate font-medium hover:underline">
+                        {r.customer_name ?? "Client"}
+                      </Link>
+                    ) : (
+                      <span className="truncate font-medium text-muted-foreground">{r.customer_name ?? "Client"}</span>
+                    )}
                     <span className="ml-auto text-[11px] text-muted-foreground">
                       {formatDistanceToNow(new Date(r.created_at), { addSuffix: true })}
                     </span>
@@ -318,26 +374,30 @@ function SentTab({ onCompose }: { onCompose: () => void }) {
                         onClick={() => setViewer({ open: true, subject: r.subject, html: r.email_html, sentAt: r.created_at })}>
                         <Eye className="h-3.5 w-3.5" />View email
                       </Button>
+                    ) : r.source === "log" ? (
+                      <span className="text-[11px] text-muted-foreground">Sent before email archiving was enabled — original not stored.</span>
                     ) : null}
-                    <AlertDialog>
-                      <AlertDialogTrigger asChild>
-                        <Button variant="ghost" size="sm" className="h-7 gap-1.5 text-xs text-muted-foreground hover:text-destructive" disabled={deletingId === r.id}>
-                          <Trash2 className="h-3.5 w-3.5" />Delete
-                        </Button>
-                      </AlertDialogTrigger>
-                      <AlertDialogContent>
-                        <AlertDialogHeader>
-                          <AlertDialogTitle>Delete this item?</AlertDialogTitle>
-                          <AlertDialogDescription>
-                            This removes it from your hub. The email already sent to the client is unaffected.
-                          </AlertDialogDescription>
-                        </AlertDialogHeader>
-                        <AlertDialogFooter>
-                          <AlertDialogCancel>Keep</AlertDialogCancel>
-                          <AlertDialogAction onClick={() => handleDelete(r.id)}>Delete</AlertDialogAction>
-                        </AlertDialogFooter>
-                      </AlertDialogContent>
-                    </AlertDialog>
+                    {r.source === "archive" && (
+                      <AlertDialog>
+                        <AlertDialogTrigger asChild>
+                          <Button variant="ghost" size="sm" className="h-7 gap-1.5 text-xs text-muted-foreground hover:text-destructive" disabled={deletingId === r.id}>
+                            <Trash2 className="h-3.5 w-3.5" />Delete
+                          </Button>
+                        </AlertDialogTrigger>
+                        <AlertDialogContent>
+                          <AlertDialogHeader>
+                            <AlertDialogTitle>Delete this item?</AlertDialogTitle>
+                            <AlertDialogDescription>
+                              This removes it from your hub. The email already sent to the client is unaffected.
+                            </AlertDialogDescription>
+                          </AlertDialogHeader>
+                          <AlertDialogFooter>
+                            <AlertDialogCancel>Keep</AlertDialogCancel>
+                            <AlertDialogAction onClick={() => handleDelete(r.id)}>Delete</AlertDialogAction>
+                          </AlertDialogFooter>
+                        </AlertDialogContent>
+                      </AlertDialog>
+                    )}
                   </div>
                 </div>
               </li>
