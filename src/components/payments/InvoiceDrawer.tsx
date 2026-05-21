@@ -354,15 +354,42 @@ export function InvoiceDrawer({ open, onOpenChange, invoiceId, customerName, onC
               <Card className="p-4">
                 <div className="mb-2 text-xs uppercase tracking-wide text-muted-foreground">Payment history</div>
                 <ul className="divide-y divide-border text-sm">
-                  {events.map((e) => (
-                    <li key={e.id} className="flex items-center justify-between py-2">
-                      <div>
-                        <div className="capitalize">{e.kind.replace(/_/g, " ")} {e.channel ? `· ${e.channel}` : ""}</div>
-                        <div className="text-xs text-muted-foreground">{format(new Date(e.created_at), "MMM d, yyyy h:mm a")}</div>
-                      </div>
-                      <div className="font-medium">{e.amount_cents != null ? formatCents(e.amount_cents) : "—"}</div>
-                    </li>
-                  ))}
+                  {events.map((e) => {
+                    const cmId = (e.metadata as any)?.client_message_id as string | undefined;
+                    return (
+                      <li key={e.id} className="flex items-center justify-between gap-2 py-2">
+                        <div className="min-w-0 flex-1">
+                          <div className="capitalize">{e.kind.replace(/_/g, " ")} {e.channel ? `· ${e.channel}` : ""}</div>
+                          <div className="text-xs text-muted-foreground">{format(new Date(e.created_at), "MMM d, yyyy h:mm a")}</div>
+                        </div>
+                        {cmId && (
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            onClick={async () => {
+                              const { data } = await supabase
+                                .from("client_messages")
+                                .select("subject, email_html, created_at")
+                                .eq("id", cmId)
+                                .maybeSingle();
+                              if ((data as any)?.email_html) {
+                                setEmailView({
+                                  subject: (data as any).subject ?? "Email",
+                                  html: (data as any).email_html,
+                                  sentAt: (data as any).created_at,
+                                });
+                              } else {
+                                toast({ title: "No rendered email stored for this item." });
+                              }
+                            }}
+                          >
+                            View email
+                          </Button>
+                        )}
+                        <div className="font-medium">{e.amount_cents != null ? formatCents(e.amount_cents) : "—"}</div>
+                      </li>
+                    );
+                  })}
                 </ul>
               </Card>
             )}
