@@ -166,7 +166,22 @@ export function InvoiceDrawer({ open, onOpenChange, invoiceId, customerName, onC
         paid_at: fullyPaid ? new Date().toISOString() : invoice.paid_at,
       } as any).eq("id", invoice.id);
       if (upErr) throw upErr;
-      toast({ title: fullyPaid ? "Marked paid" : "Partial payment recorded" });
+
+      // Send a branded receipt to the client.
+      try {
+        await supabase.functions.invoke("send-payment-receipt", {
+          body: {
+            invoiceId: invoice.id,
+            amountPaidCents: amountCents,
+            paymentMethod: method,
+            paidAt: new Date().toISOString(),
+          },
+        });
+      } catch (e) {
+        console.error("send-payment-receipt failed", e);
+      }
+
+      toast({ title: fullyPaid ? "Marked paid · receipt sent" : "Partial payment recorded · receipt sent" });
       await load(); onChanged();
     } catch (e: any) {
       toast({ title: "Couldn't record payment", description: e?.message ?? "Try again.", variant: "destructive" });
