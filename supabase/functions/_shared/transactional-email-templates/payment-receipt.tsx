@@ -104,6 +104,7 @@ export const template = {
       { label: 'Boarding · additional', total_cents: 6000 },
       { label: 'Sibling discount', total_cents: -2000 },
     ],
+    reviewUrl: 'https://yodawg.ca/review/example',
   },
 } satisfies TemplateEntry
 
