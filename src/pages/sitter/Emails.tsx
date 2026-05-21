@@ -4,6 +4,7 @@ import { format, formatDistanceToNow } from "date-fns";
 import {
   Inbox as InboxIcon, AlertTriangle, CreditCard, PawPrint, Bell,
   MessageSquare, Search, Plus, Trash2, Mail, FileText, Receipt, Eye, Send, AlertOctagon, RefreshCw,
+  Star, Archive,
 } from "lucide-react";
 import { SitterShell } from "@/components/sitter/SitterShell";
 import { SitterPageHeader } from "@/components/sitter/SitterPageHeader";
