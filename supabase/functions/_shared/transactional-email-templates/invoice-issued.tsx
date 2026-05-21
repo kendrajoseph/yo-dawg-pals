@@ -3,6 +3,7 @@ import {
   Body, Container, Head, Heading, Html, Preview, Section, Text, Hr, Button, Link,
 } from 'npm:@react-email/components@0.0.22'
 import type { TemplateEntry } from './registry.ts'
+import { BrandFooter } from './_brand-footer.tsx'
 
 const SITE_NAME = 'Yo Dawg Services'
 
@@ -84,7 +85,7 @@ const InvoiceIssuedEmail = ({
         <Text style={footer}>
           Or copy this link: <Link href={payUrl} style={linkStyle}>{payUrl}</Link>
         </Text>
-        <Text style={footer}>— {SITE_NAME}</Text>
+        <BrandFooter />
       </Container>
     </Body>
   </Html>
