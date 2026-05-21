@@ -45,13 +45,12 @@ type NavItem = {
 
 const PRIMARY: NavItem[] = [
   { to: "/sitter", label: "Today", icon: LayoutDashboard, end: true },
-  { to: "/sitter/inbox", label: "Inbox", icon: Inbox, badgeKey: "inbox" },
+  { to: "/sitter/emails", label: "Emails", icon: Mail, badgeKey: "inbox" },
   { to: "/sitter/calendar", label: "Calendar", icon: CalendarDays },
   { to: "/sitter/map", label: "Route map", icon: MapIcon },
   { to: "/sitter/clients", label: "Clients", icon: UserRound },
   { to: "/sitter/pets", label: "Pets", icon: PawPrint },
   { to: "/sitter/invoices", label: "Invoices", icon: CreditCard, badgeKey: "invoices" },
-  { to: "/sitter/messages", label: "Messages", icon: MessageSquare, badgeKey: "messages" },
 ];
 
 const SECONDARY: NavItem[] = [
@@ -65,7 +64,7 @@ const SECONDARY: NavItem[] = [
 // 4 most-used + a "More" button (which opens the full sidebar sheet on mobile)
 const BOTTOM_TABS: NavItem[] = [
   { to: "/sitter", label: "Today", icon: LayoutDashboard, end: true },
-  { to: "/sitter/inbox", label: "Inbox", icon: Inbox, badgeKey: "inbox" },
+  { to: "/sitter/emails", label: "Emails", icon: Mail, badgeKey: "inbox" },
   { to: "/sitter/calendar", label: "Calendar", icon: CalendarDays },
   { to: "/sitter/invoices", label: "Invoices", icon: CreditCard, badgeKey: "invoices" },
 ];
