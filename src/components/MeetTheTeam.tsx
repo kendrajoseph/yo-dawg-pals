@@ -5,7 +5,6 @@ import { Button } from "@/components/ui/button";
 import { dog4, dog8 } from "@/assets/dogs";
 import anneke1 from "@/assets/anneke/anneke-1.jpeg";
 import anneke2 from "@/assets/anneke/anneke-2.jpeg";
-import anneke3 from "@/assets/anneke/anneke-3.jpeg";
 import anneke4 from "@/assets/anneke/anneke-4.jpeg";
 
 import dogStick from "@/assets/anneke/dog-stick.jpeg";
@@ -14,7 +13,6 @@ import dogsCar from "@/assets/anneke/dogs-car.jpeg";
 const carouselPhotos = [
   { src: anneke1, alt: "AJ on a sunny walk with a golden retriever" },
   { src: anneke2, alt: "AJ getting a big slobbery kiss from a brindle pup" },
-  { src: anneke3, alt: "AJ cuddling a happy schnauzer outdoors" },
   { src: dogStick, alt: "A very pleased Aussie shepherd guarding the world's best stick" },
   { src: anneke4, alt: "AJ walking a chocolate lab through a golden field" },
   { src: dogsCar, alt: "Two road-trip dogs riding shotgun together" },
