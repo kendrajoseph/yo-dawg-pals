@@ -33,7 +33,7 @@ import SitterRequestDetail from "./pages/sitter/RequestDetail.tsx";
 import GroupRequestDetail from "./pages/sitter/GroupRequestDetail.tsx";
 import SitterBookingDetail from "./pages/sitter/BookingDetail.tsx";
 import SitterAssistant from "./pages/sitter/Assistant.tsx";
-import SitterMessages from "./pages/sitter/Messages.tsx";
+
 import SitterReports from "./pages/sitter/Reports.tsx";
 import SitterReviews from "./pages/sitter/Reviews.tsx";
 import SettingsHome from "./pages/sitter/settings/SettingsHome.tsx";
