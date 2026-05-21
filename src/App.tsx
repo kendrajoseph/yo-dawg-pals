@@ -48,6 +48,7 @@ import FAQ from "./pages/FAQ.tsx";
 import Terms from "./pages/Terms.tsx";
 import Privacy from "./pages/Privacy.tsx";
 import PublicInvoice from "./pages/PublicInvoice.tsx";
+import Review from "./pages/Review.tsx";
 
 const queryClient = new QueryClient();
 
