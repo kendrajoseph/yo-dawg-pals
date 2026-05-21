@@ -4,6 +4,7 @@ import { format, formatDistanceToNow } from "date-fns";
 import {
   Inbox as InboxIcon, AlertTriangle, CreditCard, PawPrint, Bell,
   MessageSquare, Search, Plus, Trash2, Mail, FileText, Receipt, Eye, Send, AlertOctagon, RefreshCw,
+  Star, Archive,
 } from "lucide-react";
 import { SitterShell } from "@/components/sitter/SitterShell";
 import { SitterPageHeader } from "@/components/sitter/SitterPageHeader";
@@ -194,6 +195,7 @@ type SentRow = {
   id: string; customer_id: string | null; customer_name: string | null; avatar_url: string | null;
   subject: string; message: string; created_at: string; kind: string; email_html: string | null;
   source: "archive" | "log"; recipient_email?: string;
+  read_at?: string | null; starred_at?: string | null; archived_at?: string | null;
 };
 
 const KIND_META: Record<string, { label: string; icon: any; className: string }> = {
@@ -205,7 +207,7 @@ const KIND_META: Record<string, { label: string; icon: any; className: string }>
   customer_service: { label: "Message",   icon: MessageSquare, className: "bg-muted text-foreground border-border" },
 };
 
-const TEMPLATE_TO_KIND: Record<string, { kind: string; subject: string }> = {
+export const TEMPLATE_TO_KIND: Record<string, { kind: string; subject: string }> = {
   "invoice-issued":              { kind: "invoice",          subject: "Invoice sent" },
   "payment-receipt":             { kind: "receipt",          subject: "Payment receipt" },
   "payment-reminder":            { kind: "reminder",         subject: "Payment reminder" },
@@ -220,28 +222,22 @@ const TEMPLATE_TO_KIND: Record<string, { kind: string; subject: string }> = {
 
 const SENT_FILTERS = [
   { value: "all", label: "All" },
+  { value: "unread", label: "Unread" },
+  { value: "starred", label: "Starred" },
   { value: "messages", label: "Messages" },
   { value: "invoice", label: "Invoices" },
   { value: "receipt", label: "Receipts" },
   { value: "reminder", label: "Reminders" },
+  { value: "archived", label: "Archived" },
 ];
 
 function SentTab({ onCompose }: { onCompose: () => void }) {
   const { user } = useAuth();
+  const navigate = useNavigate();
   const [rows, setRows] = useState<SentRow[]>([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState("");
   const [filter, setFilter] = useState("all");
-  const [deletingId, setDeletingId] = useState<string | null>(null);
-  const [viewer, setViewer] = useState<{ open: boolean; subject?: string; html?: string | null; sentAt?: string }>({ open: false });
-
-  const handleDelete = async (id: string) => {
-    setDeletingId(id);
-    const { error } = await supabase.from("client_messages").delete().eq("id", id);
-    setDeletingId(null);
-    if (error) { toast({ title: "Couldn't delete", description: error.message, variant: "destructive" }); return; }
-    setRows((prev) => prev.filter((r) => r.id !== id));
-  };
 
   useEffect(() => {
     if (!user?.id) return;
@@ -249,15 +245,25 @@ function SentTab({ onCompose }: { onCompose: () => void }) {
     (async () => {
       setLoading(true);
       const sitterEmail = (user.email ?? "").toLowerCase();
-      const [archiveRes, logRes] = await Promise.all([
+      const [archiveRes, logRes, stateRes] = await Promise.all([
         supabase.from("client_messages")
           .select("id, subject, message, created_at, customer_id, kind, email_html")
           .eq("sitter_id", user.id).order("created_at", { ascending: false }).limit(300),
         supabase.from("email_send_log")
           .select("id, message_id, template_name, recipient_email, status, created_at")
           .eq("status", "sent").order("created_at", { ascending: false }).limit(500),
+        supabase.from("email_user_state")
+          .select("source_type, source_id, read_at, starred_at, archived_at")
+          .eq("user_id", user.id),
       ]);
       if (cancelled) return;
+
+      const stateMap = new Map<string, { read_at: string | null; starred_at: string | null; archived_at: string | null }>();
+      for (const s of (stateRes.data ?? []) as any[]) {
+        stateMap.set(`${s.source_type}:${s.source_id}`, {
+          read_at: s.read_at, starred_at: s.starred_at, archived_at: s.archived_at,
+        });
+      }
 
       const archived = (archiveRes.data ?? []) as any[];
       const ids = Array.from(new Set(archived.map((r) => r.customer_id).filter(Boolean)));
@@ -266,19 +272,20 @@ function SentTab({ onCompose }: { onCompose: () => void }) {
         const { data: p } = await supabase.from("profiles").select("id, full_name, avatar_url").in("id", ids);
         profiles = new Map((p ?? []).map((x: any) => [x.id, { full_name: x.full_name, avatar_url: x.avatar_url }]));
       }
-      const archivedRows: SentRow[] = archived.map((m) => ({
-        id: m.id, customer_id: m.customer_id,
-        customer_name: profiles.get(m.customer_id)?.full_name ?? null,
-        avatar_url: profiles.get(m.customer_id)?.avatar_url ?? null,
-        subject: m.subject, message: m.message, created_at: m.created_at,
-        kind: m.kind ?? "customer_service", email_html: m.email_html ?? null,
-        source: "archive",
-      }));
+      const archivedRows: SentRow[] = archived.map((m) => {
+        const st = stateMap.get(`archive:${m.id}`);
+        return {
+          id: m.id, customer_id: m.customer_id,
+          customer_name: profiles.get(m.customer_id)?.full_name ?? null,
+          avatar_url: profiles.get(m.customer_id)?.avatar_url ?? null,
+          subject: m.subject, message: m.message, created_at: m.created_at,
+          kind: m.kind ?? "customer_service", email_html: m.email_html ?? null,
+          source: "archive",
+          read_at: st?.read_at ?? null, starred_at: st?.starred_at ?? null, archived_at: st?.archived_at ?? null,
+        };
+      });
 
-      // Dedupe: skip log rows that match an archived row by same minute.
-      const archivedMinutes = new Set(
-        archived.map((m: any) => (m.created_at as string)?.slice(0, 16))
-      );
+      const archivedMinutes = new Set(archived.map((m: any) => (m.created_at as string)?.slice(0, 16)));
 
       const logRows: SentRow[] = [];
       for (const l of (logRes.data ?? []) as any[]) {
@@ -287,6 +294,7 @@ function SentTab({ onCompose }: { onCompose: () => void }) {
         const tpl = TEMPLATE_TO_KIND[l.template_name];
         if (!tpl) continue;
         if (archivedMinutes.has((l.created_at as string)?.slice(0, 16))) continue;
+        const st = stateMap.get(`log:${l.id}`);
         logRows.push({
           id: `log-${l.id}`,
           customer_id: null,
@@ -299,6 +307,7 @@ function SentTab({ onCompose }: { onCompose: () => void }) {
           email_html: null,
           source: "log",
           recipient_email: recipient,
+          read_at: st?.read_at ?? null, starred_at: st?.starred_at ?? null, archived_at: st?.archived_at ?? null,
         });
       }
 
@@ -311,9 +320,39 @@ function SentTab({ onCompose }: { onCompose: () => void }) {
     return () => { cancelled = true; };
   }, [user?.id, user?.email]);
 
+  const upsertState = async (r: SentRow, patch: Record<string, string | null>) => {
+    if (!user?.id) return;
+    const sourceId = r.source === "archive" ? r.id : r.id.replace(/^log-/, "");
+    const next = { ...patch };
+    setRows((prev) => prev.map((x) => x.id === r.id ? { ...x, ...next } : x));
+    const { error } = await supabase.from("email_user_state").upsert({
+      user_id: user.id, source_type: r.source, source_id: sourceId,
+      read_at: next.read_at !== undefined ? next.read_at : r.read_at,
+      starred_at: next.starred_at !== undefined ? next.starred_at : r.starred_at,
+      archived_at: next.archived_at !== undefined ? next.archived_at : r.archived_at,
+    }, { onConflict: "user_id,source_type,source_id" });
+    if (error) toast({ title: "Couldn't update", description: error.message, variant: "destructive" });
+  };
+
+  const toggleStar = (r: SentRow) => upsertState(r, { starred_at: r.starred_at ? null : new Date().toISOString() });
+  const toggleArchive = (r: SentRow) => {
+    upsertState(r, { archived_at: r.archived_at ? null : new Date().toISOString() });
+    toast({ title: r.archived_at ? "Restored" : "Archived" });
+  };
+
+  const openEmail = (r: SentRow) => {
+    if (!r.read_at) upsertState(r, { read_at: new Date().toISOString() });
+    const sourceId = r.source === "archive" ? r.id : r.id.replace(/^log-/, "");
+    navigate(`/sitter/emails/${r.source}/${sourceId}`);
+  };
+
   const filtered = useMemo(() => {
     const q = search.trim().toLowerCase();
     return rows.filter((r) => {
+      if (filter !== "archived" && r.archived_at) return false;
+      if (filter === "archived" && !r.archived_at) return false;
+      if (filter === "unread" && r.read_at) return false;
+      if (filter === "starred" && !r.starred_at) return false;
       if (filter === "messages" && !["customer_service", "service_update", "offer"].includes(r.kind)) return false;
       if (["invoice", "receipt", "reminder"].includes(filter) && r.kind !== filter) return false;
       if (!q) return true;
@@ -330,13 +369,13 @@ function SentTab({ onCompose }: { onCompose: () => void }) {
           <Input value={search} onChange={(e) => setSearch(e.target.value)} placeholder="Search by client, subject, content" className="pl-8" />
         </div>
         <Tabs value={filter} onValueChange={setFilter}>
-          <TabsList>{SENT_FILTERS.map((f) => <TabsTrigger key={f.value} value={f.value}>{f.label}</TabsTrigger>)}</TabsList>
+          <TabsList className="flex-wrap h-auto">{SENT_FILTERS.map((f) => <TabsTrigger key={f.value} value={f.value}>{f.label}</TabsTrigger>)}</TabsList>
         </Tabs>
       </div>
       {loading ? (
         <div className="p-6 text-sm text-muted-foreground">Loading…</div>
       ) : filtered.length === 0 ? (
-        <EmptyState icon={<Send className="h-8 w-8" />} title="Nothing sent yet"
+        <EmptyState icon={<Send className="h-8 w-8" />} title="Nothing here"
           description="Messages, invoices, receipts, and reminders you send will show up here."
           action={<Button size="sm" onClick={onCompose}>Compose a message</Button>} />
       ) : (
@@ -344,8 +383,21 @@ function SentTab({ onCompose }: { onCompose: () => void }) {
           {filtered.map((r) => {
             const meta = KIND_META[r.kind] ?? KIND_META.customer_service;
             const Icon = meta.icon;
+            const unread = !r.read_at;
             return (
-              <li key={r.id} className="flex items-start gap-3 px-2 py-3">
+              <li key={r.id}
+                  className={`group flex items-start gap-3 px-2 py-3 cursor-pointer hover:bg-muted/40 ${unread ? "bg-primary/[0.03]" : ""}`}
+                  onClick={() => openEmail(r)}>
+                <div className="flex flex-col items-center gap-1 pt-1">
+                  {unread && <span className="h-2 w-2 rounded-full bg-primary" aria-label="Unread" />}
+                  <button
+                    type="button"
+                    onClick={(e) => { e.stopPropagation(); toggleStar(r); }}
+                    className="text-muted-foreground hover:text-amber-500"
+                    aria-label={r.starred_at ? "Unstar" : "Star"}>
+                    <Star className={`h-4 w-4 ${r.starred_at ? "fill-amber-400 text-amber-500" : ""}`} />
+                  </button>
+                </div>
                 <Avatar className="h-10 w-10 shrink-0">
                   <AvatarImage src={r.avatar_url ?? undefined} />
                   <AvatarFallback>{(r.customer_name ?? "?").slice(0, 1).toUpperCase()}</AvatarFallback>
@@ -355,58 +407,28 @@ function SentTab({ onCompose }: { onCompose: () => void }) {
                     <Badge variant="outline" className={`gap-1 ${meta.className}`}>
                       <Icon className="h-3 w-3" />{meta.label}
                     </Badge>
-                    {r.customer_id ? (
-                      <Link to={`/sitter/clients/${r.customer_id}`} className="truncate font-medium hover:underline">
-                        {r.customer_name ?? "Client"}
-                      </Link>
-                    ) : (
-                      <span className="truncate font-medium text-muted-foreground">{r.customer_name ?? "Client"}</span>
-                    )}
+                    <span className={`truncate ${unread ? "font-semibold" : "font-medium"}`}>
+                      {r.customer_name ?? "Client"}
+                    </span>
                     <span className="ml-auto text-[11px] text-muted-foreground">
                       {formatDistanceToNow(new Date(r.created_at), { addSuffix: true })}
                     </span>
                   </div>
-                  <div className="mt-1 truncate text-sm">{r.subject}</div>
+                  <div className={`mt-1 truncate text-sm ${unread ? "font-medium" : ""}`}>{r.subject}</div>
                   <div className="truncate text-xs text-muted-foreground">{r.message}</div>
-                  <div className="mt-2 flex items-center gap-1">
-                    {r.email_html ? (
-                      <Button size="sm" variant="outline" className="h-7 gap-1.5 text-xs"
-                        onClick={() => setViewer({ open: true, subject: r.subject, html: r.email_html, sentAt: r.created_at })}>
-                        <Eye className="h-3.5 w-3.5" />View email
-                      </Button>
-                    ) : r.source === "log" ? (
-                      <span className="text-[11px] text-muted-foreground">Sent before email archiving was enabled — original not stored.</span>
-                    ) : null}
-                    {r.source === "archive" && (
-                      <AlertDialog>
-                        <AlertDialogTrigger asChild>
-                          <Button variant="ghost" size="sm" className="h-7 gap-1.5 text-xs text-muted-foreground hover:text-destructive" disabled={deletingId === r.id}>
-                            <Trash2 className="h-3.5 w-3.5" />Delete
-                          </Button>
-                        </AlertDialogTrigger>
-                        <AlertDialogContent>
-                          <AlertDialogHeader>
-                            <AlertDialogTitle>Delete this item?</AlertDialogTitle>
-                            <AlertDialogDescription>
-                              This removes it from your hub. The email already sent to the client is unaffected.
-                            </AlertDialogDescription>
-                          </AlertDialogHeader>
-                          <AlertDialogFooter>
-                            <AlertDialogCancel>Keep</AlertDialogCancel>
-                            <AlertDialogAction onClick={() => handleDelete(r.id)}>Delete</AlertDialogAction>
-                          </AlertDialogFooter>
-                        </AlertDialogContent>
-                      </AlertDialog>
-                    )}
-                  </div>
+                </div>
+                <div className="flex shrink-0 items-center gap-1 opacity-0 group-hover:opacity-100">
+                  <Button size="icon" variant="ghost" className="h-7 w-7"
+                    onClick={(e) => { e.stopPropagation(); toggleArchive(r); }}
+                    aria-label={r.archived_at ? "Restore" : "Archive"}>
+                    <Archive className="h-3.5 w-3.5" />
+                  </Button>
                 </div>
               </li>
             );
           })}
         </ul>
       )}
-      <EmailViewerDialog open={viewer.open} onOpenChange={(open) => setViewer((v) => ({ ...v, open }))}
-        subject={viewer.subject} html={viewer.html} sentAt={viewer.sentAt} />
     </Card>
   );
 }

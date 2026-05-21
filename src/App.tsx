@@ -22,6 +22,7 @@ import BookingSuccess from "./pages/BookingSuccess.tsx";
 
 import SitterToday from "./pages/sitter/Today.tsx";
 import SitterEmails from "./pages/sitter/Emails.tsx";
+import SitterEmailDetail from "./pages/sitter/EmailDetail.tsx";
 import SitterInvoices from "./pages/sitter/Invoices.tsx";
 import SitterCalendar from "./pages/sitter/Calendar.tsx";
 import SitterMap from "./pages/sitter/Map.tsx";
@@ -75,6 +76,7 @@ const App = () => (
             <Route path="/account/profile" element={<ProtectedRoute><Profile /></ProtectedRoute>} />
             <Route path="/sitter" element={<ProtectedRoute requireSitter><SitterToday /></ProtectedRoute>} />
             <Route path="/sitter/emails" element={<ProtectedRoute requireSitter><SitterEmails /></ProtectedRoute>} />
+            <Route path="/sitter/emails/:source/:id" element={<ProtectedRoute requireSitter><SitterEmailDetail /></ProtectedRoute>} />
             <Route path="/sitter/inbox" element={<Navigate to="/sitter/emails?tab=inbox" replace />} />
             <Route path="/sitter/requests/group/:groupId" element={<ProtectedRoute requireSitter><GroupRequestDetail /></ProtectedRoute>} />
             <Route path="/sitter/requests/:id" element={<ProtectedRoute requireSitter><SitterRequestDetail /></ProtectedRoute>} />
