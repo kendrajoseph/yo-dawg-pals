@@ -7,7 +7,7 @@ import anneke1 from "@/assets/anneke/anneke-1.jpeg";
 import anneke2 from "@/assets/anneke/anneke-2.jpeg";
 import anneke3 from "@/assets/anneke/anneke-3.jpeg";
 import anneke4 from "@/assets/anneke/anneke-4.jpeg";
-import anneke5 from "@/assets/anneke/anneke-5.jpeg";
+
 import dogStick from "@/assets/anneke/dog-stick.jpeg";
 import dogsCar from "@/assets/anneke/dogs-car.jpeg";
 
@@ -22,6 +22,14 @@ const carouselPhotos = [
 
 const MeetTheTeam = () => {
   const [index, setIndex] = useState(0);
+
+  const goPrev = useCallback(() => {
+    setIndex((i) => (i - 1 + carouselPhotos.length) % carouselPhotos.length);
+  }, []);
+
+  const goNext = useCallback(() => {
+    setIndex((i) => (i + 1) % carouselPhotos.length);
+  }, []);
 
   useEffect(() => {
     const id = setInterval(() => {
