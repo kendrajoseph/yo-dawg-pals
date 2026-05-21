@@ -17,6 +17,7 @@ interface ReceiptProps {
   amountPaidCents?: number
   paymentMethod?: string
   lineItems?: LineItem[]
+  reviewUrl?: string
 }
 
 const formatMoney = (cents: number) => `$${((cents ?? 0) / 100).toFixed(2)}`
@@ -33,6 +34,7 @@ const PaymentReceiptEmail = ({
   amountPaidCents = 0,
   paymentMethod = '',
   lineItems = [],
+  reviewUrl = '',
 }: ReceiptProps) => (
   <Html lang="en" dir="ltr">
     <Head />
