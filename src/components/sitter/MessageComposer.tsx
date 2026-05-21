@@ -18,11 +18,15 @@ export function MessageComposer({
   open,
   onOpenChange,
   initialCustomerId,
+  initialSubject,
+  initialMessage,
   onSent,
 }: {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   initialCustomerId?: string;
+  initialSubject?: string;
+  initialMessage?: string;
   onSent?: () => void;
 }) {
   const { user } = useAuth();
@@ -33,8 +37,8 @@ export function MessageComposer({
   const [bookingId, setBookingId] = useState("");
   const [groupIds, setGroupIds] = useState<string[]>([]);
   const [kind, setKind] = useState<"customer_service" | "service_update" | "offer">("customer_service");
-  const [subject, setSubject] = useState("");
-  const [message, setMessage] = useState("");
+  const [subject, setSubject] = useState(initialSubject ?? "");
+  const [message, setMessage] = useState(initialMessage ?? "");
   const [sendEmail, setSendEmail] = useState(true);
   const [sendSms, setSendSms] = useState(false);
   const [sending, setSending] = useState(false);
@@ -42,6 +46,8 @@ export function MessageComposer({
   useEffect(() => {
     if (!open || !user?.id) return;
     setCustomerId(initialCustomerId ?? "");
+    setSubject(initialSubject ?? "");
+    setMessage(initialMessage ?? "");
     let cancelled = false;
     (async () => {
       // unique clients = profiles for any customer with a booking with this sitter
