@@ -783,6 +783,42 @@ export type Database = {
         }
         Relationships: []
       }
+      email_user_state: {
+        Row: {
+          archived_at: string | null
+          created_at: string
+          id: string
+          read_at: string | null
+          source_id: string
+          source_type: string
+          starred_at: string | null
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          archived_at?: string | null
+          created_at?: string
+          id?: string
+          read_at?: string | null
+          source_id: string
+          source_type: string
+          starred_at?: string | null
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          archived_at?: string | null
+          created_at?: string
+          id?: string
+          read_at?: string | null
+          source_id?: string
+          source_type?: string
+          starred_at?: string | null
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       inbound_sms_messages: {
         Row: {
           body: string
