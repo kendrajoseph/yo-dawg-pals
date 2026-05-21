@@ -68,7 +68,7 @@ export function MessageComposer({
       setClients(((profs ?? []) as Client[]).sort((a, b) => (a.full_name ?? "").localeCompare(b.full_name ?? "")));
     })();
     return () => { cancelled = true; };
-  }, [open, user?.id, initialCustomerId]);
+  }, [open, user?.id, initialCustomerId, initialSubject, initialMessage]);
 
   const selectedClient = useMemo(() => clients.find((c) => c.id === customerId) ?? null, [clients, customerId]);
   const clientBookings = useMemo(() => bookings.filter((b) => b.customer_id === customerId), [bookings, customerId]);
