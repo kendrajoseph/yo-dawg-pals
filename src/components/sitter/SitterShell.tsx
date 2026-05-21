@@ -191,14 +191,15 @@ function MobileBottomNav() {
 
 const titleFor = (path: string): string => {
   if (path === "/sitter") return "Today";
-  if (path.startsWith("/sitter/inbox")) return "Inbox";
+  if (path.startsWith("/sitter/emails")) return "Emails";
+  if (path.startsWith("/sitter/inbox")) return "Emails";
+  if (path.startsWith("/sitter/messages")) return "Emails";
   if (path.startsWith("/sitter/requests")) return "Request";
   if (path.startsWith("/sitter/calendar")) return "Calendar";
   if (path.startsWith("/sitter/map")) return "Route map";
   if (path.startsWith("/sitter/clients")) return "Clients";
   if (path.startsWith("/sitter/pets")) return "Pets";
   if (path.startsWith("/sitter/invoices")) return "Invoices";
-  if (path.startsWith("/sitter/messages")) return "Messages";
   if (path.startsWith("/sitter/assistant")) return "Assistant";
   if (path.startsWith("/sitter/reviews")) return "Reviews";
   if (path.startsWith("/sitter/reports")) return "Reports";
