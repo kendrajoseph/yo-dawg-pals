@@ -60,6 +60,14 @@ Deno.serve(async (req) => {
   let idempotencyKey: string
   let messageId: string
   let templateData: Record<string, any> = {}
+  let clientMessageLog: {
+    sitterId?: string
+    customerId?: string
+    bookingId?: string | null
+    kind?: string
+    subject?: string
+    message?: string
+  } | null = null
   try {
     const body = await req.json()
     templateName = body.templateName || body.template_name
@@ -68,6 +76,9 @@ Deno.serve(async (req) => {
     idempotencyKey = body.idempotencyKey || body.idempotency_key || messageId
     if (body.templateData && typeof body.templateData === 'object') {
       templateData = body.templateData
+    }
+    if (body.clientMessageLog && typeof body.clientMessageLog === 'object') {
+      clientMessageLog = body.clientMessageLog
     }
   } catch {
     return new Response(
@@ -349,8 +360,38 @@ Deno.serve(async (req) => {
 
   console.log('Transactional email enqueued', { templateName, effectiveRecipient })
 
+  // Optionally archive the rendered email into client_messages so the sitter
+  // can review exactly what the client received.
+  let clientMessageId: string | null = null
+  if (clientMessageLog?.sitterId && clientMessageLog?.customerId) {
+    const validKinds = ['service_update', 'customer_service', 'offer', 'invoice', 'receipt', 'reminder']
+    const kind = validKinds.includes(clientMessageLog.kind ?? '') ? clientMessageLog.kind : 'customer_service'
+    const { data: cm, error: cmErr } = await supabase
+      .from('client_messages')
+      .insert({
+        sitter_id: clientMessageLog.sitterId,
+        customer_id: clientMessageLog.customerId,
+        booking_id: clientMessageLog.bookingId ?? null,
+        kind,
+        subject: clientMessageLog.subject ?? resolvedSubject,
+        message: clientMessageLog.message ?? 'Email sent — open to view.',
+        send_email: true,
+        send_sms: false,
+        delivered_email_at: new Date().toISOString(),
+        email_html: html,
+        created_by: clientMessageLog.sitterId,
+      })
+      .select('id')
+      .maybeSingle()
+    if (cmErr) {
+      console.error('Failed to archive client_messages copy', cmErr)
+    } else {
+      clientMessageId = (cm as any)?.id ?? null
+    }
+  }
+
   return new Response(
-    JSON.stringify({ success: true, queued: true }),
+    JSON.stringify({ success: true, queued: true, messageId, clientMessageId }),
     {
       status: 200,
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },

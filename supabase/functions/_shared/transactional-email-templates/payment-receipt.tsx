@@ -3,6 +3,7 @@ import {
   Body, Container, Head, Heading, Html, Preview, Section, Text, Hr,
 } from 'npm:@react-email/components@0.0.22'
 import type { TemplateEntry } from './registry.ts'
+import { BrandFooter } from './_brand-footer.tsx'
 
 const SITE_NAME = 'Yo Dawg Services'
 
@@ -70,7 +71,8 @@ const PaymentReceiptEmail = ({
           </Section>
         ) : null}
 
-        <Text style={footer}>Keep this email for your records. — {SITE_NAME}</Text>
+        <Text style={footer}>Keep this email for your records.</Text>
+        <BrandFooter />
       </Container>
     </Body>
   </Html>

@@ -597,6 +597,7 @@ export type Database = {
           customer_id: string
           delivered_email_at: string | null
           delivered_sms_at: string | null
+          email_html: string | null
           id: string
           kind: Database["public"]["Enums"]["client_message_kind"]
           message: string
@@ -613,6 +614,7 @@ export type Database = {
           customer_id: string
           delivered_email_at?: string | null
           delivered_sms_at?: string | null
+          email_html?: string | null
           id?: string
           kind?: Database["public"]["Enums"]["client_message_kind"]
           message: string
@@ -629,6 +631,7 @@ export type Database = {
           customer_id?: string
           delivered_email_at?: string | null
           delivered_sms_at?: string | null
+          email_html?: string | null
           id?: string
           kind?: Database["public"]["Enums"]["client_message_kind"]
           message?: string
@@ -2243,7 +2246,13 @@ export type Database = {
         | "approval"
         | "arrived"
         | "departed"
-      client_message_kind: "service_update" | "customer_service" | "offer"
+      client_message_kind:
+        | "service_update"
+        | "customer_service"
+        | "offer"
+        | "invoice"
+        | "receipt"
+        | "reminder"
       pet_approval_status: "pending" | "approved" | "declined"
       service_alert_kind: "hours_update" | "closure" | "announcement" | "promo"
       service_capacity_mode: "single" | "shared"
@@ -2393,7 +2402,14 @@ export const Constants = {
         "arrived",
         "departed",
       ],
-      client_message_kind: ["service_update", "customer_service", "offer"],
+      client_message_kind: [
+        "service_update",
+        "customer_service",
+        "offer",
+        "invoice",
+        "receipt",
+        "reminder",
+      ],
       pet_approval_status: ["pending", "approved", "declined"],
       service_alert_kind: ["hours_update", "closure", "announcement", "promo"],
       service_capacity_mode: ["single", "shared"],

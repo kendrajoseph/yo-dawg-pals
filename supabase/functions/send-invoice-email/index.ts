@@ -71,6 +71,14 @@ Deno.serve(async (req) => {
           payUrl,
           notes: (invoice as any).notes ?? "",
         },
+        clientMessageLog: {
+          sitterId: (invoice as any).sitter_id,
+          customerId: (invoice as any).customer_id,
+          bookingId: (invoice as any).booking_id,
+          kind: "invoice",
+          subject: `Invoice ${(invoice as any).invoice_number}`,
+          message: `Invoice ${(invoice as any).invoice_number} sent · $${(((invoice as any).total_cents ?? 0) / 100).toFixed(2)}`,
+        },
       }),
     });
     if (!sendRes.ok) {
@@ -78,7 +86,8 @@ Deno.serve(async (req) => {
       console.error("send-transactional-email failed", sendRes.status, errText);
       return json({ error: `Email send failed: ${errText}` }, 500);
     }
-    await sendRes.text();
+    let sendJson: any = {};
+    try { sendJson = await sendRes.json(); } catch { /* ignore */ }
 
     await admin.from("invoices").update({
       status: (invoice as any).status === "draft" ? "sent" : (invoice as any).status,
@@ -90,7 +99,10 @@ Deno.serve(async (req) => {
       booking_id: (invoice as any).booking_id,
       kind: "invoice_sent",
       channel: "email",
-      metadata: { recipient: recipientEmail },
+      metadata: {
+        recipient: recipientEmail,
+        client_message_id: sendJson?.clientMessageId ?? null,
+      },
     });
 
     return json({ ok: true });

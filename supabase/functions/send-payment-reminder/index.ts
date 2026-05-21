@@ -49,7 +49,7 @@ Deno.serve(async (req) => {
       daysOverdue = Math.max(0, Math.floor((Date.now() - due.getTime()) / (1000 * 60 * 60 * 24)));
     }
 
-    const { error: emailErr } = await admin.functions.invoke("send-transactional-email", {
+    const { data: sendData, error: emailErr } = await admin.functions.invoke("send-transactional-email", {
       body: {
         templateName: "payment-reminder",
         recipientEmail,
@@ -62,6 +62,14 @@ Deno.serve(async (req) => {
           payUrl,
           tone,
           daysOverdue,
+        },
+        clientMessageLog: {
+          sitterId: (invoice as any).sitter_id,
+          customerId: (invoice as any).customer_id,
+          bookingId: (invoice as any).booking_id,
+          kind: "reminder",
+          subject: `Payment reminder · ${(invoice as any).invoice_number}`,
+          message: `${tone === "final" ? "Final notice" : tone === "firm" ? "Reminder" : "Friendly reminder"} · $${(owed / 100).toFixed(2)} ${daysOverdue > 0 ? `(${daysOverdue}d overdue)` : "due"}`,
         },
       },
     });
@@ -87,7 +95,12 @@ Deno.serve(async (req) => {
       booking_id: (invoice as any).booking_id,
       kind: "reminder_sent",
       channel,
-      metadata: { tone, days_overdue: daysOverdue, triggered_by_cron: triggeredByCron },
+      metadata: {
+        tone,
+        days_overdue: daysOverdue,
+        triggered_by_cron: triggeredByCron,
+        client_message_id: (sendData as any)?.clientMessageId ?? null,
+      },
     });
 
     if (daysOverdue > 0 && (invoice as any).status === "sent") {
