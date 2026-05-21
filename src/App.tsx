@@ -76,6 +76,7 @@ const App = () => (
             <Route path="/account/profile" element={<ProtectedRoute><Profile /></ProtectedRoute>} />
             <Route path="/sitter" element={<ProtectedRoute requireSitter><SitterToday /></ProtectedRoute>} />
             <Route path="/sitter/emails" element={<ProtectedRoute requireSitter><SitterEmails /></ProtectedRoute>} />
+            <Route path="/sitter/emails/:source/:id" element={<ProtectedRoute requireSitter><SitterEmailDetail /></ProtectedRoute>} />
             <Route path="/sitter/inbox" element={<Navigate to="/sitter/emails?tab=inbox" replace />} />
             <Route path="/sitter/requests/group/:groupId" element={<ProtectedRoute requireSitter><GroupRequestDetail /></ProtectedRoute>} />
             <Route path="/sitter/requests/:id" element={<ProtectedRoute requireSitter><SitterRequestDetail /></ProtectedRoute>} />
