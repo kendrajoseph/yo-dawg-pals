@@ -18,7 +18,6 @@ const carouselPhotos = [
   { src: dogStick, alt: "A very pleased Aussie shepherd guarding the world's best stick" },
   { src: anneke4, alt: "AJ walking a chocolate lab through a golden field" },
   { src: dogsCar, alt: "Two road-trip dogs riding shotgun together" },
-  { src: anneke5, alt: "AJ and a happy dog at a glowing beach sunset" },
 ];
 
 const MeetTheTeam = () => {
