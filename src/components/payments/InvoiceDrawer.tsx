@@ -21,6 +21,7 @@ import { RecipientCard } from "./RecipientCard";
 import { MarkPaidDialog } from "./MarkPaidDialog";
 import { SendReminderDialog } from "./SendReminderDialog";
 import { InvoiceReminderPanel } from "./InvoiceReminderPanel";
+import { EmailViewerDialog } from "./EmailViewerDialog";
 import { downloadInvoicePdf } from "@/lib/invoicePdf";
 import {
   AlertDialog,
@@ -55,6 +56,7 @@ export function InvoiceDrawer({ open, onOpenChange, invoiceId, customerName, onC
   const [markPaidOpen, setMarkPaidOpen] = useState(false);
   const [reminderOpen, setReminderOpen] = useState(false);
   const [voidOpen, setVoidOpen] = useState(false);
+  const [emailView, setEmailView] = useState<{ subject: string; html: string; sentAt: string } | null>(null);
 
   useEffect(() => {
     if (!open || !invoiceId) return;
