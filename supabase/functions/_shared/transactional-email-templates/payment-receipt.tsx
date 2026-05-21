@@ -73,6 +73,14 @@ const PaymentReceiptEmail = ({
           </Section>
         ) : null}
 
+        {reviewUrl ? (
+          <Section style={reviewCard}>
+            <Heading as="h3" style={reviewHeading}>How was your experience?</Heading>
+            <Text style={reviewText}>We'd love your feedback. It takes about a minute.</Text>
+            <Button href={reviewUrl} style={reviewButton}>★ Leave a review</Button>
+          </Section>
+        ) : null}
+
         <Text style={footer}>Keep this email for your records.</Text>
         <BrandFooter />
       </Container>
