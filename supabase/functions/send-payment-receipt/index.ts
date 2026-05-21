@@ -55,6 +55,10 @@ Deno.serve(async (req) => {
 
     const receiptNumber = invoiceNumber ? invoiceNumber.replace("INV-", "RCP-") : `RCP-${Date.now()}`;
 
+    const reviewBookingId = invoice?.booking_id ?? bookingId ?? null;
+    const siteOrigin = Deno.env.get("PUBLIC_SITE_URL") ?? "https://yodawg.ca";
+    const reviewUrl = reviewBookingId ? `${siteOrigin}/review/${reviewBookingId}` : "";
+
     const { data: sendData, error: sendErr } = await admin.functions.invoke("send-transactional-email", {
       body: {
         templateName: "payment-receipt",
@@ -67,6 +71,7 @@ Deno.serve(async (req) => {
           paidAt: paidAt ?? new Date().toISOString(),
           amountPaidCents,
           paymentMethod: paymentMethod ?? "",
+          reviewUrl,
           lineItems: lineItems.map((li) => ({
             label: li.label, quantity: Number(li.quantity), total_cents: li.total_cents,
           })),

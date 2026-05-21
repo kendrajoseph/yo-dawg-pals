@@ -658,10 +658,13 @@ export type Database = {
           created_at: string
           customer_id: string
           id: string
+          improvement_feedback: string | null
           is_anonymous: boolean
           rating: number
+          service_feedback: string | null
           sitter_id: string
           updated_at: string
+          value_feedback: string | null
         }
         Insert: {
           booking_id: string
@@ -669,10 +672,13 @@ export type Database = {
           created_at?: string
           customer_id: string
           id?: string
+          improvement_feedback?: string | null
           is_anonymous?: boolean
           rating: number
+          service_feedback?: string | null
           sitter_id: string
           updated_at?: string
+          value_feedback?: string | null
         }
         Update: {
           booking_id?: string
@@ -680,10 +686,13 @@ export type Database = {
           created_at?: string
           customer_id?: string
           id?: string
+          improvement_feedback?: string | null
           is_anonymous?: boolean
           rating?: number
+          service_feedback?: string | null
           sitter_id?: string
           updated_at?: string
+          value_feedback?: string | null
         }
         Relationships: []
       }

@@ -1,6 +1,6 @@
 import * as React from 'npm:react@18.3.1'
 import {
-  Body, Container, Head, Heading, Html, Preview, Section, Text, Hr,
+  Body, Button, Container, Head, Heading, Html, Preview, Section, Text, Hr,
 } from 'npm:@react-email/components@0.0.22'
 import type { TemplateEntry } from './registry.ts'
 import { BrandFooter } from './_brand-footer.tsx'
@@ -17,6 +17,7 @@ interface ReceiptProps {
   amountPaidCents?: number
   paymentMethod?: string
   lineItems?: LineItem[]
+  reviewUrl?: string
 }
 
 const formatMoney = (cents: number) => `$${((cents ?? 0) / 100).toFixed(2)}`
@@ -33,6 +34,7 @@ const PaymentReceiptEmail = ({
   amountPaidCents = 0,
   paymentMethod = '',
   lineItems = [],
+  reviewUrl = '',
 }: ReceiptProps) => (
   <Html lang="en" dir="ltr">
     <Head />
@@ -71,6 +73,14 @@ const PaymentReceiptEmail = ({
           </Section>
         ) : null}
 
+        {reviewUrl ? (
+          <Section style={reviewCard}>
+            <Heading as="h3" style={reviewHeading}>How was your experience?</Heading>
+            <Text style={reviewText}>We'd love your feedback. It takes about a minute.</Text>
+            <Button href={reviewUrl} style={reviewButton}>★ Leave a review</Button>
+          </Section>
+        ) : null}
+
         <Text style={footer}>Keep this email for your records.</Text>
         <BrandFooter />
       </Container>
@@ -94,6 +104,7 @@ export const template = {
       { label: 'Boarding · additional', total_cents: 6000 },
       { label: 'Sibling discount', total_cents: -2000 },
     ],
+    reviewUrl: 'https://yodawg.ca/review/example',
   },
 } satisfies TemplateEntry
 
@@ -114,3 +125,7 @@ const totalAmount = { fontSize: '18px', color: '#0f1c33', margin: '8px 0', fontW
 const hr = { borderColor: '#ece7d6', margin: '4px 0' }
 const hrBold = { borderColor: '#0f1c33', borderTopWidth: '2px', margin: '12px 0 4px' }
 const footer = { fontSize: '12px', color: '#7c7766', margin: '20px 0 0', textAlign: 'center' as const }
+const reviewCard = { border: '1px solid #e6e2d6', borderRadius: '14px', padding: '20px', backgroundColor: '#fff9e8', marginBottom: '14px', textAlign: 'center' as const }
+const reviewHeading = { fontSize: '16px', fontWeight: 700, color: '#0f1c33', margin: '0 0 6px' }
+const reviewText = { fontSize: '13px', color: '#4a4636', margin: '0 0 14px' }
+const reviewButton = { backgroundColor: '#1f5d3a', color: '#fdf6e9', padding: '12px 22px', borderRadius: '10px', fontSize: '14px', fontWeight: 700, textDecoration: 'none', display: 'inline-block', textTransform: 'uppercase' as const, letterSpacing: '0.04em' }

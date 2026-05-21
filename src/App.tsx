@@ -48,6 +48,7 @@ import FAQ from "./pages/FAQ.tsx";
 import Terms from "./pages/Terms.tsx";
 import Privacy from "./pages/Privacy.tsx";
 import PublicInvoice from "./pages/PublicInvoice.tsx";
+import Review from "./pages/Review.tsx";
 
 const queryClient = new QueryClient();
 
@@ -101,6 +102,7 @@ const App = () => (
             <Route path="/terms" element={<Terms />} />
             <Route path="/privacy" element={<Privacy />} />
             <Route path="/pay/:token" element={<PublicInvoice />} />
+            <Route path="/review/:bookingId" element={<ProtectedRoute><Review /></ProtectedRoute>} />
             {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
             <Route path="*" element={<NotFound />} />
           </Routes>
