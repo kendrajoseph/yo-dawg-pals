@@ -54,7 +54,7 @@ export default function SitterInvoices() {
   const [rows, setRows] = useState<InvoiceRow[]>([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState("");
-  const [tab, setTab] = useState<StatusTab>("outstanding");
+  const [tab, setTab] = useState<StatusTab>("all");
   const [drawerBooking, setDrawerBooking] = useState<PaymentDrawerBooking | null>(null);
   const [drawerOpen, setDrawerOpen] = useState(false);
   const [invoiceDrawerId, setInvoiceDrawerId] = useState<string | null>(null);
@@ -234,10 +234,36 @@ export default function SitterInvoices() {
       />
 
       <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
-        <KpiTile label="Outstanding" value={formatCents(stats.outstanding)} tone="warning" icon={<CreditCard className="h-5 w-5" />} />
-        <KpiTile label="Overdue" value={formatCents(stats.overdue)} tone={stats.overdue > 0 ? "danger" : "default"} />
-        <KpiTile label="Drafts (unsent)" value={String(stats.drafts)} tone={stats.drafts > 0 ? "warning" : "default"} icon={<Send className="h-5 w-5" />} />
-        <KpiTile label="Paid this month" value={formatCents(stats.paidThisMonth)} tone="success" />
+        <KpiTile
+          label="Outstanding"
+          value={formatCents(stats.outstanding)}
+          tone="warning"
+          icon={<CreditCard className="h-5 w-5" />}
+          onClick={() => setTab("outstanding")}
+          active={tab === "outstanding"}
+        />
+        <KpiTile
+          label="Overdue"
+          value={formatCents(stats.overdue)}
+          tone={stats.overdue > 0 ? "danger" : "default"}
+          onClick={() => setTab("overdue")}
+          active={tab === "overdue"}
+        />
+        <KpiTile
+          label="Drafts (unsent)"
+          value={String(stats.drafts)}
+          tone={stats.drafts > 0 ? "warning" : "default"}
+          icon={<Send className="h-5 w-5" />}
+          onClick={() => setTab("drafts")}
+          active={tab === "drafts"}
+        />
+        <KpiTile
+          label="Paid this month"
+          value={formatCents(stats.paidThisMonth)}
+          tone="success"
+          onClick={() => setTab("paid")}
+          active={tab === "paid"}
+        />
       </div>
 
       {stats.drafts > 0 && tab !== "drafts" && (
