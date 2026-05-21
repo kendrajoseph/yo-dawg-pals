@@ -63,6 +63,23 @@ const MeetTheTeam = () => {
                 />
               ))}
             </div>
+            {/* prev / next arrows */}
+            <button
+              type="button"
+              aria-label="Previous photo"
+              onClick={goPrev}
+              className="absolute left-2 top-1/2 z-20 -translate-y-1/2 rounded-full border-2 border-primary bg-card/90 p-1.5 text-primary shadow-pop-sm backdrop-blur-sm transition-transform hover:scale-110 active:scale-95 sm:left-3 sm:p-2"
+            >
+              <ChevronLeft className="h-4 w-4 sm:h-5 sm:w-5" />
+            </button>
+            <button
+              type="button"
+              aria-label="Next photo"
+              onClick={goNext}
+              className="absolute right-2 top-1/2 z-20 -translate-y-1/2 rounded-full border-2 border-primary bg-card/90 p-1.5 text-primary shadow-pop-sm backdrop-blur-sm transition-transform hover:scale-110 active:scale-95 sm:right-3 sm:p-2"
+            >
+              <ChevronRight className="h-4 w-4 sm:h-5 sm:w-5" />
+            </button>
           </div>
           {/* dots */}
           <div className="absolute -bottom-8 left-1/2 z-10 flex -translate-x-1/2 gap-1.5">
