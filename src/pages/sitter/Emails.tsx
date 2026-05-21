@@ -307,7 +307,7 @@ function SentTab({ onCompose }: { onCompose: () => void }) {
           source: "log",
           recipient_email: recipient,
           read_at: st?.read_at ?? null, starred_at: st?.starred_at ?? null, archived_at: st?.archived_at ?? null,
-        };
+        });
       }
 
       const merged = [...archivedRows, ...logRows].sort(
