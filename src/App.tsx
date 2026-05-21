@@ -21,7 +21,7 @@ import Checkout from "./pages/Checkout.tsx";
 import BookingSuccess from "./pages/BookingSuccess.tsx";
 
 import SitterToday from "./pages/sitter/Today.tsx";
-import SitterInbox from "./pages/sitter/Inbox.tsx";
+import SitterEmails from "./pages/sitter/Emails.tsx";
 import SitterInvoices from "./pages/sitter/Invoices.tsx";
 import SitterCalendar from "./pages/sitter/Calendar.tsx";
 import SitterMap from "./pages/sitter/Map.tsx";
