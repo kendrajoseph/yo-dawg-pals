@@ -1,5 +1,5 @@
-import { useEffect, useState } from "react";
-import { Heart, ShieldCheck, MapPin } from "lucide-react";
+import { useEffect, useState, useCallback } from "react";
+import { Heart, ShieldCheck, MapPin, ChevronLeft, ChevronRight } from "lucide-react";
 import { Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { dog4, dog8 } from "@/assets/dogs";
