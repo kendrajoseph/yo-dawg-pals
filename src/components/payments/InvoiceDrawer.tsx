@@ -150,7 +150,7 @@ export function InvoiceDrawer({ open, onOpenChange, invoiceId, customerName, onC
     try {
       const { error: peErr } = await supabase.from("payment_events").insert({
         invoice_id: invoice.id,
-        kind: "payment_recorded",
+        kind: "manual_paid",
         channel: method,
         amount_cents: amountCents,
         metadata: { reference, manual: true },
