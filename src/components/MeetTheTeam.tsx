@@ -1,5 +1,5 @@
-import { useEffect, useState } from "react";
-import { Heart, ShieldCheck, MapPin } from "lucide-react";
+import { useEffect, useState, useCallback } from "react";
+import { Heart, ShieldCheck, MapPin, ChevronLeft, ChevronRight } from "lucide-react";
 import { Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { dog4, dog8 } from "@/assets/dogs";
@@ -7,7 +7,7 @@ import anneke1 from "@/assets/anneke/anneke-1.jpeg";
 import anneke2 from "@/assets/anneke/anneke-2.jpeg";
 import anneke3 from "@/assets/anneke/anneke-3.jpeg";
 import anneke4 from "@/assets/anneke/anneke-4.jpeg";
-import anneke5 from "@/assets/anneke/anneke-5.jpeg";
+
 import dogStick from "@/assets/anneke/dog-stick.jpeg";
 import dogsCar from "@/assets/anneke/dogs-car.jpeg";
 
@@ -18,11 +18,18 @@ const carouselPhotos = [
   { src: dogStick, alt: "A very pleased Aussie shepherd guarding the world's best stick" },
   { src: anneke4, alt: "AJ walking a chocolate lab through a golden field" },
   { src: dogsCar, alt: "Two road-trip dogs riding shotgun together" },
-  { src: anneke5, alt: "AJ and a happy dog at a glowing beach sunset" },
 ];
 
 const MeetTheTeam = () => {
   const [index, setIndex] = useState(0);
+
+  const goPrev = useCallback(() => {
+    setIndex((i) => (i - 1 + carouselPhotos.length) % carouselPhotos.length);
+  }, []);
+
+  const goNext = useCallback(() => {
+    setIndex((i) => (i + 1) % carouselPhotos.length);
+  }, []);
 
   useEffect(() => {
     const id = setInterval(() => {
@@ -56,6 +63,23 @@ const MeetTheTeam = () => {
                 />
               ))}
             </div>
+            {/* prev / next arrows */}
+            <button
+              type="button"
+              aria-label="Previous photo"
+              onClick={goPrev}
+              className="absolute left-2 top-1/2 z-20 -translate-y-1/2 rounded-full border-2 border-primary bg-card/90 p-1.5 text-primary shadow-pop-sm backdrop-blur-sm transition-transform hover:scale-110 active:scale-95 sm:left-3 sm:p-2"
+            >
+              <ChevronLeft className="h-4 w-4 sm:h-5 sm:w-5" />
+            </button>
+            <button
+              type="button"
+              aria-label="Next photo"
+              onClick={goNext}
+              className="absolute right-2 top-1/2 z-20 -translate-y-1/2 rounded-full border-2 border-primary bg-card/90 p-1.5 text-primary shadow-pop-sm backdrop-blur-sm transition-transform hover:scale-110 active:scale-95 sm:right-3 sm:p-2"
+            >
+              <ChevronRight className="h-4 w-4 sm:h-5 sm:w-5" />
+            </button>
           </div>
           {/* dots */}
           <div className="absolute -bottom-8 left-1/2 z-10 flex -translate-x-1/2 gap-1.5">
