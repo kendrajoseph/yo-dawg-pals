@@ -125,3 +125,7 @@ const totalAmount = { fontSize: '18px', color: '#0f1c33', margin: '8px 0', fontW
 const hr = { borderColor: '#ece7d6', margin: '4px 0' }
 const hrBold = { borderColor: '#0f1c33', borderTopWidth: '2px', margin: '12px 0 4px' }
 const footer = { fontSize: '12px', color: '#7c7766', margin: '20px 0 0', textAlign: 'center' as const }
+const reviewCard = { border: '1px solid #e6e2d6', borderRadius: '14px', padding: '20px', backgroundColor: '#fff9e8', marginBottom: '14px', textAlign: 'center' as const }
+const reviewHeading = { fontSize: '16px', fontWeight: 700, color: '#0f1c33', margin: '0 0 6px' }
+const reviewText = { fontSize: '13px', color: '#4a4636', margin: '0 0 14px' }
+const reviewButton = { backgroundColor: '#1f5d3a', color: '#fdf6e9', padding: '12px 22px', borderRadius: '10px', fontSize: '14px', fontWeight: 700, textDecoration: 'none', display: 'inline-block', textTransform: 'uppercase' as const, letterSpacing: '0.04em' }
