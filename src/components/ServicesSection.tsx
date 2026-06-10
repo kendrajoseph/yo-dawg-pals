@@ -17,7 +17,7 @@ const services = [
     icon: Users,
     title: "Group Walk",
     desc: "A thoughtfully managed social walk for dogs who enjoy the company of others and do well in a balanced group setting. Your dog gets dependable exercise, safe pack structure, and positive social time in a calm, professional environment.",
-    price: "$30",
+    price: "$25",
     unit: "/ 60 min",
     slug: "group-walk",
     accent: "bg-secondary text-secondary-foreground",
