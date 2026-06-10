@@ -88,8 +88,6 @@ const CARD_SIZES: SizePreset[] = [
   { id: "web-md", label: "Web — Medium (1080 px)", description: "Social post", pixels: 1080 },
   { id: "web-sm", label: "Web — Small (720 px)", description: "Thumbnails", pixels: 720 },
 ];
-  { id: "web-sm", label: "Web — Small (720 px)", description: "Thumbnails", pixels: 720 },
-];
 
 type Format = "png" | "jpg";
 
