@@ -14,6 +14,7 @@ import {
   MoreHorizontal,
   PawPrint,
   PieChart,
+  Printer,
   Settings,
   Sparkles,
   Star,
@@ -57,6 +58,7 @@ const SECONDARY: NavItem[] = [
   { to: "/sitter/assistant", label: "Assistant", icon: Sparkles },
   { to: "/sitter/reviews", label: "Reviews", icon: Star },
   { to: "/sitter/reports", label: "Reports", icon: PieChart },
+  { to: "/sitter/marketing", label: "Marketing", icon: Printer },
   { to: "/sitter/settings/services", label: "Services", icon: Briefcase },
   { to: "/sitter/settings", label: "Settings", icon: Settings },
 ];

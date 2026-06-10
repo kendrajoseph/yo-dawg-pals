@@ -37,6 +37,7 @@ import SitterAssistant from "./pages/sitter/Assistant.tsx";
 
 import SitterReports from "./pages/sitter/Reports.tsx";
 import SitterReviews from "./pages/sitter/Reviews.tsx";
+import SitterMarketing from "./pages/sitter/Marketing.tsx";
 import SettingsHome from "./pages/sitter/settings/SettingsHome.tsx";
 import SettingsAvailability from "./pages/sitter/settings/Availability.tsx";
 import SettingsServices from "./pages/sitter/settings/Services.tsx";
@@ -92,6 +93,7 @@ const App = () => (
             <Route path="/sitter/messages" element={<Navigate to="/sitter/emails?tab=sent" replace />} />
             <Route path="/sitter/reports" element={<ProtectedRoute requireSitter><SitterReports /></ProtectedRoute>} />
             <Route path="/sitter/reviews" element={<ProtectedRoute requireSitter><SitterReviews /></ProtectedRoute>} />
+            <Route path="/sitter/marketing" element={<ProtectedRoute requireSitter><SitterMarketing /></ProtectedRoute>} />
             <Route path="/sitter/settings" element={<ProtectedRoute requireSitter><SettingsHome /></ProtectedRoute>} />
             <Route path="/sitter/settings/services" element={<ProtectedRoute requireSitter><SettingsServices /></ProtectedRoute>} />
             <Route path="/sitter/settings/availability" element={<ProtectedRoute requireSitter><SettingsAvailability /></ProtectedRoute>} />
