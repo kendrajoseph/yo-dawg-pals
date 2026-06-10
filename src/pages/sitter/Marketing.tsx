@@ -23,6 +23,7 @@ import flyerGreen from "@/assets/marketing/flyer-green.png.asset.json";
 import businessCards from "@/assets/marketing/business-cards.png.asset.json";
 import businessCardsV5 from "@/assets/marketing/business-cards-v5.png.asset.json";
 import stickyCards from "@/assets/marketing/sticky-cards.png.asset.json";
+import stickyCardsV5 from "@/assets/marketing/sticky-cards-v5.png.asset.json";
 
 type AssetKind = "flyer" | "card";
 
@@ -42,6 +43,7 @@ const ASSETS: MarketingAsset[] = [
   { id: "business-cards", name: "Business Cards", kind: "card", url: businessCards.url },
   { id: "business-cards-v5", name: "Business Cards — Alt", kind: "card", url: businessCardsV5.url },
   { id: "sticky-cards", name: "Sticky Cards", kind: "card", url: stickyCards.url },
+  { id: "sticky-cards-v5", name: "Sticky Cards — Alt", kind: "card", url: stickyCardsV5.url },
 ];
 
 type SizePreset = {
