@@ -18,6 +18,7 @@ import { toast } from "sonner";
 import flyerCream from "@/assets/marketing/flyer-cream.png.asset.json";
 import flyerYellow from "@/assets/marketing/flyer-yellow.png.asset.json";
 import flyerOrange from "@/assets/marketing/flyer-orange.png.asset.json";
+import flyerOrangeFrenchie from "@/assets/marketing/flyer-orange-frenchie.png.asset.json";
 import flyerGreen from "@/assets/marketing/flyer-green.png.asset.json";
 import businessCards from "@/assets/marketing/business-cards.png.asset.json";
 import stickyCards from "@/assets/marketing/sticky-cards.png.asset.json";
@@ -35,6 +36,7 @@ const ASSETS: MarketingAsset[] = [
   { id: "flyer-cream", name: "Flyer — Cream (Lab)", kind: "flyer", url: flyerCream.url },
   { id: "flyer-yellow", name: "Flyer — Yellow (Doberman)", kind: "flyer", url: flyerYellow.url },
   { id: "flyer-orange", name: "Flyer — Orange (Bulldog)", kind: "flyer", url: flyerOrange.url },
+  { id: "flyer-orange-frenchie", name: "Flyer — Orange (Frenchie)", kind: "flyer", url: flyerOrangeFrenchie.url },
   { id: "flyer-green", name: "Flyer — Forest Green (Pomeranian)", kind: "flyer", url: flyerGreen.url },
   { id: "business-cards", name: "Business Cards", kind: "card", url: businessCards.url },
   { id: "sticky-cards", name: "Sticky Cards", kind: "card", url: stickyCards.url },
