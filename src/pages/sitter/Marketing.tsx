@@ -1,6 +1,6 @@
 import { useMemo, useState } from "react";
-import SitterShell from "@/components/sitter/SitterShell";
-import SitterPageHeader from "@/components/sitter/SitterPageHeader";
+import { SitterShell } from "@/components/sitter/SitterShell";
+import { SitterPageHeader } from "@/components/sitter/SitterPageHeader";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
@@ -169,7 +169,7 @@ export default function SitterMarketing() {
 
   return (
     <SitterShell>
-      <SitterPageHeader title="Marketing assets" subtitle="Pick a design, choose a size, download." />
+      <SitterPageHeader title="Marketing assets" description="Pick a design, choose a size, download." />
 
       <div className="grid gap-6 lg:grid-cols-[1fr_360px]">
         {/* Gallery */}
