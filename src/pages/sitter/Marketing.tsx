@@ -21,6 +21,7 @@ import flyerOrange from "@/assets/marketing/flyer-orange.png.asset.json";
 import flyerOrangeFrenchie from "@/assets/marketing/flyer-orange-frenchie.png.asset.json";
 import flyerGreen from "@/assets/marketing/flyer-green.png.asset.json";
 import businessCards from "@/assets/marketing/business-cards.png.asset.json";
+import businessCardsV5 from "@/assets/marketing/business-cards-v5.png.asset.json";
 import stickyCards from "@/assets/marketing/sticky-cards.png.asset.json";
 
 type AssetKind = "flyer" | "card";
@@ -39,6 +40,7 @@ const ASSETS: MarketingAsset[] = [
   { id: "flyer-orange-frenchie", name: "Flyer — Orange (Frenchie)", kind: "flyer", url: flyerOrangeFrenchie.url },
   { id: "flyer-green", name: "Flyer — Forest Green (Pomeranian)", kind: "flyer", url: flyerGreen.url },
   { id: "business-cards", name: "Business Cards", kind: "card", url: businessCards.url },
+  { id: "business-cards-v5", name: "Business Cards — Alt", kind: "card", url: businessCardsV5.url },
   { id: "sticky-cards", name: "Sticky Cards", kind: "card", url: stickyCards.url },
 ];
 
