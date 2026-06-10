@@ -16,11 +16,9 @@ import { Download, Loader2 } from "lucide-react";
 import { toast } from "sonner";
 
 import flyerCream from "@/assets/marketing/flyer-cream.png.asset.json";
-import flyerSage from "@/assets/marketing/flyer-sage.png.asset.json";
-import flyerBlush from "@/assets/marketing/flyer-blush.png.asset.json";
-import flyerBlue from "@/assets/marketing/flyer-blue.png.asset.json";
 import flyerYellow from "@/assets/marketing/flyer-yellow.png.asset.json";
 import flyerOrange from "@/assets/marketing/flyer-orange.png.asset.json";
+import flyerGreen from "@/assets/marketing/flyer-green.png.asset.json";
 import businessCards from "@/assets/marketing/business-cards.png.asset.json";
 import stickyCards from "@/assets/marketing/sticky-cards.png.asset.json";
 
@@ -34,12 +32,10 @@ type MarketingAsset = {
 };
 
 const ASSETS: MarketingAsset[] = [
-  { id: "flyer-cream", name: "Flyer — Cream", kind: "flyer", url: flyerCream.url },
-  { id: "flyer-sage", name: "Flyer — Sage", kind: "flyer", url: flyerSage.url },
-  { id: "flyer-blush", name: "Flyer — Blush", kind: "flyer", url: flyerBlush.url },
-  { id: "flyer-blue", name: "Flyer — Powder Blue", kind: "flyer", url: flyerBlue.url },
-  { id: "flyer-yellow", name: "Flyer — Yellow", kind: "flyer", url: flyerYellow.url },
-  { id: "flyer-orange", name: "Flyer — Orange", kind: "flyer", url: flyerOrange.url },
+  { id: "flyer-cream", name: "Flyer — Cream (Golden Retriever)", kind: "flyer", url: flyerCream.url },
+  { id: "flyer-yellow", name: "Flyer — Yellow (Border Collie)", kind: "flyer", url: flyerYellow.url },
+  { id: "flyer-orange", name: "Flyer — Orange (French Bulldog)", kind: "flyer", url: flyerOrange.url },
+  { id: "flyer-green", name: "Flyer — Forest Green (Dachshund)", kind: "flyer", url: flyerGreen.url },
   { id: "business-cards", name: "Business Cards", kind: "card", url: businessCards.url },
   { id: "sticky-cards", name: "Sticky Cards", kind: "card", url: stickyCards.url },
 ];
