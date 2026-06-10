@@ -32,10 +32,10 @@ type MarketingAsset = {
 };
 
 const ASSETS: MarketingAsset[] = [
-  { id: "flyer-cream", name: "Flyer — Cream (Golden Retriever)", kind: "flyer", url: flyerCream.url },
-  { id: "flyer-yellow", name: "Flyer — Yellow (Border Collie)", kind: "flyer", url: flyerYellow.url },
-  { id: "flyer-orange", name: "Flyer — Orange (French Bulldog)", kind: "flyer", url: flyerOrange.url },
-  { id: "flyer-green", name: "Flyer — Forest Green (Dachshund)", kind: "flyer", url: flyerGreen.url },
+  { id: "flyer-cream", name: "Flyer — Cream (Lab)", kind: "flyer", url: flyerCream.url },
+  { id: "flyer-yellow", name: "Flyer — Yellow (Doberman)", kind: "flyer", url: flyerYellow.url },
+  { id: "flyer-orange", name: "Flyer — Orange (Bulldog)", kind: "flyer", url: flyerOrange.url },
+  { id: "flyer-green", name: "Flyer — Forest Green (Pomeranian)", kind: "flyer", url: flyerGreen.url },
   { id: "business-cards", name: "Business Cards", kind: "card", url: businessCards.url },
   { id: "sticky-cards", name: "Sticky Cards", kind: "card", url: stickyCards.url },
 ];
