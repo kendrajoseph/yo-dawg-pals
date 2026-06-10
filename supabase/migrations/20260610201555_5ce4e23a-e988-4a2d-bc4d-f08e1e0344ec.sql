@@ -1,0 +1,2 @@
+UPDATE public.services SET price_cents = 2500 WHERE slug = 'group-walk';
+UPDATE public.service_variants SET price_cents = 2500 WHERE service_id = (SELECT id FROM public.services WHERE slug = 'group-walk');
