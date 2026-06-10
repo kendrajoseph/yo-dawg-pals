@@ -58,10 +58,19 @@ type SizePreset = {
 
 const FLYER_SIZES: SizePreset[] = [
   { id: "original", label: "Original (full resolution)", description: "Untouched source PNG", pixels: 0 },
-  { id: "letter", label: "Letter / 8.5 × 11 in (300 DPI)", description: "3300 px longest edge — print ready", pixels: 3300 },
-  { id: "a4", label: "A4 / 8.27 × 11.69 in (300 DPI)", description: "3508 px longest edge — print ready", pixels: 3508 },
-  { id: "half-letter", label: "Half Letter / 5.5 × 8.5 in (300 DPI)", description: "2550 px longest edge", pixels: 2550 },
-  { id: "5x7", label: "Postcard 5 × 7 in (300 DPI)", description: "2100 px longest edge", pixels: 2100 },
+  // Posters
+  { id: "poster-24x36", label: "Poster 24 × 36 in (300 DPI)", description: "10800 px — large format poster", pixels: 10800 },
+  { id: "poster-18x24", label: "Poster 18 × 24 in (300 DPI)", description: "7200 px — medium poster", pixels: 7200 },
+  { id: "poster-11x17", label: "Poster / Tabloid 11 × 17 in (300 DPI)", description: "5100 px — small poster", pixels: 5100 },
+  // Flyers
+  { id: "a4", label: "A4 / 8.27 × 11.69 in (300 DPI)", description: "3508 px — standard flyer", pixels: 3508 },
+  { id: "letter", label: "Letter 8.5 × 11 in (300 DPI)", description: "3300 px — standard flyer", pixels: 3300 },
+  { id: "half-letter", label: "Half Letter 5.5 × 8.5 in (300 DPI)", description: "2550 px — handbill", pixels: 2550 },
+  { id: "a5", label: "A5 / 5.83 × 8.27 in (300 DPI)", description: "2480 px — small flyer", pixels: 2480 },
+  { id: "5x7", label: "Postcard 5 × 7 in (300 DPI)", description: "2100 px", pixels: 2100 },
+  { id: "4x6", label: "Postcard 4 × 6 in (300 DPI)", description: "1800 px", pixels: 1800 },
+  // Web
+  { id: "web-xl", label: "Web — Extra Large (2400 px)", description: "High-DPI website hero", pixels: 2400 },
   { id: "web-lg", label: "Web — Large (1600 px)", description: "Email / website hero", pixels: 1600 },
   { id: "web-md", label: "Web — Medium (1080 px)", description: "Instagram post / story", pixels: 1080 },
   { id: "web-sm", label: "Web — Small (720 px)", description: "Thumbnails / previews", pixels: 720 },
@@ -69,10 +78,16 @@ const FLYER_SIZES: SizePreset[] = [
 
 const CARD_SIZES: SizePreset[] = [
   { id: "original", label: "Original (full resolution)", description: "Untouched source PNG", pixels: 0 },
-  { id: "card-print", label: "Print sheet 3.5 × 2 in (300 DPI)", description: "1050 px longest edge per card", pixels: 3000 },
-  { id: "card-print-bleed", label: "Print sheet w/ bleed (300 DPI)", description: "3300 px longest edge", pixels: 3300 },
-  { id: "web-lg", label: "Web — Large (1600 px)", description: "Email / website hero", pixels: 1600 },
+  // Print at sheet size (the source IS a multi-card sheet)
+  { id: "letter", label: "Letter sheet 8.5 × 11 in (300 DPI)", description: "3300 px — print this full sheet", pixels: 3300 },
+  { id: "a4", label: "A4 sheet 8.27 × 11.69 in (300 DPI)", description: "3508 px — print this full sheet", pixels: 3508 },
+  { id: "tabloid", label: "Tabloid 11 × 17 in (300 DPI)", description: "5100 px — oversize sheet", pixels: 5100 },
+  // Web
+  { id: "web-xl", label: "Web — Extra Large (2400 px)", description: "High-DPI display", pixels: 2400 },
+  { id: "web-lg", label: "Web — Large (1600 px)", description: "Email / website", pixels: 1600 },
   { id: "web-md", label: "Web — Medium (1080 px)", description: "Social post", pixels: 1080 },
+  { id: "web-sm", label: "Web — Small (720 px)", description: "Thumbnails", pixels: 720 },
+];
   { id: "web-sm", label: "Web — Small (720 px)", description: "Thumbnails", pixels: 720 },
 ];
 
