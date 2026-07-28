@@ -1,7 +1,7 @@
-// Sitter-only: invite a new client by email. Creates an auth user (or
-// reuses an existing one if the email already exists), then links the
-// resulting profile to this sitter via created_by_sitter_id so RLS lets
-// the sitter manage the client even before any booking exists.
+// Sitter-only: create a client profile.
+// - mode "invite": sends an email invite via Supabase auth
+// - mode "ghost": creates an auth user with a synthetic email so the
+//   profiles.id -> auth.users(id) FK is satisfied, without emailing anyone.
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.45.0";
 
 const cors = {
@@ -36,28 +36,42 @@ Deno.serve(async (req) => {
     if (!roleRow) return json(403, { error: "Sitter only" });
 
     const body = await req.json().catch(() => ({}));
-    const email = String(body.email ?? "").trim().toLowerCase();
+    const mode: "invite" | "ghost" = body.mode === "ghost" ? "ghost" : "invite";
     const fullName = String(body.full_name ?? "").trim();
-    if (!email || !fullName) return json(400, { error: "Email and name required" });
+    if (!fullName) return json(400, { error: "Name required" });
 
-    // Try to invite. If email already exists, fall back to looking up the user.
     let userId: string | null = null;
-    const { data: invited, error: inviteErr } = await admin.auth.admin.inviteUserByEmail(email, {
-      data: { full_name: fullName },
-    });
 
-    if (invited?.user) {
-      userId = invited.user.id;
-    } else if (inviteErr) {
-      // Email already registered → find existing user
-      const { data: list } = await admin.auth.admin.listUsers({ page: 1, perPage: 200 });
-      const found = list?.users.find((u) => u.email?.toLowerCase() === email);
-      if (!found) return json(400, { error: inviteErr.message });
-      userId = found.id;
+    if (mode === "invite") {
+      const email = String(body.email ?? "").trim().toLowerCase();
+      if (!email) return json(400, { error: "Email required" });
+
+      const { data: invited, error: inviteErr } = await admin.auth.admin.inviteUserByEmail(email, {
+        data: { full_name: fullName },
+      });
+
+      if (invited?.user) {
+        userId = invited.user.id;
+      } else if (inviteErr) {
+        const { data: list } = await admin.auth.admin.listUsers({ page: 1, perPage: 200 });
+        const found = list?.users.find((u) => u.email?.toLowerCase() === email);
+        if (!found) return json(400, { error: inviteErr.message });
+        userId = found.id;
+      }
+    } else {
+      // Ghost: synthesize an email to satisfy auth.users NOT NULL/unique, mark manual.
+      const syntheticEmail = `manual-${crypto.randomUUID()}@ghost.yodawg.local`;
+      const { data: created, error: createErr } = await admin.auth.admin.createUser({
+        email: syntheticEmail,
+        email_confirm: true,
+        user_metadata: { full_name: fullName, is_manual_ghost: true },
+      });
+      if (createErr || !created?.user) return json(500, { error: createErr?.message ?? "Could not create ghost user" });
+      userId = created.user.id;
     }
+
     if (!userId) return json(500, { error: "Could not create user" });
 
-    // Patch profile (handle_new_user trigger created the row on insert).
     const { error: profErr } = await admin
       .from("profiles")
       .update({
@@ -70,6 +84,7 @@ Deno.serve(async (req) => {
         province: body.province || null,
         postal_code: body.postal_code || null,
         created_by_sitter_id: user.id,
+        is_manual: mode === "ghost",
       })
       .eq("id", userId);
     if (profErr) return json(500, { error: profErr.message });
