@@ -94,12 +94,31 @@ Deno.serve(async (req) => {
         }
 
         case "approve_booking": {
-          // Use the existing approval flow via booking-workflow
+          const { data: bk, error: bkErr } = await admin
+            .from("bookings")
+            .select("id, sitter_id, status, scheduled_start_at, scheduled_end_at, services(slug)")
+            .eq("id", a.action_payload.booking_id)
+            .single();
+          if (bkErr || !bk) throw new Error("Booking not found");
+          if ((bk as any).sitter_id !== user.id) throw new Error("Forbidden");
+          if ((bk as any).status !== "requested") {
+            throw new Error(`Cannot approve booking with status "${(bk as any).status}"`);
+          }
+          const startAt = a.action_payload.scheduled_start_at || (bk as any).scheduled_start_at;
+          const endAt = a.action_payload.scheduled_end_at || (bk as any).scheduled_end_at;
+          if (!startAt || !endAt) {
+            throw new Error("Cannot approve: no scheduled time set. Approve this booking from the booking page instead.");
+          }
+          const slug = ((bk as any).services?.slug || "").toLowerCase();
+          const workflowAction = slug === "group-walk" ? "approve_group_walk" : "schedule_solo_walk";
           const { data, error } = await admin.functions.invoke("booking-workflow", {
-            headers: { Authorization: `Bearer ${serviceKey}` },
+            headers: { Authorization: authHeader },
             body: {
-              action: "approve",
-              booking_id: a.action_payload.booking_id,
+              action: workflowAction,
+              bookingId: a.action_payload.booking_id,
+              scheduledStartAt: startAt,
+              scheduledEndAt: endAt,
+              appUrl: a.action_payload.app_url || "",
             },
           });
           if (error) throw new Error(error.message);

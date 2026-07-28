@@ -201,8 +201,24 @@ serve(async (req) => {
             payment_amount_cents: Math.max(0, ((booking as any).payment_amount_cents ?? totalAmount) - refundedAmount),
           }).eq("id", (booking as any).id);
 
+          // Mirror refund onto related invoice so it doesn't stay "paid".
+          const { data: invoice } = await supabase.from("invoices")
+            .select("id, amount_paid_cents")
+            .eq("booking_id", (booking as any).id)
+            .order("created_at", { ascending: false })
+            .limit(1)
+            .maybeSingle();
+          if (invoice) {
+            const newPaid = Math.max(0, ((invoice as any).amount_paid_cents ?? 0) - refundedAmount);
+            await supabase.from("invoices").update({
+              amount_paid_cents: newPaid,
+              status: newPaid === 0 ? "refunded" : "partial",
+            }).eq("id", (invoice as any).id);
+          }
+
           await supabase.from("payment_events").insert({
             booking_id: (booking as any).id,
+            invoice_id: (invoice as any)?.id ?? null,
             kind: isFullRefund ? "refund_succeeded" : "partial_refund",
             channel: "stripe",
             amount_cents: refundedAmount,

@@ -285,7 +285,17 @@ function SentTab({ onCompose }: { onCompose: () => void }) {
         };
       });
 
-      const archivedMinutes = new Set(archived.map((m: any) => (m.created_at as string)?.slice(0, 16)));
+      // Dedup logs against archived using (kind + minute + customer_id). Log rows
+      // don't carry customer_id, but modern send-transactional-email stores it in
+      // metadata.customer_id when it archives the message. Legacy log rows without
+      // that field fall back to (kind + minute) dedup.
+      const archivedKeysStrict = new Set<string>();
+      const archivedKeysLoose = new Set<string>();
+      for (const m of archived as any[]) {
+        const minute = (m.created_at as string)?.slice(0, 16) ?? "";
+        archivedKeysStrict.add(`${m.kind}|${minute}|${m.customer_id}`);
+        archivedKeysLoose.add(`${m.kind}|${minute}`);
+      }
 
       const logRows: SentRow[] = [];
       for (const l of (logRes.data ?? []) as any[]) {
@@ -293,7 +303,10 @@ function SentTab({ onCompose }: { onCompose: () => void }) {
         if (!recipient || recipient === sitterEmail) continue;
         const tpl = TEMPLATE_TO_KIND[l.template_name];
         if (!tpl) continue;
-        if (archivedMinutes.has((l.created_at as string)?.slice(0, 16))) continue;
+        const minute = (l.created_at as string)?.slice(0, 16) ?? "";
+        const metaCustomerId = (l.metadata as any)?.customer_id;
+        if (metaCustomerId && archivedKeysStrict.has(`${tpl.kind}|${minute}|${metaCustomerId}`)) continue;
+        if (!metaCustomerId && archivedKeysLoose.has(`${tpl.kind}|${minute}`)) continue;
         const st = stateMap.get(`log:${l.id}`);
         logRows.push({
           id: `log-${l.id}`,

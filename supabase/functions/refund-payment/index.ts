@@ -98,11 +98,14 @@ Deno.serve(async (req) => {
     const refunded = refund.amount;
     const remaining = Math.max(0, ((booking as any).payment_amount_cents ?? 0) - refunded);
 
-    await admin.from("bookings").update({
+    const bookingPatch: Record<string, unknown> = {
       refund_id: refund.id,
       payment_status: remaining > 0 ? "partial" : "refunded",
       payment_amount_cents: remaining,
-    }).eq("id", bookingId);
+    };
+    // Full refund → also flip the booking status so the UI reflects it.
+    if (remaining === 0) bookingPatch.status = "refunded";
+    await admin.from("bookings").update(bookingPatch).eq("id", bookingId);
 
     // Update related invoice
     const { data: invoice } = await admin.from("invoices")

@@ -34,7 +34,14 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const [session, setSession] = useState<Session | null>(null);
   const [user, setUser] = useState<User | null>(null);
   const [roles, setRoles] = useState<Role[]>([]);
-  const [loading, setLoading] = useState(true);
+  const [sessionLoaded, setSessionLoaded] = useState(false);
+  const [rolesLoaded, setRolesLoaded] = useState(false);
+
+  const loadRoles = async (uid: string) => {
+    const { data } = await supabase.from("user_roles").select("role").eq("user_id", uid);
+    setRoles((data ?? []).map((r) => r.role as Role));
+    setRolesLoaded(true);
+  };
 
   useEffect(() => {
     // Set up listener BEFORE fetching session
@@ -43,7 +50,9 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       setUser(sess?.user ?? null);
       if (!sess?.user) {
         setRoles([]);
+        setRolesLoaded(true);
       } else {
+        setRolesLoaded(false);
         // defer the supabase call to avoid deadlock in the listener
         setTimeout(() => loadRoles(sess.user.id), 0);
       }
@@ -52,21 +61,25 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     supabase.auth.getSession().then(({ data: { session: sess } }) => {
       setSession(sess);
       setUser(sess?.user ?? null);
-      if (sess?.user) loadRoles(sess.user.id);
-      setLoading(false);
+      if (sess?.user) {
+        loadRoles(sess.user.id);
+      } else {
+        setRolesLoaded(true);
+      }
+      setSessionLoaded(true);
     });
 
     return () => sub.subscription.unsubscribe();
   }, []);
 
-  const loadRoles = async (uid: string) => {
-    const { data } = await supabase.from("user_roles").select("role").eq("user_id", uid);
-    setRoles((data ?? []).map((r) => r.role as Role));
-  };
+  // Wait for both session and (when signed in) roles so ProtectedRoute
+  // doesn't bounce admins to /account during the role-fetch race.
+  const loading = !sessionLoaded || (!!user && !rolesLoaded);
 
   const signOut = async () => {
     await supabase.auth.signOut();
     setRoles([]);
+    setRolesLoaded(true);
   };
 
   const isAJ = user?.email?.toLowerCase() === ANNEKE_EMAIL;

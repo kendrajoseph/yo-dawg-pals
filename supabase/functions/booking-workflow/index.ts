@@ -390,11 +390,16 @@ serve(async (req) => {
     };
 
     if (action === "schedule_solo_walk") {
-      const { error } = await supabase
+      const { data: updated, error } = await supabase
         .from("bookings")
         .update({ ...commonPatch, status: "confirmed" })
-        .eq("id", bookingId);
+        .eq("id", bookingId)
+        .eq("status", "requested")
+        .select("id");
       if (error) return json({ error: error.message }, 400);
+      if (!updated || updated.length === 0) {
+        return json({ error: `Booking is not in a requestable state (current: ${booking.status}).` }, 409);
+      }
 
       return await sendClientNotification({
         booking: { ...booking, scheduled_start_at: scheduledStartAt },
@@ -410,11 +415,16 @@ serve(async (req) => {
     }
 
     if (action === "approve_group_walk") {
-      const { error } = await supabase
+      const { data: updated, error } = await supabase
         .from("bookings")
         .update({ ...commonPatch, status: "awaiting_payment" })
-        .eq("id", bookingId);
+        .eq("id", bookingId)
+        .eq("status", "requested")
+        .select("id");
       if (error) return json({ error: error.message }, 400);
+      if (!updated || updated.length === 0) {
+        return json({ error: `Booking is not in a requestable state (current: ${booking.status}).` }, 409);
+      }
 
       return await sendClientNotification({
         booking: { ...booking, scheduled_start_at: scheduledStartAt, group_assignment_label: groupLabel },
