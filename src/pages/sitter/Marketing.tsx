@@ -98,10 +98,27 @@ async function downloadResized(
   format: Format,
 ): Promise<void> {
   if (pixels === 0) {
-    // Download original directly
-    const res = await fetch(sourceUrl);
-    const blob = await res.blob();
-    triggerDownload(blob, `${filenameBase}-original.png`);
+    if (format === "png") {
+      // Download original directly
+      const res = await fetch(sourceUrl);
+      const blob = await res.blob();
+      triggerDownload(blob, `${filenameBase}-original.png`);
+      return;
+    }
+    // JPG requested: re-encode at original dimensions
+    const img = await loadImage(sourceUrl);
+    const canvas = document.createElement("canvas");
+    canvas.width = img.naturalWidth;
+    canvas.height = img.naturalHeight;
+    const ctx = canvas.getContext("2d");
+    if (!ctx) throw new Error("Canvas not supported");
+    ctx.fillStyle = "#ffffff";
+    ctx.fillRect(0, 0, canvas.width, canvas.height);
+    ctx.drawImage(img, 0, 0);
+    const blob: Blob = await new Promise((resolve, reject) =>
+      canvas.toBlob((b) => (b ? resolve(b) : reject(new Error("toBlob failed"))), "image/jpeg", 0.92),
+    );
+    triggerDownload(blob, `${filenameBase}-original.jpg`);
     return;
   }
 
