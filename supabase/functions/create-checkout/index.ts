@@ -28,6 +28,20 @@ serve(async (req) => {
     if (booking.customer_id !== user.id) return new Response(JSON.stringify({ error: "Forbidden" }), { status: 403, headers: { ...corsHeaders, "Content-Type": "application/json" } });
     if (!["pending_payment", "awaiting_payment"].includes(booking.status)) return new Response(JSON.stringify({ error: "Booking is not payable" }), { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } });
 
+    // Double-submit guard: reuse an existing open Checkout Session if one exists for this booking.
+    const existingSessionId = (booking as any).stripe_session_id as string | null | undefined;
+    if (existingSessionId) {
+      try {
+        const stripeCheck = createStripeClient((environment || "sandbox") as StripeEnv);
+        const existing = await stripeCheck.checkout.sessions.retrieve(existingSessionId);
+        if (existing && existing.status === "open" && existing.client_secret) {
+          return new Response(JSON.stringify({ clientSecret: existing.client_secret }), { headers: { ...corsHeaders, "Content-Type": "application/json" } });
+        }
+      } catch (_) {
+        // fall through and create a new session
+      }
+    }
+
     const service = (booking as any).services;
     const variant = (booking as any).service_variants;
     const paymentMode = variant?.payment_mode ?? service?.payment_mode;
