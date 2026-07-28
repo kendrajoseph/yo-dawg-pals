@@ -38,29 +38,14 @@ export default function NewClientDialog({ open, onOpenChange, onCreated }: Props
     if (addPet && !pet.name.trim()) { toast.error("Pet name is required"); return; }
     setSaving(true);
     try {
-      let clientId: string;
-      if (mode === "invite") {
-        const { data, error } = await supabase.functions.invoke("sitter-invite-client", { body: { ...form, email: form.email.trim().toLowerCase() } });
-        if (error || !data?.client_id) throw new Error(error?.message ?? data?.error ?? "Invite failed");
-        clientId = data.client_id;
-      } else {
-        // Ghost client → insert profile directly with a fresh uuid
-        clientId = crypto.randomUUID();
-        const { error } = await db.from("profiles").insert({
-          id: clientId,
-          full_name: form.full_name,
-          phone: form.phone || null,
-          mobile_phone: form.mobile_phone || null,
-          address_line1: form.address_line1 || null,
-          address_line2: form.address_line2 || null,
-          city: form.city || null,
-          province: form.province || null,
-          postal_code: form.postal_code || null,
-          is_manual: true,
-          created_by_sitter_id: user.id,
-        });
-        if (error) throw error;
-      }
+      const payload = {
+        ...form,
+        email: form.email.trim().toLowerCase(),
+        mode,
+      };
+      const { data, error } = await supabase.functions.invoke("sitter-invite-client", { body: payload });
+      if (error || !data?.client_id) throw new Error(error?.message ?? data?.error ?? "Could not create client");
+      const clientId: string = data.client_id;
 
       if (addPet) {
         const { error: petErr } = await db.from("pets").insert({
