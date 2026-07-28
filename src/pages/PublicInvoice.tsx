@@ -161,7 +161,7 @@ const PublicInvoice = () => {
                 <p className="mt-4 rounded-md border border-border bg-muted/40 p-3 text-sm text-muted-foreground">{data.invoice.notes}</p>
               )}
 
-              {data.invoice.status !== "paid" && data.invoice.amount_paid_cents < data.invoice.total_cents && (
+              {!["paid", "void", "refunded"].includes(data.invoice.status) && data.invoice.amount_paid_cents < data.invoice.total_cents && (
                 <>
                   {!paying && token && (
                     <Button onClick={startPay} className="mt-6 w-full font-display uppercase">

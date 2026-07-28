@@ -285,7 +285,22 @@ function SentTab({ onCompose }: { onCompose: () => void }) {
         };
       });
 
-      const archivedMinutes = new Set(archived.map((m: any) => (m.created_at as string)?.slice(0, 16)));
+      // Dedup logs against archived by (kind + minute + customer email) so
+      // unrelated sends in the same minute don't hide each other.
+      const customerEmails = new Map<string, string>();
+      if (ids.length > 0) {
+        for (const cid of ids) {
+          const { data: au } = await supabase.auth.admin.getUserById(cid as string).catch(() => ({ data: null } as any));
+          const em = (au as any)?.user?.email?.toLowerCase();
+          if (em) customerEmails.set(cid as string, em);
+        }
+      }
+      const archivedKeys = new Set<string>();
+      for (const m of archived as any[]) {
+        const minute = (m.created_at as string)?.slice(0, 16) ?? "";
+        const em = customerEmails.get(m.customer_id) ?? "";
+        archivedKeys.add(`${m.kind}|${minute}|${em}`);
+      }
 
       const logRows: SentRow[] = [];
       for (const l of (logRes.data ?? []) as any[]) {
@@ -293,7 +308,8 @@ function SentTab({ onCompose }: { onCompose: () => void }) {
         if (!recipient || recipient === sitterEmail) continue;
         const tpl = TEMPLATE_TO_KIND[l.template_name];
         if (!tpl) continue;
-        if (archivedMinutes.has((l.created_at as string)?.slice(0, 16))) continue;
+        const minute = (l.created_at as string)?.slice(0, 16) ?? "";
+        if (archivedKeys.has(`${tpl.kind}|${minute}|${recipient}`)) continue;
         const st = stateMap.get(`log:${l.id}`);
         logRows.push({
           id: `log-${l.id}`,

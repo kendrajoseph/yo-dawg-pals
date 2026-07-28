@@ -90,7 +90,7 @@ Deno.serve(async (req) => {
 
     const { data: booking, error: bErr } = await admin
       .from("bookings")
-      .select("id, customer_id, sitter_id, status, scheduled_start_at, requested_date, requested_window_label, services(name), pets(name)")
+      .select("id, customer_id, sitter_id, status, payment_status, scheduled_start_at, requested_date, requested_window_label, services(name), pets(name)")
       .eq("id", bookingId)
       .maybeSingle();
     if (bErr || !booking) return json({ error: "Booking not found" }, 404);
@@ -100,14 +100,26 @@ Deno.serve(async (req) => {
     const isSitter = booking.sitter_id === user.id;
     if (!isSitter && !isAdmin) return json({ error: "Forbidden" }, 403);
 
-    // Cancel the booking
+    // Only allow decline on a still-pending request. Paid/confirmed bookings
+    // must go through cancel-booking / refund-payment so a refund is issued.
+    if (!["requested", "pending_payment"].includes((booking as any).status)) {
+      return json({
+        error: `This booking is ${(booking as any).status}. Use Cancel & Refund instead of Decline.`,
+      }, 400);
+    }
+    if ((booking as any).payment_status === "paid" || (booking as any).payment_status === "partial") {
+      return json({ error: "This booking has been paid. Use Cancel & Refund instead of Decline." }, 400);
+    }
+
+    // Cancel the booking (guarded on status to avoid racing an approval)
     const { error: updateError } = await admin
       .from("bookings")
       .update({
         status: "cancelled",
         cancelled_at: new Date().toISOString(),
       })
-      .eq("id", bookingId);
+      .eq("id", bookingId)
+      .in("status", ["requested", "pending_payment"]);
     if (updateError) return json({ error: updateError.message }, 400);
 
     // Build a structured suggestion summary for email/SMS/audit
