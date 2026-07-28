@@ -285,21 +285,16 @@ function SentTab({ onCompose }: { onCompose: () => void }) {
         };
       });
 
-      // Dedup logs against archived by (kind + minute + customer email) so
-      // unrelated sends in the same minute don't hide each other.
-      const customerEmails = new Map<string, string>();
-      if (ids.length > 0) {
-        for (const cid of ids) {
-          const { data: au } = await supabase.auth.admin.getUserById(cid as string).catch(() => ({ data: null } as any));
-          const em = (au as any)?.user?.email?.toLowerCase();
-          if (em) customerEmails.set(cid as string, em);
-        }
-      }
-      const archivedKeys = new Set<string>();
+      // Dedup logs against archived using (kind + minute + customer_id). Log rows
+      // don't carry customer_id, but modern send-transactional-email stores it in
+      // metadata.customer_id when it archives the message. Legacy log rows without
+      // that field fall back to (kind + minute) dedup.
+      const archivedKeysStrict = new Set<string>();
+      const archivedKeysLoose = new Set<string>();
       for (const m of archived as any[]) {
         const minute = (m.created_at as string)?.slice(0, 16) ?? "";
-        const em = customerEmails.get(m.customer_id) ?? "";
-        archivedKeys.add(`${m.kind}|${minute}|${em}`);
+        archivedKeysStrict.add(`${m.kind}|${minute}|${m.customer_id}`);
+        archivedKeysLoose.add(`${m.kind}|${minute}`);
       }
 
       const logRows: SentRow[] = [];
@@ -309,7 +304,9 @@ function SentTab({ onCompose }: { onCompose: () => void }) {
         const tpl = TEMPLATE_TO_KIND[l.template_name];
         if (!tpl) continue;
         const minute = (l.created_at as string)?.slice(0, 16) ?? "";
-        if (archivedKeys.has(`${tpl.kind}|${minute}|${recipient}`)) continue;
+        const metaCustomerId = (l.metadata as any)?.customer_id;
+        if (metaCustomerId && archivedKeysStrict.has(`${tpl.kind}|${minute}|${metaCustomerId}`)) continue;
+        if (!metaCustomerId && archivedKeysLoose.has(`${tpl.kind}|${minute}`)) continue;
         const st = stateMap.get(`log:${l.id}`);
         logRows.push({
           id: `log-${l.id}`,
